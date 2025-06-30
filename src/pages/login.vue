@@ -7,7 +7,7 @@
             <v-toolbar-title>登录</v-toolbar-title>
           </v-toolbar>
           <v-card-text>
-            <v-form @submit.prevent="login" ref="form">
+            <v-form @keyup.enter="login" ref="form">
               <v-text-field
                 v-model="username"
                 label="用户名"

@@ -56,17 +56,20 @@
               label="班级名称"
               :rules="[v => !!v || '班级名称不能为空']"
               required
+              @keyup.enter.prevent="saveClass"
             ></v-text-field>
             <v-text-field
               v-model="editedItem.grade"
               label="年级"
               :rules="[v => !!v || '年级不能为空']"
               required
+              @keyup.enter.prevent="saveClass"
             ></v-text-field>
             <v-textarea
               v-model="editedItem.description"
               label="描述"
               rows="3"
+              @keyup.enter.prevent="saveClass"
             ></v-textarea>
           </v-form>
         </v-card-text>

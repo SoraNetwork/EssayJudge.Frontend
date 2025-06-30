@@ -7,51 +7,58 @@
       
       <!-- 统计卡片 -->
       <v-col cols="12" md="4">
-        <v-card class="mb-4" height="150">
-          <v-card-title class="text-h6">
-            <v-icon left color="primary" class="mr-2">mdi-book-open-page-variant</v-icon>
-            作文题目
-          </v-card-title>
-          <v-card-text class="d-flex align-center justify-center">
-            <div class="text-h3 text-primary" v-if="!loading.assignments">{{ stats.assignmentCount }}</div>
-            <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn variant="text" color="primary" to="/assignments">查看全部</v-btn>
-          </v-card-actions>
-        </v-card>
+        <div class="stat-card-hover" @click="goTo('/assignments')">
+          <v-card class="mb-4 stat-card" height="150">
+            <v-card-title class="text-h6">
+              <v-icon left color="primary" class="mr-2">mdi-book-open-page-variant</v-icon>
+              作文题目
+            </v-card-title>
+            <v-card-text class="d-flex align-center justify-center">
+              <div class="text-h3 text-primary" v-if="!loading.assignments">{{ stats.assignmentCount }}</div>
+              <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
+            </v-card-text>
+            <!-- 遮罩 -->
+            <div class="stat-card-mask">
+              查看全部
+            </div>
+          </v-card>
+        </div>
       </v-col>
       
       <v-col cols="12" md="4">
-        <v-card class="mb-4" height="150">
-          <v-card-title class="text-h6">
-            <v-icon left color="primary" class="mr-2">mdi-account-group</v-icon>
-            学生人数
-          </v-card-title>
-          <v-card-text class="d-flex align-center justify-center">
-            <div class="text-h3 text-primary" v-if="!loading.students">{{ stats.studentCount }}</div>
-            <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn variant="text" color="primary" to="/students">查看全部</v-btn>
-          </v-card-actions>
-        </v-card>
+        <div class="stat-card-hover" @click="goTo('/students')">
+          <v-card class="mb-4 stat-card" height="150">
+            <v-card-title class="text-h6">
+              <v-icon left color="primary" class="mr-2">mdi-account-group</v-icon>
+              学生人数
+            </v-card-title>
+            <v-card-text class="d-flex align-center justify-center">
+              <div class="text-h3 text-primary" v-if="!loading.students">{{ stats.studentCount }}</div>
+              <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
+            </v-card-text>
+            <div class="stat-card-mask">
+              查看全部
+            </div>
+          </v-card>
+        </div>
       </v-col>
       
       <v-col cols="12" md="4">
-        <v-card class="mb-4" height="150">
-          <v-card-title class="text-h6">
-            <v-icon left color="primary" class="mr-2">mdi-clipboard-text</v-icon>
-            作文提交
-          </v-card-title>
-          <v-card-text class="d-flex align-center justify-center">
-            <div class="text-h3 text-primary" v-if="!loading.submissions">{{ stats.submissionCount }}</div>
-            <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn variant="text" color="primary" to="/essays">查看全部</v-btn>
-          </v-card-actions>
-        </v-card>
+        <div class="stat-card-hover" @click="goTo('/essays')">
+          <v-card class="mb-4 stat-card" height="150">
+            <v-card-title class="text-h6">
+              <v-icon left color="primary" class="mr-2">mdi-clipboard-text</v-icon>
+              作文提交
+            </v-card-title>
+            <v-card-text class="d-flex align-center justify-center">
+              <div class="text-h3 text-primary" v-if="!loading.submissions">{{ stats.submissionCount }}</div>
+              <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
+            </v-card-text>
+            <div class="stat-card-mask">
+              查看全部
+            </div>
+          </v-card>
+        </div>
       </v-col>
       
       <!-- 最近作文提交 -->
@@ -115,8 +122,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/services/api'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 // 统计数据
 const stats = ref({
@@ -201,6 +210,10 @@ async function fetchRecentSubmissions() {
   }
 }
 
+function goTo(path: string) {
+  router.push(path)
+}
+
 onMounted(() => {
   if (isLoggedIn.value) {
     fetchStats()
@@ -208,3 +221,38 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.stat-card-hover {
+  position: relative;
+  cursor: pointer;
+}
+.stat-card-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(25, 118, 210, 0.75);
+  color: #fff;
+  font-size: 1.3em;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+.stat-card-hover:hover .stat-card-mask {
+  opacity: 1;
+  pointer-events: auto;
+}
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+</style>
