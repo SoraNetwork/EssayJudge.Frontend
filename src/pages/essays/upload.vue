@@ -15,7 +15,7 @@
           ></v-select>
           <v-file-input
             v-model="selectedFile"
-            label="选择作文图片"
+            label="选择作文图片（支持拖动文件到此处选择）"
             accept="image/*"
             required
           ></v-file-input>
@@ -31,17 +31,27 @@
     </v-card>
 
     <div v-if="isPolling">
+      <!-- 线性进度条 -->
+      <v-progress-linear
+        :model-value="pollingProgress"
+        color="primary"
+        height="8"
+        striped
+        class="mb-4"
+      ></v-progress-linear>
+
       <v-card class="mb-4">
         <v-card-text class="text-center">
+          <!-- 循环进度指示器，移除文本 -->
           <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
           <p class="mt-4">正在批改中，请稍候...</p>
           <p>状态: {{ pollingStatus.status }}</p>
         </v-card-text>
       </v-card>
 
-      <v-card v-if="pollingStatus.originalText" class="mb-4">
+      <v-card v-if="pollingStatus.parsedText" class="mb-4">
         <v-card-title>识别原文</v-card-title>
-        <v-card-text class="pre-wrap">{{ pollingStatus.originalText }}</v-card-text>
+        <v-card-text class="pre-wrap">{{ pollingStatus.parsedText}}</v-card-text>
       </v-card>
 
       <v-card v-if="pollingStatus.aiResults && pollingStatus.aiResults.length > 0" class="mb-4">
@@ -73,6 +83,7 @@ const isSubmitting = ref(false);
 const isUploading = ref(false);
 const isPolling = ref(false);
 const pollingStatus = ref<any>({});
+const pollingProgress = ref(0); // 新增进度变量
 
 async function fetchAssignments() {
   try {
@@ -90,6 +101,7 @@ async function uploadEssay() {
 
   isSubmitting.value = true;
   isUploading.value = true;
+  pollingProgress.value = 0; // 重置进度
 
   const formData = new FormData();
   formData.append('essayAssignmentId', selectedAssignment.value);
@@ -106,6 +118,8 @@ async function uploadEssay() {
     startPolling(submissionId);
   } catch (error) {
     console.error('上传作文失败:', error);
+    isPolling.value = false; // 停止轮询
+    pollingProgress.value = 0; // 错误时重置进度
   } finally {
     isSubmitting.value = false;
   }
@@ -114,18 +128,38 @@ async function uploadEssay() {
 function startPolling(submissionId: string) {
   isUploading.value = false;
   isPolling.value = true;
+  pollingProgress.value = 0; // 开始轮询时进度为0
+
   const interval = setInterval(async () => {
     try {
       const response = await api.get(`/EssaySubmission/${submissionId}`);
       pollingStatus.value = response.data;
+
+      // 更新进度
+      let progress = 0;
+      if (pollingStatus.value.parsedText) {
+        progress += 20; // 识别原文完成
+      }
+      if (pollingStatus.value.aiResults && pollingStatus.value.aiResults.length > 0) {
+        // 每个AI结果增加20%，最多4个AI结果
+        progress += Math.min(pollingStatus.value.aiResults.length, 4) * 20;
+      }
+      pollingProgress.value = Math.min(progress, 100); // 确保进度不超过100
+
       if (response.data.judgeResult) {
         clearInterval(interval);
-        router.push(`/essays/${submissionId}`);
+        pollingProgress.value = 100; // 批改完成，进度100%
+        // 延迟跳转，让用户看到100%进度
+        setTimeout(() => {
+          router.push(`/essays/${submissionId}`);
+        }, 500); // 延迟0.5秒
       }
     } catch (error) {
       console.error('轮询失败:', error);
       clearInterval(interval);
       isPolling.value = false; // Stop polling on error
+      pollingStatus.value = {}; // 清空状态
+      pollingProgress.value = 0; // 错误时重置进度
     }
   }, 2000);
 }
