@@ -43,7 +43,10 @@
 
     <v-main>
       <v-container fluid>
-        <router-view />
+        <!-- Wrap router-view with KeepAlive -->
+        <KeepAlive>
+          <router-view />
+        </KeepAlive>
       </v-container>
     </v-main>
 

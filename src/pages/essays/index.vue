@@ -53,7 +53,7 @@
           no-data-text="暂无数据"
         >
           <template v-slot:item.createdAt="{ item }">
-            {{ new Date(item.createdAt).toLocaleString() }}
+            {{ formatDate(item.createdAt) }}
           </template>
           <template v-slot:item.finalScore="{ item }">
             <v-chip
@@ -190,6 +190,21 @@ function getScoreColor(score: number | null | undefined) {
   if (score >= 80) return 'info'
   if (score >= 60) return 'warning'
   return 'error'
+}
+
+// 格式化日期为东八区时间
+function formatDate(dateString: string) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'Asia/Shanghai' // 指定东八区时区
+  })
 }
 
 // 页面加载时获取数据

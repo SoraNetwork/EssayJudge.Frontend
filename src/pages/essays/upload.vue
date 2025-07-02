@@ -25,7 +25,10 @@
             type="number"
             required
           ></v-text-field>
-          <v-btn type="submit" color="primary" :loading="isSubmitting">提交</v-btn>
+          <div class="d-flex justify-end">
+            <v-btn type="submit" color="primary" :loading="isSubmitting" class="mr-2">提交</v-btn>
+            <v-btn color="secondary" to="/essays/upload_multiple" prepend-icon="mdi-upload-multiple">批量上传</v-btn>
+          </div>
         </v-form>
       </v-card-text>
     </v-card>
