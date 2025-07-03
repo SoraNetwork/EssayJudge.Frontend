@@ -37,7 +37,7 @@
         <v-col cols="12" lg="8">
           <v-card>
             <v-card-title>综合评判</v-card-title>
-                        <v-card-text>
+                        <v-card-text style="white-space: normal">
               <div ref="previewElement" class="markdown-body"></div>
             </v-card-text>
 
@@ -226,5 +226,14 @@ onMounted(() => {
 .v-card-text > .markdown-body {
     padding: 0;
     margin: 0;
+}
+
+/* Remove margin from the first and last elements inside the markdown body */
+.markdown-body > :first-child {
+    margin-top: 0 !important;
+}
+
+.markdown-body > :last-child {
+    margin-bottom: 0 !important;
 }
 </style>

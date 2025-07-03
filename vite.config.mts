@@ -7,6 +7,7 @@ import Vue from '@vitejs/plugin-vue'
 import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+import vueDevTools from 'vite-plugin-vue-devtools'
 
 // Utilities
 import { defineConfig } from 'vite'
@@ -15,6 +16,7 @@ import { fileURLToPath, URL } from 'node:url'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    vueDevTools(),
     VueRouter({
       dts: 'src/typed-router.d.ts',
     }),

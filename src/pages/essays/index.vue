@@ -192,19 +192,24 @@ function getScoreColor(score: number | null | undefined) {
   return 'error'
 }
 
-// 格式化日期为东八区时间
-function formatDate(dateString: string) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZone: 'Asia/Shanghai' // 指定东八区时区
-  })
+// 格式化日期并增加8小时 (UTC+8)
+function formatDate(dateString: string | Date): string {
+  const date = new Date(dateString);
+  // 检查日期是否有效
+  if (isNaN(date.getTime())) {
+    return '无效日期';
+  }
+  // 增加8小时 (8 * 60 * 60 * 1000 毫秒)
+  date.setTime(date.getTime() + (8 * 60 * 60 * 1000));
+
+  const year = date.getFullYear();
+  const month = ('0' + (date.getMonth() + 1)).slice(-2);
+  const day = ('0' + date.getDate()).slice(-2);
+  const hours = ('0' + date.getHours()).slice(-2);
+  const minutes = ('0' + date.getMinutes()).slice(-2);
+  const seconds = ('0' + date.getSeconds()).slice(-2);
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 // 页面加载时获取数据
