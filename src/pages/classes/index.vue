@@ -58,19 +58,6 @@
               required
               @keyup.enter.prevent="saveClass"
             ></v-text-field>
-            <v-text-field
-              v-model="editedItem.grade"
-              label="年级"
-              :rules="[v => !!v || '年级不能为空']"
-              required
-              @keyup.enter.prevent="saveClass"
-            ></v-text-field>
-            <v-textarea
-              v-model="editedItem.description"
-              label="描述"
-              rows="3"
-              @keyup.enter.prevent="saveClass"
-            ></v-textarea>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -110,8 +97,6 @@ import api from '@/services/api'
 // 表格列定义
 const headers = [
   { title: '班级名称', key: 'name' },
-  { title: '年级', key: 'grade' },
-  { title: '描述', key: 'description' },
   { title: '学生数量', key: 'studentCount' },
   { title: '操作', key: 'actions', sortable: false }
 ]
@@ -130,8 +115,6 @@ const form = ref<any>(null)
 const editedItem = ref({
   id: '',
   name: '',
-  grade: '',
-  description: ''
 })
 
 // 要删除的项目
@@ -226,8 +209,6 @@ function resetForm() {
   editedItem.value = {
     id: '',
     name: '',
-    grade: '',
-    description: ''
   }
 }
 
