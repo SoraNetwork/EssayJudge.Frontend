@@ -23,7 +23,7 @@
               icon
               variant="text"
               size="small"
-              :to="`/EssayAssignment/${item.id}`"
+              :to="`/assignments/${item.id}`"
             >
               <v-icon>mdi-eye</v-icon>
             </v-btn>
@@ -57,41 +57,31 @@
         </v-card-title>
         <v-card-text>
           <v-form ref="form" @submit.prevent="saveAssignment">
-            <v-select
-              v-model="editedItem.grade"
-              :items="grades"
-              item-title="grade"
-              item-value="string"
-              label="选择年级"
-              required
-            ></v-select>
             <v-text-field
               v-model="editedItem.title"
               label="标题"
               :rules="[v => !!v || '标题不能为空']"
               required
             ></v-text-field>
-              <v-text-field
-              v-model="editedItem.totalScore"
-              label="总分"
-              type="number"
-              :rules="[v => (v !== null && v !== undefined && v > 0) || '总分必须大于0']"
-              required
-            ></v-text-field>
-            <v-text-field
-              v-model="editedItem.baseScore"
-              label="基础分"
-              type="number"
-              :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']"
-              required
-            ></v-text-field>
             <v-textarea
-              v-model="editedItem.scoringCriteria"
-              label="评分标准"
-              :rules="[v => !!v || '评分标准不能为空']"
+              v-model="editedItem.description"
+              label="描述"
+              rows="3"
+            ></v-textarea>
+            <v-textarea
+              v-model="editedItem.prompt"
+              label="作文提示"
+              :rules="[v => !!v || '作文提示不能为空']"
               required
               rows="5"
             ></v-textarea>
+            <v-text-field
+              v-model="editedItem.wordLimit"
+              label="字数限制"
+              type="number"
+              :rules="[v => v > 0 || '字数限制必须大于0']"
+              required
+            ></v-text-field>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -121,93 +111,39 @@
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 
-// Define interface for Assignment item
-interface Assignment {
-  id: string;
-  title: string;
-  grade: string | null;
-  wordLimit: number;
-  createdAt: string; // Assuming createdAt is a string from the API
-  totalScore: number | null;
-  baseScore: number | null;
-  scoringCriteria: string | null; // Add scoringCriteria
-} // Close the interface definition
-
-// 数据和状态
-const loading = ref(false)
-const dialog = ref(false)
 // 表格列定义
 const headers = [
   { title: '标题', key: 'title' },
-  { title: '年级', key: 'grade' },
+  { title: '描述', key: 'description' },
+  { title: '字数限制', key: 'wordLimit' },
   { title: '创建时间', key: 'createdAt' },
   { title: '操作', key: 'actions', sortable: false }
 ]
 
 // 数据和状态
-const assignments = ref<Assignment[]>([])
+const assignments = ref([])
+const loading = ref(false)
+const dialog = ref(false)
 const deleteDialog = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
 const isEditing = ref(false)
 const form = ref<any>(null)
 
-// Define grades for the select input
-const grades = ref([
-  { grade: '一年级', string: 'Grade1' },
-  { grade: '二年级', string: 'Grade2' },
-  { grade: '三年级', string: 'Grade3' },
-  { grade: '四年级', string: 'Grade4' },
-  { grade: '五年级', string: 'Grade5' },
-  { grade: '六年级', string: 'Grade6' },
-  { grade: '初一', string: 'Junior1' },
-  { grade: '初二', string: 'Junior2' },
-  { grade: '初三', string: 'Junior3' },
-  { grade: '高一', string: 'Senior1' },
-  { grade: '高二', string: 'Senior2' },
-  { grade: '高三', string: 'Senior3' },
-]);
-
-
-// 当前编辑的项目 - Updated to match form fields
+// 当前编辑的项目
 const editedItem = ref({
   id: '',
-  grade: null, // For v-select
-  title: '', // For titleContext
-  totalScore: null, // For totalScore
-  baseScore: null, // For baseScore
-  scoringCriteria: '', // For scoringCriteria
-  // description and prompt are not in the new editedItem structure
-}) // <-- Close the ref object here
+  title: '',
+  description: '',
+  prompt: '',
+  wordLimit: 800
+})
 
-// Item to delete
-const itemToDelete = ref<any>(null) // <-- Add itemToDelete ref
-
-// 确认删除测验
-const confirmDelete = (item: any) => {
-  itemToDelete.value = item
-  deleteDialog.value = true
-}
-
-// 编辑测验
-const editAssignment = (item: any) => {
-  isEditing.value = true
-  // Copy properties from item, including new ones if they exist on the fetched item
-  // Ensure all properties expected by the form are copied
-  editedItem.value = {
-    id: item.id,
-    grade: item.grade || null,
-    title: item.title || '',
-    totalScore: item.totalScore || null,
-    baseScore: item.baseScore || null,
-    scoringCriteria: item.scoringCriteria || '',
-    // description and prompt are not in the new editedItem structure
-  }
-  dialog.value = true
-}
+// 要删除的项目
+const itemToDelete = ref(null)
 
 // 获取所有测验
-const fetchAssignments = async () => {
+async function fetchAssignments() {
   loading.value = true
   try {
     const response = await api.get('/EssayAssignment')
@@ -219,8 +155,15 @@ const fetchAssignments = async () => {
   }
 }
 
+// 编辑测验
+function editAssignment(item: any) {
+  isEditing.value = true
+  editedItem.value = { ...item }
+  dialog.value = true
+}
+
 // 保存测验
-const saveAssignment = async () => {
+async function saveAssignment() {
   // 表单验证
   const { valid } = await form.value.validate()
   if (!valid) return
@@ -234,11 +177,11 @@ const saveAssignment = async () => {
       // 创建新测验
       await api.post('/EssayAssignment', editedItem.value)
     }
-
+    
     // 关闭对话框并刷新列表
     dialog.value = false
     await fetchAssignments()
-
+    
     // 重置表单
     resetForm()
   } catch (error) {
@@ -248,10 +191,16 @@ const saveAssignment = async () => {
   }
 }
 
-// 删除测验
-const deleteAssignment = async () => {
-  if (!itemToDelete.value) return
+// 确认删除
+function confirmDelete(item: any) {
+  itemToDelete.value = item
+  deleteDialog.value = true
+}
 
+// 删除测验
+async function deleteAssignment() {
+  if (!itemToDelete.value) return
+  
   deleting.value = true
   try {
     await api.delete(`/EssayAssignment/${itemToDelete.value.id}`)
@@ -266,16 +215,14 @@ const deleteAssignment = async () => {
 }
 
 // 重置表单
-const resetForm = () => {
+function resetForm() {
   isEditing.value = false
   editedItem.value = {
     id: '',
-    grade: null, // Add grade
     title: '',
-    totalScore: null, // Add totalScore
-    baseScore: null, // Add baseScore
-    scoringCriteria: '', // Add scoringCriteria
-    // Remove description and prompt as they are not in the form/editedItem ref
+    description: '',
+    prompt: '',
+    wordLimit: 800
   }
 }
 
