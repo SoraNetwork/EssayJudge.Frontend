@@ -86,7 +86,7 @@
               required
             ></v-text-field>
             <v-text-field
-              v-model="editedItem.studentNumber"
+              v-model="editedItem.studentId"
               label="学号"
               :rules="[v => !!v || '学号不能为空']"
               required
@@ -143,7 +143,7 @@ import api from '@/services/api'
 // 表格列定义
 const headers = [
   { title: '姓名', key: 'name' },
-  { title: '学号', key: 'studentNumber' },
+  { title: '学号', key: 'studentId' },
   { title: '班级', key: 'className' },
   { title: '邮箱', key: 'email' },
   { title: '手机号', key: 'phoneNumber' },
@@ -171,7 +171,7 @@ const filters = ref({
 const editedItem = ref({
   id: '',
   name: '',
-  studentNumber: '',
+  studentId: '',
   classId: '',
   email: '',
   phoneNumber: ''
