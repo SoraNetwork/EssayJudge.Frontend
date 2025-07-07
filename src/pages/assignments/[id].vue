@@ -204,7 +204,8 @@ import api from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
-const assignmentId = computed(() => route.params.id as string)
+// Assert that route.params has an 'id' property of type string
+const assignmentId = computed(() => (route.params as { id: string }).id)
 
 // 状态变量
 const assignment = ref<any>({

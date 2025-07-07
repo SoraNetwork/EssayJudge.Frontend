@@ -100,17 +100,6 @@
               :rules="[v => !!v || '请选择班级']"
               required
             ></v-select>
-            <v-text-field
-              v-model="editedItem.email"
-              label="邮箱"
-              type="email"
-            ></v-text-field>
-            <v-text-field
-              v-model="editedItem.phoneNumber"
-              label="手机号"
-              type="tel"
-              :rules="[v => !v || /^1\d{10}$/.test(v) || '请输入有效的手机号']"
-            ></v-text-field>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -145,8 +134,6 @@ const headers = [
   { title: '姓名', key: 'name' },
   { title: '学号', key: 'studentId' },
   { title: '班级', key: 'className' },
-  { title: '邮箱', key: 'email' },
-  { title: '手机号', key: 'phoneNumber' },
   { title: '操作', key: 'actions', sortable: false }
 ]
 
@@ -173,8 +160,6 @@ const editedItem = ref({
   name: '',
   studentId: '',
   classId: '',
-  email: '',
-  phoneNumber: ''
 })
 
 // 要删除的项目
@@ -284,10 +269,8 @@ function resetForm() {
   editedItem.value = {
     id: '',
     name: '',
-    studentNumber: '',
+    studentId: '',
     classId: '',
-    email: '',
-    phoneNumber: ''
   }
 }
 

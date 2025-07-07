@@ -88,7 +88,8 @@ const menuItems = computed(() => {
       { title: '作文管理', icon: 'mdi-book-open-page-variant', to: '/essays' },
       { title: '测验管理', icon: 'mdi-clipboard-text', to: '/assignments' },
       { title: '学生管理', icon: 'mdi-account-group', to: '/students' },
-      { title: '班级管理', icon: 'mdi-google-classroom', to: '/classes' }
+      { title: '班级管理', icon: 'mdi-google-classroom', to: '/classes' },
+      { title: 'API密钥管理', icon: 'mdi-key-variant', to: '/apikey' }
     )
   }
 
