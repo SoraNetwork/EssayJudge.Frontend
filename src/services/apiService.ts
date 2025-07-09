@@ -38,7 +38,7 @@ export interface Assignment {
   updatedAt: string;
 }
 
-interface Submission {
+export interface Submission {
   id: string;
   title: string; // Assuming submission has a title or gets it from assignment
   studentId: string;

@@ -145,7 +145,7 @@ interface EditedStudent {
   studentId: string;
   classId: string | null;
   // Add other properties from Student if needed in the form, e.g., className
-  // className?: string;
+  className?: string;
 }
 
 // 表格列定义
@@ -247,12 +247,28 @@ async function saveStudent() {
          console.error("Cannot update student without an ID.");
          return; // Or handle this error appropriately
       }
-      // Prepare data for update, excluding className if it exists
-      const { className, ...dataToUpdate } = editedItem.value;
+      // Prepare data for update, excluding id and className, and handling null classId
+      const dataToUpdate: { name: string; studentId: string; classId?: string } = {
+        name: editedItem.value.name,
+        studentId: editedItem.value.studentId,
+      };
+      // Only include classId if it's not null, as the API expects string | undefined, not null
+      if (editedItem.value.classId !== null) {
+        dataToUpdate.classId = editedItem.value.classId;
+      }
+
       await updateStudent(editedItem.value.id, dataToUpdate);
     } else {
       // Prepare data for create, excluding id and className
-      const { id, className, ...dataToCreate } = editedItem.value;
+      // The form validation ensures classId is not null here
+      const dataToCreate: { name: string; studentId: string; classId?: string } = {
+        name: editedItem.value.name,
+        studentId: editedItem.value.studentId,
+      };
+      // Include classId only if it's not null
+      if (editedItem.value.classId !== null) {
+        dataToCreate.classId = editedItem.value.classId;
+      }
       await createStudent(dataToCreate);
     }
     dialog.value = false;
@@ -299,4 +315,6 @@ async function fetchClasses() {
     console.error('获取班级列表失败:', error)
   }
 }
+
+</script>
 

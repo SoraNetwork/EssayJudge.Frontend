@@ -105,11 +105,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAssignments, uploadEssaySubmission, getSubmissionById } from '@/services/apiService';
+import { getAssignments, uploadEssaySubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 
 const router = useRouter();
 
-const assignments = ref([]);
+const assignments = ref<Assignment[]>([]);
 const selectedAssignment = ref(null);
 const selectedFiles = ref<File[] | null>(null); // Change to array for multiple files
 const columnCount = ref(3);

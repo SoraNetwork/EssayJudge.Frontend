@@ -78,8 +78,15 @@ import { getAssignments, uploadEssaySubmission, getSubmissionById } from '@/serv
 
 const router = useRouter();
 
-const assignments = ref([]);
-const selectedAssignment = ref(null);
+// Define the type for an assignment
+interface Assignment {
+  id: string; // Assuming id is a number based on item-value="id"
+  title: string; // Assuming title is a string based on item-title="title"
+  // Add other properties if necessary
+}
+
+const assignments = ref<Assignment[]>([]);
+const selectedAssignment = ref<string | null>(null); // Assuming assignment id is a number
 const selectedFile = ref<File | null>(null);
 const columnCount = ref(3);
 const isSubmitting = ref(false);
