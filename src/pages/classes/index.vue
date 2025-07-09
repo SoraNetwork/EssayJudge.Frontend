@@ -74,7 +74,7 @@
         <v-card-title class="text-h5">确认删除</v-card-title>
         <v-card-text>
           确定要删除班级 <strong>{{ itemToDelete?.name }}</strong> 吗？此操作不可撤销。
-          <div class="mt-2" v-if="itemToDelete?.studentCount > 0">
+          <div class="mt-2" v-if="itemToDelete && itemToDelete.studentCount > 0">
             <v-alert type="warning" variant="tonal" density="compact">
               注意：该班级下有 {{ itemToDelete?.studentCount }} 名学生，删除班级将导致这些学生失去班级关联。
             </v-alert>
@@ -92,7 +92,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import { getClasses, createClass, updateClass, deleteClass as apiDeleteClass, getStudents } from '@/services/apiService';
+
+// Define the type for a class item
+interface ClassItem {
+  id: string;
+  name: string;
+  studentCount: number;
+}
 
 // 表格列定义
 const headers = [
@@ -102,7 +109,7 @@ const headers = [
 ]
 
 // 数据和状态
-const classes = ref([])
+const classes = ref<ClassItem[]>([]) // Type the classes ref
 const loading = ref(false)
 const dialog = ref(false)
 const deleteDialog = ref(false)
@@ -112,40 +119,49 @@ const isEditing = ref(false)
 const form = ref<any>(null)
 
 // 当前编辑的项目
-const editedItem = ref({
+const editedItem = ref<Partial<ClassItem>>({ // Type the editedItem ref
   id: '',
   name: '',
 })
 
 // 要删除的项目
-const itemToDelete = ref<any>(null)
+const itemToDelete = ref<ClassItem | null>(null) // Type the itemToDelete ref
 
 // 获取所有班级
 async function fetchClasses() {
   loading.value = true
   try {
-    const response = await api.get('/Class')
-    classes.value = response.data || []
-    
-    // 获取每个班级的学生数量
-    for (const classItem of classes.value) {
+    const data = await getClasses(); // Assuming getClasses returns an array of objects with id and name
+    const classesWithCount: ClassItem[] = []; // Array to hold typed class items
+
+    for (const classItem of data || []) {
       try {
-        const studentsResponse = await api.get(`/Student?classId=${classItem.id}`)
-        classItem.studentCount = studentsResponse.data.length || 0
+        const studentsResponse = await getStudents({ classId: classItem.id });
+        classesWithCount.push({
+          id: classItem.id, // Assuming id exists
+          name: classItem.name, // Assuming name exists
+          studentCount: studentsResponse.length || 0
+        });
       } catch (error) {
         console.error(`获取班级 ${classItem.name} 的学生数量失败:`, error)
-        classItem.studentCount = 0
+        classesWithCount.push({
+          id: classItem.id,
+          name: classItem.name,
+          studentCount: 0 // Default to 0 on error
+        });
       }
     }
+    classes.value = classesWithCount; // Assign the typed array
   } catch (error) {
     console.error('获取班级列表失败:', error)
+    classes.value = []; // Assign empty array on error
   } finally {
     loading.value = false
   }
 }
 
 // 编辑班级
-function editClass(item: any) {
+function editClass(item: ClassItem) { // Type the item parameter
   isEditing.value = true
   editedItem.value = { ...item }
   dialog.value = true
@@ -159,18 +175,22 @@ async function saveClass() {
 
   saving.value = true
   try {
+    const dataToSave = { name: editedItem.value.name! }; // Always send only name
+
     if (isEditing.value) {
-      // 更新现有班级
-      await api.put(`/Class/${editedItem.value.id}`, editedItem.value)
+      if (!editedItem.value.id) {
+        console.error('Cannot update class without an ID');
+        return; // Or handle error appropriately
+      }
+      await updateClass(editedItem.value.id, dataToSave);
     } else {
-      // 创建新班级
-      await api.post('/Class', editedItem.value)
+      await createClass(dataToSave);
     }
-    
+
     // 关闭对话框并刷新列表
     dialog.value = false
     await fetchClasses()
-    
+
     // 重置表单
     resetForm()
   } catch (error) {
@@ -181,7 +201,7 @@ async function saveClass() {
 }
 
 // 确认删除
-function confirmDelete(item: any) {
+function confirmDelete(item: ClassItem) { // Type the item parameter
   itemToDelete.value = item
   deleteDialog.value = true
 }
@@ -189,10 +209,10 @@ function confirmDelete(item: any) {
 // 删除班级
 async function deleteClass() {
   if (!itemToDelete.value) return
-  
+
   deleting.value = true
   try {
-    await api.delete(`/Class/${itemToDelete.value.id}`)
+    await apiDeleteClass(itemToDelete.value.id);
     deleteDialog.value = false
     await fetchClasses()
   } catch (error) {

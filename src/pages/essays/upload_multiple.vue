@@ -105,7 +105,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/services/api';
+import { getAssignments, uploadEssaySubmission, getSubmissionById } from '@/services/apiService';
 
 const router = useRouter();
 
@@ -137,8 +137,8 @@ let currentFileIndex = 0; // Index to track the file currently being processed
 
 async function fetchAssignments() {
   try {
-    const response = await api.get('/EssayAssignment');
-    assignments.value = response.data || [];
+    const data = await getAssignments();
+    assignments.value = data || [];
   } catch (error) {
     console.error('获取测验列表失败:', error);
   }
@@ -201,10 +201,12 @@ async function processFileAtIndex(index: number) {
     formData.append('columnCount', columnCount.value.toString());
 
     try {
-      const response = await api.post('/EssaySubmission', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      item.submissionId = response.data.submissionId;
+      const response = await uploadEssaySubmission(
+        selectedAssignment.value!,
+        item.file,
+        columnCount.value
+      );
+      item.submissionId = response.submissionId;
       item.status = 'polling';
       // Start polling for this specific file
       startPollingForFile(item);
@@ -242,9 +244,7 @@ async function checkPollingStatusForFile(item: typeof processingFiles.value[0]) 
   }
 
   try {
-    const response = await api.get(`/EssaySubmission/${reactiveItem.submissionId}`);
-    const submissionData = response.data;
-
+    const submissionData = await getSubmissionById(reactiveItem.submissionId);
     // Check if processing is complete (judgeResult is available)
     if (submissionData.judgeResult) {
       reactiveItem.status = 'completed';

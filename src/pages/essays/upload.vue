@@ -74,7 +74,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/services/api';
+import { getAssignments, uploadEssaySubmission, getSubmissionById } from '@/services/apiService';
 
 const router = useRouter();
 
@@ -90,8 +90,9 @@ const pollingProgress = ref(0); // 新增进度变量
 
 async function fetchAssignments() {
   try {
-    const response = await api.get('/EssayAssignment');
-    assignments.value = response.data || [];
+    // Replace api.get with getAssignments
+    const data = await getAssignments();
+    assignments.value = data || [];
   } catch (error) {
     console.error('获取测验列表失败:', error);
   }
@@ -106,18 +107,14 @@ async function uploadEssay() {
   isUploading.value = true;
   pollingProgress.value = 0; // 重置进度
 
-  const formData = new FormData();
-  formData.append('essayAssignmentId', selectedAssignment.value);
-  formData.append('imageFile', selectedFile.value);
-  formData.append('columnCount', columnCount.value.toString());
-
   try {
-    const response = await api.post('/EssaySubmission', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    const submissionId = response.data.submissionId;
+    // Replace api.post with uploadEssaySubmission
+    const response = await uploadEssaySubmission(
+      selectedAssignment.value,
+      selectedFile.value,
+      columnCount.value
+    );
+    const submissionId = response.submissionId;
     startPolling(submissionId);
   } catch (error) {
     console.error('上传作文失败:', error);
@@ -135,8 +132,9 @@ function startPolling(submissionId: string) {
 
   const interval = setInterval(async () => {
     try {
-      const response = await api.get(`/EssaySubmission/${submissionId}`);
-      pollingStatus.value = response.data;
+      // Replace api.get with getSubmissionById
+      const submissionData = await getSubmissionById(submissionId);
+      pollingStatus.value = submissionData;
 
       // 更新进度
       let progress = 0;
@@ -149,7 +147,7 @@ function startPolling(submissionId: string) {
       }
       pollingProgress.value = Math.min(progress, 100); // 确保进度不超过100
 
-      if (response.data.judgeResult) {
+      if (submissionData.judgeResult) {
         clearInterval(interval);
         pollingProgress.value = 100; // 批改完成，进度100%
         // 延迟跳转，让用户看到100%进度

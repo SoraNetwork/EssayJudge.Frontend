@@ -92,7 +92,7 @@
               required
             ></v-text-field>
             <v-select
-              v-model="editedItem.classId"
+              v-model="(editedItem.classId as any)"
               label="班级"
               :items="classes"
               item-title="name"
@@ -127,7 +127,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, Student } from '@/services/apiService';
 
 // 表格列定义
 const headers = [
@@ -150,7 +150,7 @@ const form = ref<any>(null)
 
 // 筛选条件
 const filters = ref({
-  classId: '',
+  classId: null as null | undefined, // Allow null or undefined
   searchTerm: ''
 })
 
@@ -159,7 +159,7 @@ const editedItem = ref({
   id: '',
   name: '',
   studentId: '',
-  classId: '',
+  classId: null as string | null, // Allow null for initial state and no selection
 })
 
 // 要删除的项目
@@ -169,24 +169,17 @@ const itemToDelete = ref<any>(null)
 async function fetchStudents() {
   loading.value = true
   try {
-    let url = '/Student'
-    const params = new URLSearchParams()
-    
-    if (filters.value.classId) {
-      params.append('classId', filters.value.classId)
+    // Construct filters object, excluding null values
+    const effectiveFilters: { classId?: string; searchTerm?: string } = {};
+    if (filters.value.classId !== null && filters.value.classId !== undefined) {
+      effectiveFilters.classId = filters.value.classId;
     }
-    
     if (filters.value.searchTerm) {
-      params.append('searchTerm', filters.value.searchTerm)
+      effectiveFilters.searchTerm = filters.value.searchTerm;
     }
-    
-    // 添加参数
-    if (params.toString()) {
-      url += `?${params.toString()}`
-    }
-    
-    const response = await api.get(url)
-    students.value = response.data || []
+
+    const data = await getStudents(effectiveFilters);
+    students.value = data || [];
   } catch (error) {
     console.error('获取学生列表失败:', error)
   } finally {
@@ -197,8 +190,8 @@ async function fetchStudents() {
 // 获取所有班级
 async function fetchClasses() {
   try {
-    const response = await api.get('/Class')
-    classes.value = response.data || []
+    const data = await getClasses();
+    classes.value = data || [];
   } catch (error) {
     console.error('获取班级列表失败:', error)
   }
@@ -220,13 +213,11 @@ async function saveStudent() {
   saving.value = true
   try {
     if (isEditing.value) {
-      // 更新现有学生
-      await api.put(`/Student/${editedItem.value.id}`, editedItem.value)
+      await updateStudent(editedItem.value.id, editedItem.value);
     } else {
-      // 创建新学生
-      await api.post('/Student', editedItem.value)
+      await createStudent(editedItem.value);
     }
-    
+
     // 关闭对话框并刷新列表
     dialog.value = false
     await fetchStudents()
@@ -249,10 +240,10 @@ function confirmDelete(item: any) {
 // 删除学生
 async function deleteStudent() {
   if (!itemToDelete.value) return
-  
+
   deleting.value = true
   try {
-    await api.delete(`/Student/${itemToDelete.value.id}`)
+    await apiDeleteStudent(itemToDelete.value.id);
     deleteDialog.value = false
     await fetchStudents()
   } catch (error) {
@@ -270,7 +261,7 @@ function resetForm() {
     id: '',
     name: '',
     studentId: '',
-    classId: '',
+    classId: null, // Reset to null
   }
 }
 

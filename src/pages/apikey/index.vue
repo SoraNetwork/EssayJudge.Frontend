@@ -121,7 +121,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import { getApiKeys, createApiKey, updateApiKey, deleteApiKey as deleteApiKeyService } from '@/services/apiService';
 
 // 表格列定义
 const headers = [
@@ -165,8 +165,8 @@ const itemToDelete = ref<any>(null)
 const fetchApiKeys = async () => {
   loading.value = true
   try {
-    const response = await api.get('/ApiKey')
-    apiKeys.value = response.data || []
+    const data = await getApiKeys();
+    apiKeys.value = data || []
   } catch (error) {
     console.error('获取 API 密钥列表失败:', error)
   } finally {
@@ -201,11 +201,9 @@ const saveApiKey = async () => {
   saving.value = true
   try {
     if (isEditing.value) {
-      // 更新现有密钥
-      await api.put(`/ApiKey/${editedItem.value.id}`, editedItem.value)
+      await updateApiKey(editedItem.value.id, editedItem.value);
     } else {
-      // 创建新密钥
-      await api.post('/ApiKey', editedItem.value)
+      await createApiKey(editedItem.value);
     }
     closeDialog()
     await fetchApiKeys()
@@ -225,10 +223,10 @@ const confirmDelete = (item: any) => {
 // 删除密钥
 const deleteApiKey = async () => {
   if (!itemToDelete.value) return
-  
+
   deleting.value = true
   try {
-    await api.delete(`/ApiKey/${itemToDelete.value.id}`)
+    await deleteApiKeyService(itemToDelete.value.id);
     deleteDialog.value = false
     await fetchApiKeys()
   } catch (error) {
@@ -243,7 +241,7 @@ const deleteApiKey = async () => {
 const toggleEnabled = async (item: any) => {
   const updatedItem = { ...item, isEnabled: !item.isEnabled }
   try {
-    await api.put(`/ApiKey/${item.id}`, updatedItem)
+    await updateApiKey(item.id, updatedItem);
     await fetchApiKeys()
   } catch (error) {
     console.error('更新密钥状态失败:', error)

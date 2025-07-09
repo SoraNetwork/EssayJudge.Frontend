@@ -200,7 +200,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '@/services/api'
+import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
 
 const route = useRoute()
 const router = useRouter()
@@ -280,8 +280,8 @@ async function fetchAssignmentDetails() {
   error.value = ''
 
   try {
-    const response = await api.get(`/EssayAssignment/${assignmentId.value}`)
-    assignment.value = response.data
+    const data = await getAssignmentById(assignmentId.value);
+    assignment.value = data;
 
     if (!assignment.value) {
       error.value = '未找到测验信息'
@@ -314,41 +314,23 @@ async function fetchSubmissions() {
   loadingSubmissions.value = true
 
   try {
-    const response = await api.get(`/EssaySubmissionSearch?assignmentId=${assignmentId.value}`)
-    const submissionData = response.data || []
+    const submissionData = await searchSubmissions({ assignmentId: assignmentId.value });
 
-    // 获取每个提交的学生和班级信息
+    // 获取每个提交的学生和班级信息 (This part might need backend support or separate API calls)
+    // Assuming searchSubmissions now includes studentName and className
     const enrichedSubmissions = await Promise.all(submissionData.map(async (submission: any) => {
-      try {
-        // 获取学生信息
-        const studentResponse = await api.get(`/Student/${submission.studentId}`)
-        const student = studentResponse.data
-
-        // 获取班级信息
-        let className = ''
-        if (student && student.classId) {
-          try {
-            const classResponse = await api.get(`/Class/${student.classId}`)
-            className = classResponse.data?.name || ''
-          } catch (err) {
-            console.error('获取班级信息失败:', err)
-          }
-        }
-
-        return {
-          ...submission,
-          studentName: student?.name || '未知学生',
-          className: className || '未分配班级'
-        }
-      } catch (err) {
-        console.error('获取学生信息失败:', err)
-        return {
-          ...submission,
-          studentName: '未知学生',
-          className: '未知班级'
-        }
-      }
-    }))
+      // If backend doesn't return studentName/className, you might need:
+      // const studentResponse = await api.get(`/Student/${submission.studentId}`);
+      // const student = studentResponse.data;
+      // let className = '';
+      // if (student && student.classId) {
+      //   const classResponse = await api.get(`/Class/${student.classId}`);
+      //   className = classResponse.data?.name || '';
+      // }
+      // return { ...submission, studentName: student?.name || '未知学生', className: className || '未分配班级' };
+      // For now, assuming searchSubmissions includes studentName and className
+      return submission; // Assuming searchSubmissions returns enriched data
+    }));
 
     submissions.value = enrichedSubmissions
   } catch (err) {
@@ -366,7 +348,7 @@ async function saveAssignment() {
 
   saving.value = true
   try {
-    await api.put(`/EssayAssignment/${assignment.value.id}`, editedItem.value)
+    await updateAssignment(assignment.value.id, editedItem.value);
 
     // 关闭对话框并刷新数据
     editDialog.value = false

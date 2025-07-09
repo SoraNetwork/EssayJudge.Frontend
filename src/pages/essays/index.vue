@@ -52,8 +52,8 @@
           loading-text="加载中..."
           no-data-text="暂无数据"
         >
-          <template v-slot:item.createdAt="{ item }">
-            {{ formatDate(item.createdAt) }}
+          <template v-slot:item.submissionDate="{ item }">
+            {{ formatDate(item.submissionDate) }}
           </template>
           <template v-slot:item.finalScore="{ item }">
             <v-chip
@@ -95,53 +95,59 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import api from '@/services/api'
+import { searchSubmissions, getAssignments, getStudents, submitSubmissionForEvaluation } from '@/services/apiService';
 
-// 表格列定义
-const headers = [
-  { title: '标题', key: 'title' },
-  { title: '学生', key: 'studentName' },
-  { title: '测验', key: 'assignmentTitle' },
-  { title: '分数', key: 'finalScore' },
-  { title: '提交时间', key: 'createdAt' },
-  { title: '操作', key: 'actions', sortable: false }
+// Define interface for Essay item
+interface Essay {
+  id: string | number; // Adjust type based on your API response
+  studentName?: string | null | undefined; // Allow studentName to be null or undefined and optional
+  assignmentTitle?: string; // Make assignmentTitle optional to match Submission type
+  finalScore?: number | null | undefined; // Make finalScore optional to match Submission type
+  submissionDate: string; // Adjust type if it's a Date object
+  // Add other properties used in the template or headers
+}
+
+// Define interface for Assignment item
+interface Assignment {
+  id: string | number;
+  title: string;
+  // Add other properties if needed
+}
+
+// Helper function to format date
+function formatDate(dateString: string) {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+}
+
+// 表头定义
+const headers: any[] = [
 ]
 
 // 数据和状态
-const essays = ref([])
-const assignments = ref([])
-const students = ref([])
+const essays = ref<Essay[]>([]) // Type the ref with the Essay interface
+const assignments = ref<Assignment[]>([]) // Explicitly type assignments as Assignment[]
+interface Student {
+  id: string | number;
+  name: string;
+  // Add other properties if needed
+}
+const students = ref<Student[]>([])
 const loading = ref(false)
 const evaluating = ref('')
 
 // 筛选条件
 const filters = ref({
-  assignmentId: '',
-  studentId: ''
+  assignmentId: undefined,
+  studentId: undefined
 })
 
 // 获取所有作文
 async function fetchEssays() {
   loading.value = true
   try {
-    let url = '/EssaySubmissionSearch'
-    const params = new URLSearchParams()
-    
-    if (filters.value.assignmentId) {
-      params.append('assignmentId', filters.value.assignmentId)
-    }
-    
-    if (filters.value.studentId) {
-      params.append('studentId', filters.value.studentId)
-    }
-    
-    // 添加参数
-    if (params.toString()) {
-      url += `?${params.toString()}`
-    }
-    
-    const response = await api.get(url)
-    essays.value = response.data || []
+    const data = await searchSubmissions(filters.value);
+    essays.value = data || []
   } catch (error) {
     console.error('获取作文列表失败:', error)
   } finally {
@@ -149,11 +155,27 @@ async function fetchEssays() {
   }
 }
 
+// 根据分数获取颜色
+function getScoreColor(score: number | null | undefined) {
+  if (score === null || score === undefined) {
+    return undefined; // Or a default color like 'grey'
+  }
+  if (score >= 90) {
+    return 'green';
+  } else if (score >= 75) {
+    return 'light-green';
+  } else if (score >= 60) {
+    return 'orange';
+  } else {
+    return 'red';
+  }
+}
+
 // 获取所有测验
 async function fetchAssignments() {
   try {
-    const response = await api.get('/EssayAssignment')
-    assignments.value = response.data || []
+    const data = await getAssignments();
+    assignments.value = data || []
   } catch (error) {
     console.error('获取测验列表失败:', error)
   }
@@ -162,8 +184,8 @@ async function fetchAssignments() {
 // 获取所有学生
 async function fetchStudents() {
   try {
-    const response = await api.get('/Student')
-    students.value = response.data || []
+    const data = await getStudents({}); // Pass empty filters
+    students.value = data || []
   } catch (error) {
     console.error('获取学生列表失败:', error)
   }
@@ -173,7 +195,7 @@ async function fetchStudents() {
 async function submitForEvaluation(item: any) {
   evaluating.value = item.id
   try {
-    await api.post(`/EssaySubmission/${item.id}/evaluate`)
+    await submitSubmissionForEvaluation(item.id);
     // 刷新作文列表
     await fetchEssays()
   } catch (error) {
@@ -183,39 +205,10 @@ async function submitForEvaluation(item: any) {
   }
 }
 
-// 根据分数获取颜色
-function getScoreColor(score: number | null | undefined) {
-  if (score === null || score === undefined) return 'grey'
-  if (score >= 90) return 'success'
-  if (score >= 80) return 'info'
-  if (score >= 60) return 'warning'
-  return 'error'
-}
-
-// 格式化日期并增加8小时 (UTC+8)
-function formatDate(dateString: string | Date): string {
-  const date = new Date(dateString);
-  // 检查日期是否有效
-  if (isNaN(date.getTime())) {
-    return '无效日期';
-  }
-  // 增加8小时 (8 * 60 * 60 * 1000 毫秒)
-  date.setTime(date.getTime() + (8 * 60 * 60 * 1000));
-
-  const year = date.getFullYear();
-  const month = ('0' + (date.getMonth() + 1)).slice(-2);
-  const day = ('0' + date.getDate()).slice(-2);
-  const hours = ('0' + date.getHours()).slice(-2);
-  const minutes = ('0' + date.getMinutes()).slice(-2);
-  const seconds = ('0' + date.getSeconds()).slice(-2);
-
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
-// 页面加载时获取数据
+// Fetch initial data on mount
 onMounted(() => {
-  fetchEssays()
-  fetchAssignments()
-  fetchStudents()
-})
+  fetchEssays();
+  fetchAssignments();
+  fetchStudents();
+});
 </script>

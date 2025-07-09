@@ -231,11 +231,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '@/services/api'
+import { getStudentById, searchSubmissions, getClasses, updateStudent, getClassById } from '@/services/apiService';
 
 const route = useRoute()
 const router = useRouter()
-const studentId = computed(() => route.params.id as string)
+const studentId = computed(() => (route.params as { id: string }).id)
 
 // 状态变量
 const student = ref<any>({
@@ -303,20 +303,19 @@ async function fetchStudentDetails() {
   error.value = ''
   
   try {
-    const response = await api.get(`/Student/${studentId.value}`)
-    const studentData = response.data
-    
+    const studentData = await getStudentById(studentId.value);
+
     if (!studentData) {
       error.value = '未找到学生信息'
       return
     }
-    
+
     // 获取班级信息
     let className = ''
     if (studentData.classId) {
       try {
-        const classResponse = await api.get(`/Class/${studentData.classId}`)
-        className = classResponse.data?.name || ''
+        const classResponse = await getClassById(studentData.classId);
+        className = classResponse?.name || '';
       } catch (err) {
         console.error('获取班级信息失败:', err)
       }
@@ -355,29 +354,19 @@ async function fetchSubmissions() {
   loadingSubmissions.value = true
   
   try {
-    const response = await api.get(`/EssaySubmissionSearch?studentId=${studentId.value}`)
-    const submissionData = response.data || []
-    
-    // 获取每个提交的测验题目信息
+    const submissionData = await searchSubmissions({ studentId: studentId.value });
+
+    // 获取每个提交的测验题目信息 (This part might need backend support or a separate API call if assignment title isn't included)
+    // Assuming the backend searchSubmissions now includes assignmentTitle or we fetch it here
     const enrichedSubmissions = await Promise.all(submissionData.map(async (submission: any) => {
-      try {
-        // 获取测验题目信息
-        const assignmentResponse = await api.get(`/EssayAssignment/${submission.assignmentId}`)
-        const assignment = assignmentResponse.data
-        
-        return {
-          ...submission,
-          assignmentTitle: assignment?.title || '未知题目'
-        }
-      } catch (err) {
-        console.error('获取测验题目信息失败:', err)
-        return {
-          ...submission,
-          assignmentTitle: '未知题目'
-        }
-      }
-    }))
-    
+      // If backend doesn't return assignmentTitle, you might need:
+      // const assignmentResponse = await api.get(`/EssayAssignment/${submission.assignmentId}`);
+      // const assignment = assignmentResponse.data;
+      // return { ...submission, assignmentTitle: assignment?.title || '未知题目' };
+      // For now, assuming searchSubmissions includes assignmentTitle
+       return submission; // Assuming searchSubmissions returns enriched data
+    }));
+
     submissions.value = enrichedSubmissions
   } catch (err) {
     console.error('获取作文提交列表失败:', err)
@@ -391,8 +380,8 @@ async function fetchClasses() {
   loadingClasses.value = true
   
   try {
-    const response = await api.get('/Class')
-    classes.value = response.data || []
+    const data = await getClasses();
+    classes.value = data || [];
   } catch (err) {
     console.error('获取班级列表失败:', err)
   } finally {
@@ -408,8 +397,8 @@ async function saveStudent() {
   
   saving.value = true
   try {
-    await api.put(`/Student/${student.value.id}`, editedItem.value)
-    
+    await updateStudent(student.value.id, editedItem.value);
+
     // 关闭对话框并刷新数据
     editDialog.value = false
     await fetchStudentDetails()

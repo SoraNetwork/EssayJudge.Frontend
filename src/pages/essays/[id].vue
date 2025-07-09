@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import api from '@/services/api'
+import { getSubmissionById, updateSubmissionScore } from '@/services/apiService'; // Import from apiService
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
 
@@ -112,7 +112,7 @@ const imageDialog = ref(false);
 const editDialog = ref(false);
 const editableScore = ref<number | null>(null);
 
-const previewElement = ref<HTMLElement | null>(null);
+const previewElement = ref<HTMLDivElement | null>(null);
 
 const renderMarkdown = (markdown: string) => {
   if (previewElement.value) {
@@ -120,15 +120,17 @@ const renderMarkdown = (markdown: string) => {
       after: () => {
         // You can add any callbacks here if needed
       },
+      mode: 'dark'
     });
   }
 };
 
 const fetchEssay = async () => {
-  const id = route.params.id
+  const id = (route.params as { id: string }).id; // Assert that route.params has an id property of type string
   try {
-        const response = await api.get(`/EssaySubmission/${id}`)
-    essay.value = response.data
+    // Replace api.get with getSubmissionById
+    const data = await getSubmissionById(id);
+    essay.value = data;
   } catch (err) {
     error.value = '加载作文失败，请稍后再试。'
     console.error(err)
@@ -163,10 +165,14 @@ const openEditDialog = () => {
 };
 
 const updateScore = async () => {
-  if (editableScore.value === null) return;
-  const id = route.params.id;
+  if (editableScore.value === null || essay.value === null) return; // Add null check for essay
+  const id = (route.params as { id: string }).id; // Assert that route.params has an id property of type string
   try {
-    await api.put(`/api/EssaySubmissions/${id}/score`, { score: editableScore.value });
+    // Replace api.put with updateSubmissionScore
+    // Note: The original code used a POST to /api/EssaySubmissions/{id}/score.
+    // The apiService function updateSubmissionScore is implemented using PUT on the main resource.
+    // Ensure this matches your backend. If backend expects POST to /score endpoint, adjust apiService.
+    await updateSubmissionScore(id, editableScore.value);
     editDialog.value = false;
     await fetchEssay(); // Refresh data
   } catch (err) {

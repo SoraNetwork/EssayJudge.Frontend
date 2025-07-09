@@ -121,7 +121,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import api from '@/services/api'
+import { getAssignments, getStudents, searchSubmissions } from '@/services/apiService'; // Import from apiService
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
@@ -160,34 +160,37 @@ const isLoggedIn = computed(() => authStore.isAuthenticated)
 // 获取统计数据
 async function fetchStats() {
   if (!isLoggedIn.value) return
-  
+
   // 获取作文题目数量
   loading.value.assignments = true
   try {
-    const response = await api.get('/EssayAssignment')
-    stats.value.assignmentCount = response.data.length || 0
+    // Replace api.get with getAssignments
+    const data = await getAssignments();
+    stats.value.assignmentCount = data.length || 0
   } catch (error) {
     console.error('获取作文题目失败:', error)
   } finally {
     loading.value.assignments = false
   }
-  
+
   // 获取学生数量
   loading.value.students = true
   try {
-    const response = await api.get('/Student')
-    stats.value.studentCount = response.data.length || 0
+    // Replace api.get with getStudents
+    const data = await getStudents({}); // Pass empty filters
+    stats.value.studentCount = data.length || 0
   } catch (error) {
     console.error('获取学生数量失败:', error)
   } finally {
     loading.value.students = false
   }
-  
+
   // 获取作文提交数量
   loading.value.submissions = true
   try {
-    const response = await api.get('/EssaySubmissionSearch?top=1000')
-    stats.value.submissionCount = response.data.length || 0
+    // Replace api.get with searchSubmissions
+    const data = await searchSubmissions({ top: 1000 }); // Pass top filter
+    stats.value.submissionCount = data.length || 0
   } catch (error) {
     console.error('获取作文提交数量失败:', error)
   } finally {
@@ -198,11 +201,12 @@ async function fetchStats() {
 // 获取最近提交的作文
 async function fetchRecentSubmissions() {
   if (!isLoggedIn.value) return
-  
+
   loading.value.recentSubmissions = true
   try {
-    const response = await api.get('/EssaySubmissionSearch?top=5')
-    recentSubmissions.value = response.data || []
+    // Replace api.get with searchSubmissions
+    const data = await searchSubmissions({ top: 5 }); // Pass top filter
+    recentSubmissions.value = data || []
   } catch (error) {
     console.error('获取最近作文提交失败:', error)
   } finally {
