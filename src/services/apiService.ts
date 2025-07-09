@@ -7,7 +7,7 @@ interface ApiResponse<T> {
 }
 
 // 定义各个模块的数据类型 (根据后端实际返回结构定义)
-interface Student {
+export interface Student {
   id: string;
   name: string;
   studentId: string;

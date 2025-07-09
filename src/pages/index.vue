@@ -121,20 +121,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getAssignments, getStudents, searchSubmissions } from '@/services/apiService'; // Import from apiService
+import { getAssignments, getStudents, searchSubmissions, type Submission } from '@/services/apiService'; // Import from apiService
 import { useRouter } from 'vue-router'
 
-const authStore = useAuthStore()
-const router = useRouter()
-
-// 统计数据
-const stats = ref({
-  assignmentCount: 0,
-  studentCount: 0,
-  submissionCount: 0
-})
-
-// 加载状态
+// Loading states
 const loading = ref({
   assignments: false,
   students: false,
@@ -142,8 +132,18 @@ const loading = ref({
   recentSubmissions: false
 })
 
+const authStore = useAuthStore()
+const router = useRouter()
+
+// 统计数据
+const stats = ref({
+  assignmentCount: 0,
+  studentCount: 0, // Add studentCount
+  submissionCount: 0 // Add submissionCount
+})
+
 // 最近提交的作文
-const recentSubmissions = ref([])
+const recentSubmissions = ref<Submission[]>([])
 
 // 表格列定义
 const headers = [

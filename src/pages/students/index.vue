@@ -92,7 +92,7 @@
               required
             ></v-text-field>
             <v-select
-              v-model="(editedItem.classId as any)"
+              v-model="editedItem.classId"
               label="班级"
               :items="classes"
               item-title="name"
@@ -123,11 +123,30 @@
       </v-card>
     </v-dialog>
   </div>
+
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, Student } from '@/services/apiService';
+// Import Student type from apiService
+import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
+
+interface Class {
+  id: string;
+  name: string;
+}
+
+// Define a type for the form data, based on the imported Student type
+// It allows classId to be null for the select component
+// Explicitly define properties needed for the form
+interface EditedStudent {
+  id: string;
+  name: string;
+  studentId: string;
+  classId: string | null;
+  // Add other properties from Student if needed in the form, e.g., className
+  // className?: string;
+}
 
 // 表格列定义
 const headers = [
@@ -138,8 +157,8 @@ const headers = [
 ]
 
 // 数据和状态
-const students = ref([])
-const classes = ref([])
+const students = ref<Student[]>([])
+const classes = ref<Class[]>([])
 const loading = ref(false)
 const dialog = ref(false)
 const deleteDialog = ref(false)
@@ -150,20 +169,20 @@ const form = ref<any>(null)
 
 // 筛选条件
 const filters = ref({
-  classId: null as null | undefined, // Allow null or undefined
-  searchTerm: ''
-})
+  classId: null as string | null,
+  searchTerm: '',
+});
 
 // 当前编辑的项目
-const editedItem = ref({
+// 当前编辑的项目
+const editedItem = ref<EditedStudent>({ // Use the EditedStudent type
   id: '',
   name: '',
   studentId: '',
-  classId: null as string | null, // Allow null for initial state and no selection
+  classId: null, // Allow null for initial state and no selection
 })
-
 // 要删除的项目
-const itemToDelete = ref<any>(null)
+const itemToDelete = ref<Student | null>(null)
 
 // 获取所有学生
 async function fetchStudents() {
@@ -187,6 +206,90 @@ async function fetchStudents() {
   }
 }
 
+// 重置编辑项
+function resetEditedItem() {
+  editedItem.value = {
+    id: '',
+    name: '',
+    studentId: '',
+    classId: null,
+  };
+}
+
+// 编辑学生
+function editStudent(item: Student) {
+  isEditing.value = true;
+  // Ensure all properties are copied, including id
+  editedItem.value = { ...item, classId: item.classId || null }; // Handle potential null classId
+  dialog.value = true;
+}
+
+// 确认删除学生
+function confirmDelete(item: Student) {
+  itemToDelete.value = item;
+  deleteDialog.value = true;
+}
+
+// 保存学生 (新建或编辑)
+async function saveStudent() {
+  if (!form.value) return;
+  const { valid } = await form.value.validate();
+
+  if (!valid) {
+    return;
+  }
+
+  saving.value = true;
+  try {
+    if (isEditing.value) {
+      // Ensure id is passed for update
+      if (!editedItem.value.id) {
+         console.error("Cannot update student without an ID.");
+         return; // Or handle this error appropriately
+      }
+      // Prepare data for update, excluding className if it exists
+      const { className, ...dataToUpdate } = editedItem.value;
+      await updateStudent(editedItem.value.id, dataToUpdate);
+    } else {
+      // Prepare data for create, excluding id and className
+      const { id, className, ...dataToCreate } = editedItem.value;
+      await createStudent(dataToCreate);
+    }
+    dialog.value = false;
+    resetEditedItem();
+    fetchStudents(); // Refresh list
+  } catch (error) {
+    console.error('保存学生失败:', error);
+    // Optionally show a user-friendly error message
+  } finally {
+    saving.value = false;
+  }
+}
+
+// 删除学生
+async function deleteStudent() {
+  if (!itemToDelete.value) return;
+
+  deleting.value = true;
+  try {
+    await apiDeleteStudent(itemToDelete.value.id);
+    deleteDialog.value = false;
+    itemToDelete.value = null;
+    fetchStudents(); // Refresh list
+  } catch (error) {
+    console.error('删除学生失败:', error);
+    // Optionally show a user-friendly error message
+  } finally {
+    deleting.value = false;
+  }
+}
+
+// 初始化数据
+onMounted(() => {
+  fetchClasses();
+  fetchStudents();
+});
+
 // 获取所有班级
 async function fetchClasses() {
   try {
@@ -197,77 +300,3 @@ async function fetchClasses() {
   }
 }
 
-// 编辑学生
-function editStudent(item: any) {
-  isEditing.value = true
-  editedItem.value = { ...item }
-  dialog.value = true
-}
-
-// 保存学生
-async function saveStudent() {
-  // 表单验证
-  const { valid } = await form.value.validate()
-  if (!valid) return
-
-  saving.value = true
-  try {
-    if (isEditing.value) {
-      await updateStudent(editedItem.value.id, editedItem.value);
-    } else {
-      await createStudent(editedItem.value);
-    }
-
-    // 关闭对话框并刷新列表
-    dialog.value = false
-    await fetchStudents()
-    
-    // 重置表单
-    resetForm()
-  } catch (error) {
-    console.error('保存学生失败:', error)
-  } finally {
-    saving.value = false
-  }
-}
-
-// 确认删除
-function confirmDelete(item: any) {
-  itemToDelete.value = item
-  deleteDialog.value = true
-}
-
-// 删除学生
-async function deleteStudent() {
-  if (!itemToDelete.value) return
-
-  deleting.value = true
-  try {
-    await apiDeleteStudent(itemToDelete.value.id);
-    deleteDialog.value = false
-    await fetchStudents()
-  } catch (error) {
-    console.error('删除学生失败:', error)
-  } finally {
-    deleting.value = false
-    itemToDelete.value = null
-  }
-}
-
-// 重置表单
-function resetForm() {
-  isEditing.value = false
-  editedItem.value = {
-    id: '',
-    name: '',
-    studentId: '',
-    classId: null, // Reset to null
-  }
-}
-
-// 页面加载时获取数据
-onMounted(() => {
-  fetchStudents()
-  fetchClasses()
-})
-</script>
