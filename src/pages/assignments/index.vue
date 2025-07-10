@@ -16,14 +16,14 @@
           no-data-text="暂无数据"
         >
           <template v-slot:item.createdAt="{ item }">
-            {{ new Date(item.createdAt).toLocaleString() }}
+            {{ formatDate(item.createdAt) }}
           </template>
           <template v-slot:item.actions="{ item }">
             <v-btn
               icon
               variant="text"
               size="small"
-              :to="`/EssayAssignment/${item.id}`"
+              :to="`/assignments/${item.id}`"
             >
               <v-icon>mdi-eye</v-icon>
             </v-btn>
@@ -65,12 +65,6 @@
               label="选择年级"
               required
             ></v-select>
-            <v-text-field
-              v-model="editedItem.title"
-              label="标题"
-              :rules="[v => !!v || '标题不能为空']"
-              required
-            ></v-text-field>
               <v-text-field
               v-model="editedItem.totalScore"
               label="总分"
@@ -85,6 +79,16 @@
               :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']"
               required
             ></v-text-field>
+            <v-textarea
+              v-model="editedItem.titleContext"
+              label="标题"
+              rows="5"
+            ></v-textarea>
+            <v-textarea
+              v-model="editedItem.Description"
+              label="描述"
+              rows="5"
+            ></v-textarea>
             <v-textarea
               v-model="editedItem.scoringCriteria"
               label="评分标准"
@@ -121,12 +125,21 @@
 import { ref, onMounted } from 'vue'
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
 
+// Helper function to format date and add 8 hours
+function formatDate(dateString: string) {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  const date = new Date(dateString);
+  // Add 8 hours for UTC+8
+  date.setHours(date.getHours() + 8);
+  return date.toLocaleString(undefined, options); // Use toLocaleString for both date and time
+}
+
 // 数据和状态
 const loading = ref(false)
 const dialog = ref(false)
 // 表格列定义
 const headers = [
-  { title: '标题', key: 'title' },
+  { title: '描述', key: 'Description' },
   { title: '年级', key: 'grade' },
   { title: '创建时间', key: 'createdAt' },
   { title: '操作', key: 'actions', sortable: false }
@@ -142,38 +155,40 @@ const form = ref<any>(null)
 
 // Define grades for the select input
 const grades = ref([
-  { grade: '一年级', string: 'Grade1' },
-  { grade: '二年级', string: 'Grade2' },
-  { grade: '三年级', string: 'Grade3' },
-  { grade: '四年级', string: 'Grade4' },
-  { grade: '五年级', string: 'Grade5' },
-  { grade: '六年级', string: 'Grade6' },
-  { grade: '初一', string: 'Junior1' },
-  { grade: '初二', string: 'Junior2' },
-  { grade: '初三', string: 'Junior3' },
-  { grade: '高一', string: 'Senior1' },
-  { grade: '高二', string: 'Senior2' },
-  { grade: '高三', string: 'Senior3' },
+  { grade: '一年级', string: '一年级' },
+  { grade: '二年级', string: '二年级' },
+  { grade: '三年级', string: '三年级' },
+  { grade: '四年级', string: '四年级' },
+  { grade: '五年级', string: '五年级' },
+  { grade: '六年级', string: '六年级' },
+  { grade: '初一', string: '初一' },
+  { grade: '初二', string: '初二' },
+  { grade: '初三', string: '初三' },
+  { grade: '高一', string: '高一' },
+  { grade: '高二', string: '高二' },
+  { grade: '高三', string: '高三' },
 ]);
 
 // Define interface for edited item
 interface EditedAssignment {
   id: string;
   grade: string | null;
-  title: string;
   totalScore: number | null;
   baseScore: number | null;
   scoringCriteria: string;
+  Description: string | null; // Add Description field
+  titleContext: string | null; // For titleContext
 }
 
 // 当前编辑的项目 - Updated to match form fields
 const editedItem = ref<EditedAssignment>({ // Add type argument
   id: '',
   grade: null, // For v-select
-  title: '', // For titleContext
   totalScore: null, // For totalScore
   baseScore: null, // For baseScore
+  Description:'',
   scoringCriteria: '', // For scoringCriteria
+  titleContext: '', // For titleContext
   // description and prompt are not in the new editedItem structure
 }) // <-- Close the ref object here
 
@@ -194,10 +209,11 @@ const editAssignment = (item: Assignment) => { // Use imported type
   editedItem.value = {
     id: item.id,
     grade: item.grade || null,
-    title: item.title || '',
     totalScore: item.totalScore || null,
     baseScore: item.baseScore || null,
     scoringCriteria: item.scoringCriteria || '',
+    Description: item.Description || null, // Add Description field
+    titleContext: item.titleContext || null, // For titleContext
     // description and prompt are not in the new editedItem structure
   }
   dialog.value = true
@@ -227,12 +243,14 @@ const saveAssignment = async () => {
   try {
     // Prepare data for the API
     const dataToSend: Omit<Assignment, "createdAt" | "id" | "updatedAt"> = {
-      title: editedItem.value.title,
       scoringCriteria: editedItem.value.scoringCriteria,
       // Convert nulls from form model to undefined for optional API fields
       grade: editedItem.value.grade || undefined,
       totalScore: editedItem.value.totalScore || undefined,
       baseScore: editedItem.value.baseScore || undefined,
+      titleContext: editedItem.value.titleContext || undefined,
+      Description: editedItem.value.Description || undefined, // Add Description field
+
     };
 
     if (isEditing.value) {
@@ -280,10 +298,11 @@ const resetForm = () => {
   editedItem.value = {
     id: '',
     grade: null, // Add grade
-    title: '',
     totalScore: null, // Add totalScore
     baseScore: null, // Add baseScore
     scoringCriteria: '', // Add scoringCriteria
+    Description: '', // Add Description
+    titleContext: '', // For titleContext
     // Remove description and prompt as they are not in the form/editedItem ref
   }
 }
@@ -296,7 +315,6 @@ onMounted(() => {
 
 export interface Assignment {
   id: string;
-  title: string;
   description?: string;
   prompt?: string;
   wordLimit?: number;

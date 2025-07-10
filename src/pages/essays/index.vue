@@ -175,7 +175,7 @@ function getScoreColor(score: number | null | undefined) {
 async function fetchAssignments() {
   try {
     const data = await getAssignments();
-    assignments.value = data || []
+    assignments.value = data as unknown as Assignment[] || []
   } catch (error) {
     console.error('获取测验列表失败:', error)
   }

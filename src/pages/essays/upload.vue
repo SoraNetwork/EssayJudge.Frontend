@@ -74,16 +74,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAssignments, uploadEssaySubmission, getSubmissionById } from '@/services/apiService';
+import { getAssignments, uploadEssaySubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 
 const router = useRouter();
 
 // Define the type for an assignment
-interface Assignment {
-  id: string; // Assuming id is a number based on item-value="id"
-  title: string; // Assuming title is a string based on item-title="title"
-  // Add other properties if necessary
-}
+// interface Assignment {
+//   id: string; // Assuming id is a number based on item-value="id"
+//   title: string; // Assuming title is a string based on item-title="title"
+//   // Add other properties if necessary
+// }
 
 const assignments = ref<Assignment[]>([]);
 const selectedAssignment = ref<string | null>(null); // Assuming assignment id is a number

@@ -26,8 +26,6 @@ interface Class {
 
 export interface Assignment {
   id: string;
-  title: string;
-  description?: string;
   prompt?: string;
   wordLimit?: number;
   grade?: string;
@@ -35,7 +33,9 @@ export interface Assignment {
   baseScore?: number;
   scoringCriteria?: string;
   createdAt: string;
+  titleContext?: string; // For title context
   updatedAt: string;
+  Description?: string; // Added for convenience in frontend
 }
 
 export interface Submission {
