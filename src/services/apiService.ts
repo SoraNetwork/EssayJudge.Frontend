@@ -230,20 +230,20 @@ export const updateSubmissionScore = async (id: string, score: number): Promise<
 // --- API Key 管理 API ---
 
 export const getApiKeys = async (): Promise<ApiKey[]> => {
-  const response = await api.get<ApiKey[]>('/ApiKey');
+  const response = await api.get<ApiKey[]>('/api/ApiKey');
   return response.data;
 };
 
 export const createApiKey = async (apiKeyData: Omit<ApiKey, 'id' | 'createdAt'>): Promise<ApiKey> => {
-  const response = await api.post<ApiKey>('/ApiKey', apiKeyData);
+  const response = await api.post<ApiKey>('/api/ApiKey', apiKeyData);
   return response.data;
 };
 
 export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 'id' | 'createdAt'>>): Promise<ApiKey> => {
-  const response = await api.put<ApiKey>(`/ApiKey/${id}`, apiKeyData);
+  const response = await api.put<ApiKey>(`/api/ApiKey/${id}`, apiKeyData);
   return response.data;
 };
 
 export const deleteApiKey = async (id: string): Promise<void> => {
-  await api.delete(`/ApiKey/${id}`);
+  await api.delete(`/api/ApiKey/${id}`);
 };
