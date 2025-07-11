@@ -24,4 +24,4 @@ jobs:
           git config --global user.name "GitHub-actions[bot]"
           git add .
           git commit -m "SEJ-F/${{github.sha}} From CI"
-          git push origin main
+          git push origin v2
