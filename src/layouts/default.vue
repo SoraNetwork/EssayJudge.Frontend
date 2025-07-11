@@ -5,10 +5,16 @@
       app
     >
       <v-list-item
-        prepend-avatar="https://randomuser.me/api/portraits/men/78.jpg"
         :title="authStore.realName || '未登录'"
         :subtitle="authStore.userName || '请先登录'"
-      ></v-list-item>
+      >
+        <template v-slot:prepend>
+          <v-avatar color="primary">
+            <span v-if="authStore.isAuthenticated">{{ userInitial }}</span>
+            <v-icon v-else>mdi-account</v-icon>
+          </v-avatar>
+        </template>
+      </v-list-item>
 
       <v-divider></v-divider>
 
@@ -24,6 +30,16 @@
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
       <v-toolbar-title>作文评测系统</v-toolbar-title>
       <v-spacer></v-spacer>
+
+      <!-- Status Info Button -->
+      <v-tooltip location="bottom" v-if="authStore.isAuthenticated">
+        <template v-slot:activator="{ props }">
+          <v-btn icon to="/status" v-bind="props">
+            <v-icon>mdi-information-outline</v-icon>
+          </v-btn>
+        </template>
+        <span>{{ versionTooltip }}</span>
+      </v-tooltip>
 
       <!-- 主题切换按钮 -->
       <v-btn icon @click="toggleTheme">
@@ -62,15 +78,26 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from 'vuetify'
 import { usePreferredDark } from '@vueuse/core' // 导入 usePreferredDark
+import { getServerStatus, type ServerStatus } from '@/services/apiService';
 
 const router = useRouter()
 const authStore = useAuthStore()
 const drawer = ref(false)
 const theme = useTheme()
 const preferredDark = usePreferredDark() // 获取系统主题偏好
+const serverStatus = ref<ServerStatus | null>(null);
+
+const userInitial = computed(() => (authStore.realName ? authStore.realName.charAt(0).toUpperCase() : ''));
 
 // 计算属性：判断当前是否为深色主题
 const isDark = computed(() => theme.global.name.value === 'dark')
+
+const versionTooltip = computed(() => {
+  if (serverStatus.value?.build) {
+    return `${serverStatus.value.build.version}@${serverStatus.value.build.gitCommit}`;
+  }
+  return '加载中...';
+});
 
 // 切换主题函数
 function toggleTheme() {
@@ -103,8 +130,15 @@ function logout() {
 }
 
 // 页面挂载时，根据系统主题设置初始主题
-onMounted(() => {
+onMounted(async () => {
   theme.global.name.value = preferredDark.value ? 'dark' : 'light';
+  if (authStore.isAuthenticated) {
+    try {
+      serverStatus.value = await getServerStatus();
+    } catch (error) {
+      console.error("获取服务器状态失败:", error);
+    }
+  }
 });
 
 // 监听系统主题变化，并同步更新应用主题

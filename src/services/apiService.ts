@@ -67,6 +67,35 @@ interface ApiKey {
   createdAt: string;
 }
 
+export interface ServerStatus {
+  serverStatus: string;
+  serverTimeUtc: string;
+  uptime: string;
+  build: {
+    version: string;
+    gitCommit: string;
+  };
+  application: {
+    environment: string;
+    framework: string;
+    processId: number;
+    memoryUsage: string;
+    totalAllocatedMemory: string;
+    threadCount: number;
+  };
+  system: {
+    hostName: string;
+    serverIpAddresses: string;
+    os: string;
+    osArchitecture: string;
+    processorCount: number;
+  };
+  request: {
+    clientIp: string;
+  };
+  databaseStatus: string;
+}
+
 
 // --- 学生管理 API ---
 
@@ -246,4 +275,10 @@ export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 
 
 export const deleteApiKey = async (id: string): Promise<void> => {
   await api.delete(`/api/ApiKey/${id}`);
+};
+
+// --- Server Status API ---
+export const getServerStatus = async (): Promise<ServerStatus> => {
+  const response = await api.get<ServerStatus>('/api/Status');
+  return response.data;
 };
