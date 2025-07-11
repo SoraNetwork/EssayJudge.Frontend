@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // 后端API基础URL
+  baseURL: 'https://api.ej.xingsora.cn', // 后端API基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'multipart/form-data'
