@@ -1,0 +1,27 @@
+name: Build
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4.2.0
+      - name: Replace API URL
+        run: |
+          sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts
+      - name: Build
+        run: | 
+          npm install
+          npm run build
+      - name: Push
+        continue-on-error: true
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub-actions[bot]"
+          git add .
+          git commit -m "SEJ-F/${{github.sha}} From CI"
+          git push origin main
