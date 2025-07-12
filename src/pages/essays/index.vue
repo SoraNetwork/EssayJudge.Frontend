@@ -117,11 +117,19 @@ interface Assignment {
 // Helper function to format date
 function formatDate(dateString: string) {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  // Add 8 hours for UTC+8
+  const date = new Date(dateString);
+  date.setHours(date.getHours() + 8);
+  return date.toLocaleString(undefined, options); // Use toLocaleString for both date and time
 }
 
 // 表头定义
 const headers: any[] = [
+  { title: '学生姓名', key: 'studentName' },
+  { title: '测验题目', key: 'assignmentTitle' },
+  { title: '提交时间', key: 'submissionDate' },
+  { title: '得分', key: 'finalScore' },
+  { title: '操作', key: 'actions', sortable: false },
 ]
 
 // 数据和状态

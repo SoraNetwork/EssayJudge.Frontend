@@ -21,6 +21,8 @@
             </v-chip>
           </template>
           <template v-slot:item.actions="{ item }">
+            <!-- 移除编辑按钮 -->
+            <!--
             <v-btn
               icon
               variant="text"
@@ -29,6 +31,7 @@
             >
               <v-icon>mdi-pencil</v-icon>
             </v-btn>
+            -->
             <v-btn
               icon
               variant="text"
@@ -43,11 +46,12 @@
       </v-card-text>
     </v-card>
 
-    <!-- 新建/编辑班级对话框 -->
+    <!-- 新建班级对话框 -->
     <v-dialog v-model="dialog" max-width="600px">
       <v-card>
         <v-card-title>
-          <span class="text-h5">{{ isEditing ? '编辑班级' : '添加班级' }}</span>
+          <!-- 标题固定为“添加班级” -->
+          <span class="text-h5">添加班级</span>
         </v-card-title>
         <v-card-text>
           <v-form ref="form" @submit.prevent="saveClass">
@@ -92,9 +96,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getClasses, createClass, updateClass, deleteClass as apiDeleteClass, getStudents } from '@/services/apiService';
+// 移除 updateClass 导入
+import { getClasses, createClass, deleteClass as apiDeleteClass, getStudents } from '@/services/apiService';
 
-// Define the type for a class item
+// 定义班级项的类型
 interface ClassItem {
   id: string;
   name: string;
@@ -109,37 +114,38 @@ const headers = [
 ]
 
 // 数据和状态
-const classes = ref<ClassItem[]>([]) // Type the classes ref
+const classes = ref<ClassItem[]>([]) // 班级列表的ref
 const loading = ref(false)
 const dialog = ref(false)
 const deleteDialog = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
-const isEditing = ref(false)
+// 移除 isEditing 状态
+// const isEditing = ref(false)
 const form = ref<any>(null)
 
-// 当前编辑的项目
-const editedItem = ref<Partial<ClassItem>>({ // Type the editedItem ref
-  id: '',
+// 当前编辑的项目 (只用于新建)
+// 简化类型，移除id
+const editedItem = ref<{ name: string }>({
   name: '',
 })
 
 // 要删除的项目
-const itemToDelete = ref<ClassItem | null>(null) // Type the itemToDelete ref
+const itemToDelete = ref<ClassItem | null>(null) // 待删除项的ref
 
 // 获取所有班级
 async function fetchClasses() {
   loading.value = true
   try {
-    const data = await getClasses(); // Assuming getClasses returns an array of objects with id and name
-    const classesWithCount: ClassItem[] = []; // Array to hold typed class items
+    const data = await getClasses(); // 假设 getClasses 返回一个包含 id 和 name 属性的对象数组
+    const classesWithCount: ClassItem[] = []; // 用于存放带学生数量的班级项的数组
 
     for (const classItem of data || []) {
       try {
         const studentsResponse = await getStudents({ classId: classItem.id });
         classesWithCount.push({
-          id: classItem.id, // Assuming id exists
-          name: classItem.name, // Assuming name exists
+          id: classItem.id, // 假设 id 存在
+          name: classItem.name, // 假设 name 存在
           studentCount: studentsResponse.length || 0
         });
       } catch (error) {
@@ -147,27 +153,27 @@ async function fetchClasses() {
         classesWithCount.push({
           id: classItem.id,
           name: classItem.name,
-          studentCount: 0 // Default to 0 on error
+          studentCount: 0 // 错误时默认为 0
         });
       }
     }
-    classes.value = classesWithCount; // Assign the typed array
+    classes.value = classesWithCount; // 赋值类型化的数组
   } catch (error) {
     console.error('获取班级列表失败:', error)
-    classes.value = []; // Assign empty array on error
+    classes.value = []; // 错误时赋值空数组
   } finally {
     loading.value = false
   }
 }
 
-// 编辑班级
-function editClass(item: ClassItem) { // Type the item parameter
-  isEditing.value = true
-  editedItem.value = { ...item }
-  dialog.value = true
-}
+// 移除 editClass 函数
+// function editClass(item: ClassItem) { // Type the item parameter
+//   isEditing.value = true
+//   editedItem.value = { ...item }
+//   dialog.value = true
+// }
 
-// 保存班级
+// 保存班级 (只处理新建)
 async function saveClass() {
   // 表单验证
   const { valid } = await form.value.validate()
@@ -175,17 +181,18 @@ async function saveClass() {
 
   saving.value = true
   try {
-    const dataToSave = { name: editedItem.value.name! }; // Always send only name
+    const dataToSave = { name: editedItem.value.name! }; // 总是只发送 name
 
-    if (isEditing.value) {
-      if (!editedItem.value.id) {
-        console.error('Cannot update class without an ID');
-        return; // Or handle error appropriately
-      }
-      await updateClass(editedItem.value.id, dataToSave);
-    } else {
+    // 移除更新逻辑，只保留新建
+    // if (isEditing.value) {
+    //   if (!editedItem.value.id) {
+    //     console.error('Cannot update class without an ID');
+    //     return; // Or handle error appropriately
+    //   }
+    //   await updateClass(editedItem.value.id, dataToSave);
+    // } else {
       await createClass(dataToSave);
-    }
+    // }
 
     // 关闭对话框并刷新列表
     dialog.value = false
@@ -225,9 +232,10 @@ async function deleteClass() {
 
 // 重置表单
 function resetForm() {
-  isEditing.value = false
+  // 移除 isEditing 状态重置
+  // isEditing.value = false
+  // 简化 editedItem 重置
   editedItem.value = {
-    id: '',
     name: '',
   }
 }

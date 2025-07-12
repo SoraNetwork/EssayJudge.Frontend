@@ -9,11 +9,19 @@
           <v-select
             v-model="selectedAssignment"
             :items="assignments"
-            item-title="title"
             item-value="id"
             label="选择测验"
             required
-          ></v-select>
+          >
+            <template v-slot:selection="{ item }">
+              <span>{{ item.raw.description }}</span>
+            </template>
+            <template v-slot:item="{ props, item }">
+              <v-list-item v-bind="props" :title="item.raw.description">
+                <v-list-item-subtitle>{{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
+              </v-list-item>
+            </template>
+          </v-select>
           <!-- 支持拖拽的文件输入 -->
           <div
             class="drag-file-area"
@@ -23,7 +31,7 @@
           >
             <v-file-input
               v-model="selectedFiles"
-              label="选择作文图片（支持拖动文件到此处选择，最多20篇）"
+              :label="`选择作文图片（支持拖动文件到此处选择，最多 ${maxFiles} 篇）`"
               accept="image/*"
               required
               multiple
@@ -32,7 +40,20 @@
               prepend-icon="mdi-upload"
               style="background: transparent"
               @click.stop
-            ></v-file-input>
+              chips
+            >
+              <!-- 使用 v-slot:selection 自定义文件标签显示 -->
+              <!-- 添加 index 参数 -->
+              <template v-slot:selection="{ fileNames }">
+                <template v-for="(name, index) in fileNames" :key="name">
+                  <v-chip
+                    :text="name"
+                    closable
+                    @click:close="removeFile(index)"
+                  ></v-chip>
+                </template>
+              </template>
+            </v-file-input>
           </div>
           <v-text-field
             v-model.number="columnCount"
@@ -109,9 +130,18 @@ import { getAssignments, uploadEssaySubmission, getSubmissionById, type Assignme
 
 const router = useRouter();
 
+// Helper function to format date
+function formatDate(dateString: string) {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  const date = new Date(dateString);
+  // Add 8 hours for UTC+8
+  date.setHours(date.getHours() + 8);
+  return date.toLocaleString(undefined, options);
+}
+
 const assignments = ref<Assignment[]>([]);
 const selectedAssignment = ref(null);
-const selectedFiles = ref<File[] | null>(null); // Change to array for multiple files
+const selectedFiles = ref<File[] | null>(null); // 改为数组以支持多文件
 const columnCount = ref(3);
 const isSubmitting = ref(false);
 
@@ -124,16 +154,24 @@ const processingFiles = ref<Array<{
   finalScore?: number,
   error?: string,
 }>>([]);
-const overallProgress = ref(0); // Overall batch progress (0-100)
-const pollingIntervalId = ref<number | null>(null); // To store the interval ID for the current file
+const overallProgress = ref(0); // 整体批量进度（0-100）
 
-// Completion Dialog State
+// 批量处理配置
+const maxFiles = 60; // 最大上传文件数目
+const batchSize = 5; // 一次上传文件数目
+const batchDelay = 5000; // 批次之间的延迟（毫秒）
+
+let currentFileIndex = 0; // 跟踪下一个批次起始文件索引
+
+// 用于存储每个文件的轮询定时器
+const pollingIntervals = new Map<string, number | null>();
+// 用于存储下一个批次处理的定时器 ID
+let batchTimeoutId: number | null = null;
+
+
+// 完成对话框状态
 const completionDialog = ref(false);
 const completionMessage = ref('');
-
-// Batch processing configuration
-const maxFiles = 20; // Maximum files allowed in total
-let currentFileIndex = 0; // Index to track the file currently being processed
 
 async function fetchAssignments() {
   try {
@@ -146,59 +184,62 @@ async function fetchAssignments() {
 
 async function uploadEssay() {
   if (!selectedAssignment.value || !selectedFiles.value || selectedFiles.value.length === 0) {
-    // Maybe show a message if validation fails
+    // 如果校验失败可提示
     return;
   }
 
-  // Enforce max files (redundant with v-file-input prop, but good fallback)
+  // 冗余校验最大文件数（v-file-input 已限制，但作为兜底）
   if (selectedFiles.value.length > maxFiles) {
-     alert(`每次最多上传${maxFiles}篇作文`); // Or use a snackbar/toast
+     alert(`每次最多上传${maxFiles}篇作文`);
      return;
   }
 
-  // Reset state and switch view
+  // 重置状态并切换视图
   isSubmitting.value = true;
   viewState.value = 'processing';
   overallProgress.value = 0;
-  currentFileIndex = 0; // Reset file index
+  currentFileIndex = 0; // 重置文件索引
   processingFiles.value = selectedFiles.value.map(file => ({ file: file, status: 'pending' }));
 
-  // Stop any existing polling interval
-  if (pollingIntervalId.value !== null) {
-    clearInterval(pollingIntervalId.value);
-    pollingIntervalId.value = null;
-  }
+  // 清除所有已有定时器
+  clearAllTimers();
 
-  // Start processing the first file
-  await processFileAtIndex(currentFileIndex);
+  // 开始处理第一批
+  processNextBatch();
 
-  isSubmitting.value = false; // Submitting is done once uploads are initiated
+  isSubmitting.value = false; // 提交动作完成
 }
 
-async function processFileAtIndex(index: number) {
-    // Check if all files are processed
-    if (index >= processingFiles.value.length) {
-        calculateOverallProgress(); // Ensure final progress is 100%
-        // Show completion dialog and redirect
-        completionMessage.value = '全部批改完成！';
-        completionDialog.value = true;
-
-        // Auto-close dialog and redirect after 5 seconds
-        setTimeout(() => {
-          completionDialog.value = false;
-          router.push('/essays');
-        }, 5000); // 5 seconds delay
-        return; // Stop processing
+function processNextBatch() {
+    // 检查是否所有文件都已启动处理
+    if (currentFileIndex >= processingFiles.value.length) {
+        console.log('所有批次已启动');
+        return;
     }
 
-    currentFileIndex = index; // Update current index
-    const item = processingFiles.value[index];
-    item.status = 'uploading';
+    const endIndex = Math.min(currentFileIndex + batchSize, processingFiles.value.length);
+    console.log(`开始处理批次: 从索引 ${currentFileIndex} 到 ${endIndex - 1}`);
 
-    const formData = new FormData();
-    formData.append('essayAssignmentId', selectedAssignment.value!);
-    formData.append('imageFile', item.file);
-    formData.append('columnCount', columnCount.value.toString());
+    // 处理当前批次的文件
+    for (let i = currentFileIndex; i < endIndex; i++) {
+        uploadAndPollFile(processingFiles.value[i]);
+    }
+
+    // 更新下一个批次的起始索引
+    currentFileIndex = endIndex;
+
+    // 如果还有剩余文件，安排下一个批次
+    if (currentFileIndex < processingFiles.value.length) {
+        console.log(`安排下一批次在 ${batchDelay / 1000} 秒后开始`);
+        batchTimeoutId = setTimeout(processNextBatch, batchDelay) as any;
+    } else {
+        console.log('所有文件上传已安排');
+    }
+}
+
+async function uploadAndPollFile(item: typeof processingFiles.value[0]) {
+    item.status = 'uploading';
+    console.log(`上传文件: ${item.file.name}`);
 
     try {
       const response = await uploadEssaySubmission(
@@ -208,76 +249,82 @@ async function processFileAtIndex(index: number) {
       );
       item.submissionId = response.submissionId;
       item.status = 'polling';
-      // Start polling for this specific file
+      console.log(`文件 ${item.file.name} 上传成功, submissionId: ${item.submissionId}. 开始轮询.`);
+      // 启动该文件的轮询
       startPollingForFile(item);
     } catch (error: any) {
       console.error(`上传文件 ${item.file.name} 失败:`, error);
       item.status = 'error';
       item.error = error.response?.data?.message || '上传失败';
-      calculateOverallProgress(); // Update progress on error
-      // Immediately move to the next file if upload fails
-      await processFileAtIndex(currentFileIndex + 1);
+      calculateOverallProgress(); // 上传失败时更新进度
+      checkOverallCompletion(); // 检查是否全部完成
     }
 }
 
 
 function startPollingForFile(item: typeof processingFiles.value[0]) {
-  // Clear any existing interval before starting a new one
-  if (pollingIntervalId.value !== null) {
-    clearInterval(pollingIntervalId.value);
+  if (!item.submissionId) {
+      console.error(`无法为文件 ${item.file.name} 启动轮询：缺少 submissionId`);
+      return;
   }
-  // Start polling for the specific item
-  pollingIntervalId.value = setInterval(() => checkPollingStatusForFile(item), 2000) as any;
+  // 如有已有定时器先清除
+  if (pollingIntervals.has(item.submissionId) && pollingIntervals.get(item.submissionId) !== null) {
+      clearInterval(pollingIntervals.get(item.submissionId)!);
+  }
+
+  // 启动该文件的轮询
+  const interval = setInterval(() => checkPollingStatusForFile(item), 2000) as any;
+  pollingIntervals.set(item.submissionId, interval);
+  console.log(`为 submissionId ${item.submissionId} 启动轮询定时器 ID: ${interval}`);
 }
 
 async function checkPollingStatusForFile(item: typeof processingFiles.value[0]) {
-  // Find the item in the reactive array to ensure updates are reflected
-  const reactiveItem = processingFiles.value.find(f => f.submissionId === item.submissionId);
-
-  if (!reactiveItem || reactiveItem.status !== 'polling' || !reactiveItem.submissionId) {
-      // Should not happen if called correctly, but as a safeguard
-      if (pollingIntervalId.value !== null) {
-        clearInterval(pollingIntervalId.value);
-        pollingIntervalId.value = null;
+  if (!item.submissionId || item.status !== 'polling') {
+      // 如果该文件不再轮询，清除其定时器
+      if (item.submissionId && pollingIntervals.has(item.submissionId) && pollingIntervals.get(item.submissionId) !== null) {
+          console.log(`停止轮询 submissionId ${item.submissionId} (状态不是 polling 或无 ID)`);
+          clearInterval(pollingIntervals.get(item.submissionId)!);
+          pollingIntervals.delete(item.submissionId);
       }
       return;
   }
 
   try {
-    const submissionData = await getSubmissionById(reactiveItem.submissionId);
-    // Check if processing is complete (judgeResult is available)
+    const submissionData = await getSubmissionById(item.submissionId);
+    // 检查是否批改完成（judgeResult 已返回）
     if (submissionData.judgeResult) {
-      reactiveItem.status = 'completed';
-      reactiveItem.finalScore = submissionData.finalScore;
-      calculateOverallProgress(); // Recalculate overall progress
+      console.log(`submissionId ${item.submissionId} 批改完成`);
+      item.status = 'completed';
+      item.finalScore = submissionData.finalScore;
 
-      // Stop polling for this file
-      if (pollingIntervalId.value !== null) {
-        clearInterval(pollingIntervalId.value);
-        pollingIntervalId.value = null;
+      // 停止该文件的轮询
+      if (pollingIntervals.has(item.submissionId) && pollingIntervals.get(item.submissionId) !== null) {
+          console.log(`停止轮询 submissionId ${item.submissionId}`);
+          clearInterval(pollingIntervals.get(item.submissionId)!);
+          pollingIntervals.delete(item.submissionId);
       }
 
-      // Move to the next file
-      await processFileAtIndex(currentFileIndex + 1);
+      calculateOverallProgress(); // 重新计算进度
+      checkOverallCompletion(); // 检查是否全部完成
 
     } else {
-       // Still polling, maybe update status text if backend provides it
-       // reactiveItem.statusText = submissionData.status; // If backend provides detailed status
+       // 仍在轮询，可根据后端返回状态更新文本
+       // item.statusText = submissionData.status;
     }
   } catch (error: any) {
-    console.error(`轮询提交 ${reactiveItem.submissionId} 失败:`, error);
-    reactiveItem.status = 'error';
-    reactiveItem.error = error.response?.data?.message || '处理失败';
-    calculateOverallProgress(); // Recalculate overall progress after error
+    console.error(`轮询提交 ${item.submissionId} 失败:`, error);
+    item.status = 'error';
+    item.error = error.response?.data?.message || '处理失败';
 
-    // Stop polling for this file
-    if (pollingIntervalId.value !== null) {
-      clearInterval(pollingIntervalId.value);
-      pollingIntervalId.value = null;
+    // 停止该文件的轮询
+    if (pollingIntervals.has(item.submissionId) && pollingIntervals.get(item.submissionId) !== null) {
+        console.log(`停止轮询 submissionId ${item.submissionId} (发生错误)`);
+        clearInterval(pollingIntervals.get(item.submissionId)!);
+        pollingIntervals.delete(item.submissionId);
     }
 
-    // Move to the next file
-    await processFileAtIndex(currentFileIndex + 1);
+    calculateOverallProgress(); // 失败后重新计算进度
+    checkOverallCompletion(); // 检查是否全部完成
   }
 }
 
@@ -287,58 +334,113 @@ function calculateOverallProgress() {
     overallProgress.value = 0;
     return;
   }
-  // Progress is based on the count of files that are completed or have errored
+  // 进度基于已完成或失败的文件数
   const completedOrErroredCount = processingFiles.value.filter(item => item.status === 'completed' || item.status === 'error').length;
   overallProgress.value = Math.min((completedOrErroredCount / totalFiles) * 100, 100);
+  console.log(`当前进度: ${overallProgress.value.toFixed(2)}% (${completedOrErroredCount}/${totalFiles})`);
 }
+
+function checkOverallCompletion() {
+    const totalFiles = processingFiles.value.length;
+    if (totalFiles === 0) return;
+
+    const completedOrErroredCount = processingFiles.value.filter(item => item.status === 'completed' || item.status === 'error').length;
+
+    if (completedOrErroredCount === totalFiles) {
+        console.log('所有文件处理完成');
+        calculateOverallProgress(); // 确保进度为100%
+        // 显示完成对话框并跳转
+        completionMessage.value = '全部批改完成！';
+        completionDialog.value = true;
+
+        // 清除批次定时器
+        if (batchTimeoutId !== null) {
+            clearTimeout(batchTimeoutId);
+            batchTimeoutId = null;
+            console.log('清除批次定时器');
+        }
+
+        // 5秒后自动关闭对话框并跳转
+        setTimeout(() => {
+          completionDialog.value = false;
+          router.push('/essays');
+        }, 5000);
+    }
+}
+
 
 function getProcessingStatusText(status: string) {
   switch (status) {
     case 'pending': return '等待上传';
     case 'uploading': return '上传中';
-    case 'polling': return '处理中'; // This covers OCR and AI steps
+    case 'polling': return '处理中'; // 包括OCR和AI步骤
     case 'completed': return '已完成';
     case 'error': return '失败';
     default: return status;
   }
 }
 
-// --- Drag and Drop Logic ---
+// --- 拖拽逻辑 ---
 function onDropFile(e: DragEvent) {
-  e.preventDefault(); // Prevent default to avoid opening file in browser
+  e.preventDefault(); // 阻止默认行为避免浏览器打开文件
 
   if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > maxFiles) {
-        alert(`每次最多上传${maxFiles}篇作文`); // Or use a snackbar/toast
-        selectedFiles.value = null; // Clear selection
+    const newFiles = Array.from(e.dataTransfer.files);
+    const currentFiles = selectedFiles.value ? Array.from(selectedFiles.value) : [];
+    const combinedFiles = [...currentFiles, ...newFiles];
+
+    if (combinedFiles.length > maxFiles) {
+        alert(`文件总数不能超过 ${maxFiles} 篇。已自动选择前 ${maxFiles} 篇文件。`);
+        selectedFiles.value = combinedFiles.slice(0, maxFiles);
     } else {
-        selectedFiles.value = files;
-        // If assignment and column count are already selected, trigger upload
-        // Use nextTick to allow v-model to update
-        nextTick(() => {
-             if (selectedAssignment.value && columnCount.value > 0) {
-                uploadEssay();
-            } else {
-                // Otherwise, user needs to select assignment/column count and click submit
-                // The v-file-input will now show the selected files
-            }
-        });
+        selectedFiles.value = combinedFiles;
     }
+
+    // 如果测验和分栏数已选，自动触发上传
+    nextTick(() => {
+         if (selectedAssignment.value && columnCount.value > 0 && selectedFiles.value && selectedFiles.value.length > 0) {
+            uploadEssay();
+        } else {
+            // 否则需用户手动选择测验/分栏数并点击提交
+            // v-file-input 会显示已选文件
+        }
+    });
   }
 }
-// --- End Drag and Drop Logic ---
+// --- 拖拽逻辑结束 ---
+
+function removeFile(index: number) {
+  if (selectedFiles.value) {
+    selectedFiles.value.splice(index, 1);
+  }
+}
+
+function clearAllTimers() {
+    // 清除所有轮询定时器
+    pollingIntervals.forEach((intervalId, submissionId) => {
+        if (intervalId !== null) {
+            clearInterval(intervalId);
+            console.log(`清除轮询定时器 ID: ${intervalId} (submissionId: ${submissionId})`);
+        }
+    });
+    pollingIntervals.clear();
+
+    // 清除批次定时器
+    if (batchTimeoutId !== null) {
+        clearTimeout(batchTimeoutId);
+        batchTimeoutId = null;
+        console.log('清除批次定时器');
+    }
+}
 
 
-// Global event listeners (removed global drag/leave/drop)
+// 生命周期钩子
 onMounted(() => {
   fetchAssignments();
 });
 
 onUnmounted(() => {
-  if (pollingIntervalId.value !== null) {
-    clearInterval(pollingIntervalId.value);
-  }
+  clearAllTimers();
 });
 
 </script>

@@ -8,11 +8,19 @@
           <v-select
             v-model="selectedAssignment"
             :items="assignments"
-            item-title="title"
             item-value="id"
             label="选择测验"
             required
-          ></v-select>
+          >
+            <template v-slot:selection="{ item }">
+              <span>{{ item.raw.description }}</span>
+            </template>
+            <template v-slot:item="{ props, item }">
+              <v-list-item v-bind="props" :title="item.raw.description">
+                <v-list-item-subtitle>{{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
+              </v-list-item>
+            </template>
+          </v-select>
           <v-file-input
             v-model="selectedFile"
             label="选择作文图片（支持拖动文件到此处选择）"
@@ -77,6 +85,15 @@ import { useRouter } from 'vue-router';
 import { getAssignments, uploadEssaySubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 
 const router = useRouter();
+
+// Helper function to format date
+function formatDate(dateString: string) {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  const date = new Date(dateString);
+  // Add 8 hours for UTC+8
+  date.setHours(date.getHours() + 8);
+  return date.toLocaleString(undefined, options);
+}
 
 // Define the type for an assignment
 // interface Assignment {

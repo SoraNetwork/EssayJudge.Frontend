@@ -85,15 +85,13 @@
               rows="5"
             ></v-textarea>
             <v-textarea
-              v-model="editedItem.Description"
+              v-model="editedItem.description"
               label="描述"
               rows="5"
             ></v-textarea>
             <v-textarea
               v-model="editedItem.scoringCriteria"
               label="评分标准"
-              :rules="[v => !!v || '评分标准不能为空']"
-              required
               rows="5"
             ></v-textarea>
           </v-form>
@@ -125,13 +123,13 @@
 import { ref, onMounted } from 'vue'
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
 
-// Helper function to format date and add 8 hours
+// 辅助函数：格式化日期并加8小时
 function formatDate(dateString: string) {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
   const date = new Date(dateString);
-  // Add 8 hours for UTC+8
+  // 加8小时，转换为UTC+8
   date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options); // Use toLocaleString for both date and time
+  return date.toLocaleString(undefined, options); // 使用toLocaleString同时显示日期和时间
 }
 
 // 数据和状态
@@ -139,7 +137,7 @@ const loading = ref(false)
 const dialog = ref(false)
 // 表格列定义
 const headers = [
-  { title: '描述', key: 'Description' },
+  { title: '描述', key: 'description' }, 
   { title: '年级', key: 'grade' },
   { title: '创建时间', key: 'createdAt' },
   { title: '操作', key: 'actions', sortable: false }
@@ -153,7 +151,7 @@ const deleting = ref(false)
 const isEditing = ref(false)
 const form = ref<any>(null)
 
-// Define grades for the select input
+// 年级下拉选项
 const grades = ref([
   { grade: '一年级', string: '一年级' },
   { grade: '二年级', string: '二年级' },
@@ -169,31 +167,31 @@ const grades = ref([
   { grade: '高三', string: '高三' },
 ]);
 
-// Define interface for edited item
+// 编辑项的接口定义
 interface EditedAssignment {
   id: string;
   grade: string | null;
   totalScore: number | null;
   baseScore: number | null;
   scoringCriteria: string;
-  Description: string | null; // Add Description field
-  titleContext: string | null; // For titleContext
+  description: string | null; 
+  titleContext: string | null; // 标题内容
 }
 
-// 当前编辑的项目 - Updated to match form fields
-const editedItem = ref<EditedAssignment>({ // Add type argument
+// 当前编辑的项目 - 与表单字段保持一致
+const editedItem = ref<EditedAssignment>({
   id: '',
-  grade: null, // For v-select
-  totalScore: null, // For totalScore
-  baseScore: null, // For baseScore
-  Description:'',
-  scoringCriteria: '', // For scoringCriteria
-  titleContext: '', // For titleContext
-  // description and prompt are not in the new editedItem structure
-}) // <-- Close the ref object here
+  grade: null, // 用于v-select
+  totalScore: null, // 总分
+  baseScore: null, // 基础分
+  description:'', 
+  scoringCriteria: '', // 评分标准
+  titleContext: '', // 标题内容
+  // description和prompt不在新的editedItem结构中
+}) // <-- 在此处关闭ref对象
 
-// Item to delete
-const itemToDelete = ref<any>(null) // <-- Add itemToDelete ref
+// 待删除的项
+const itemToDelete = ref<any>(null) // <-- 新增itemToDelete的ref
 
 // 确认删除测验
 const confirmDelete = (item: any) => {
@@ -202,18 +200,18 @@ const confirmDelete = (item: any) => {
 }
 
 // 编辑测验
-const editAssignment = (item: Assignment) => { // Use imported type
+const editAssignment = (item: Assignment) => { // 使用导入的类型
   isEditing.value = true
-  // Copy properties from item, including new ones if they exist on the fetched item
-  // Ensure all properties expected by the form are copied
+  // 从item复制属性，包括后端返回的新属性
+  // 确保表单需要的所有属性都被复制
   editedItem.value = {
     id: item.id,
     grade: item.grade || null,
     totalScore: item.totalScore || null,
     baseScore: item.baseScore || null,
     scoringCriteria: item.scoringCriteria || '',
-    Description: item.Description || null, // Add Description field
-    titleContext: item.titleContext || null, // For titleContext
+    description: item.description || null, 
+    titleContext: item.titleContext || null, // 标题内容
     // description and prompt are not in the new editedItem structure
   }
   dialog.value = true
@@ -223,7 +221,7 @@ const editAssignment = (item: Assignment) => { // Use imported type
 const fetchAssignments = async () => {
   loading.value = true
   try {
-    // Replace api.get with getAssignments
+    // 用getAssignments替换api.get
     const data = await getAssignments();
     assignments.value = data || []
   } catch (error) {
@@ -235,35 +233,34 @@ const fetchAssignments = async () => {
 
 // 保存测验
 const saveAssignment = async () => {
-  // 表单验证
+  // 表单校验
   const { valid } = await form.value.validate()
   if (!valid) return
 
   saving.value = true
   try {
-    // Prepare data for the API
+    // 构造API所需数据
     const dataToSend: Omit<Assignment, "createdAt" | "id" | "updatedAt"> = {
       scoringCriteria: editedItem.value.scoringCriteria,
-      // Convert nulls from form model to undefined for optional API fields
+      // 将表单模型中的null转换为undefined，适配API可选字段
       grade: editedItem.value.grade || undefined,
       totalScore: editedItem.value.totalScore || undefined,
       baseScore: editedItem.value.baseScore || undefined,
       titleContext: editedItem.value.titleContext || undefined,
-      Description: editedItem.value.Description || undefined, // Add Description field
-
+      description: editedItem.value.description || undefined, 
     };
 
     if (isEditing.value) {
-      // Replace api.put with updateAssignment
-      await updateAssignment(editedItem.value.id, dataToSend); // Use dataToSend
+      // 用updateAssignment替换api.put
+      await updateAssignment(editedItem.value.id, dataToSend); // 传递dataToSend
     } else {
-      // Replace api.post with createAssignment
-      await createAssignment(dataToSend); // Use dataToSend
+      // 用createAssignment替换api.post
+      await createAssignment(dataToSend); // 传递dataToSend
     }
 
     // 关闭对话框并刷新列表
     dialog.value = false
-    await fetchAssignments()
+    window.location.reload(); // 添加页面刷新
 
     // 重置表单
     resetForm()
@@ -280,10 +277,10 @@ const deleteAssignment = async () => {
 
   deleting.value = true
   try {
-    // Replace api.delete with deleteAssignment
+    // 用deleteAssignment替换api.delete
     await deleteAssignmentApi(itemToDelete.value.id);
     deleteDialog.value = false
-    await fetchAssignments()
+    window.location.reload(); // 添加页面刷新
   } catch (error) {
     console.error('删除测验失败:', error)
   } finally {
@@ -297,13 +294,13 @@ const resetForm = () => {
   isEditing.value = false
   editedItem.value = {
     id: '',
-    grade: null, // Add grade
-    totalScore: null, // Add totalScore
-    baseScore: null, // Add baseScore
-    scoringCriteria: '', // Add scoringCriteria
-    Description: '', // Add Description
-    titleContext: '', // For titleContext
-    // Remove description and prompt as they are not in the form/editedItem ref
+    grade: null, // 年级
+    totalScore: null, // 总分
+    baseScore: null, // 基础分
+    scoringCriteria: '', // 评分标准
+    description: '', // 描述
+    titleContext: '', // 标题内容
+    // description和prompt不在表单/editedItem ref中
   }
 }
 

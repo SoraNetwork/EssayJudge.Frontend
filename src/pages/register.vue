@@ -34,6 +34,8 @@
                 name="name"
                 prepend-icon="mdi-account-badge"
                 type="text"
+                :rules="[v => !!v || '真实姓名不能为空']"
+                required
               ></v-text-field>
 
               <v-text-field
