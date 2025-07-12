@@ -16,7 +16,23 @@
               <p><strong>标题:</strong> {{ essay.title }}</p>
               <p><strong>学生:</strong> {{ essay.student?.name }}</p>
               <p><strong>班级:</strong> {{ essay.student?.class?.name ?? '未分配班级' }}</p>
-              <p><strong>最终得分:</strong> {{ essay.finalScore }} / {{ essay.essayAssignment.totalScore }}</p>
+              <v-list-item>
+                <v-list-item-title class="text-subtitle-1">
+                  <strong>系统评分:</strong>
+                  <v-chip :color="getScoreColor(essay.finalScore, essay.essayAssignment.totalScore)" dark small class="ml-2">
+                    {{ essay.finalScore }} / {{ essay.essayAssignment.totalScore }}
+                  </v-chip>
+                </v-list-item-title>
+              </v-list-item>
+              <v-list-item v-if="essay.score">
+                <v-list-item-title class="text-subtitle-1">
+                  <strong>人工复评:</strong>
+                  <v-chip color="purple" dark small class="ml-2">
+                    {{ essay.score }} / {{ essay.essayAssignment.totalScore }}
+                  </v-chip>
+                  <v-icon small color="purple" class="ml-2">mdi-account-check</v-icon>
+                </v-list-item-title>
+              </v-list-item>
             </v-card-text>
             <v-card-actions class="pa-4">
               <v-btn color="primary" block @click="imageDialog = true">查看原文图片</v-btn>
@@ -77,11 +93,11 @@
     <!-- Edit Dialog -->
     <v-dialog v-model="editDialog" persistent max-width="500px">
       <v-card>
-        <v-card-title>修改作文分数</v-card-title>
+        <v-card-title>人工复评打分</v-card-title>
         <v-card-text>
           <v-text-field
             v-model.number="editableScore"
-            label="最终得分"
+            label="复评分数"
             type="number"
             :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`]"
           ></v-text-field>
@@ -159,7 +175,7 @@ watch(essay, (newEssay) => {
 
 const openEditDialog = () => {
   if (essay.value) {
-    editableScore.value = essay.value.finalScore;
+    editableScore.value = essay.value.score || essay.value.finalScore;
     editDialog.value = true;
   }
 };
