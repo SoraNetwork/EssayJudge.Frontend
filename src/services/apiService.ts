@@ -35,7 +35,7 @@ export interface Assignment {
   createdAt: string;
   titleContext?: string; // For title context
   updatedAt: string;
-  Description?: string; // Added for convenience in frontend
+  description?: string; // Added for convenience in frontend
 }
 
 export interface Submission {
