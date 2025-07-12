@@ -56,7 +56,15 @@ export interface Submission {
   assignmentTitle?: string; // Added for convenience in frontend
 }
 
-interface ApiKey {
+// Define AIModel interface
+export interface AIModel {
+  id: string;
+  modelId: string;
+  serviceType?: string;
+  apiKeyId?: string;
+}
+
+export interface ApiKey {
   id: string;
   serviceType: string;
   key: string;
@@ -65,6 +73,18 @@ interface ApiKey {
   description?: string;
   isEnabled: boolean;
   createdAt: string;
+  AIModels?: AIModel[]; // Add AIModels property
+}
+
+// Define AIModelUsageSetting interface
+export interface AIModelUsageSetting {
+  id: string;
+  usageType: string;
+  aiModelId: string;
+  aiModel?: AIModel; // Include the related AIModel object
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ServerStatus {
@@ -259,23 +279,154 @@ export const updateSubmissionScore = async (id: string, score: number): Promise<
 // --- API Key 管理 API ---
 
 export const getApiKeys = async (): Promise<ApiKey[]> => {
+  // Assuming backend GET /api/ApiKey now includes AIModels
   const response = await api.get<ApiKey[]>('/api/ApiKey');
   return response.data;
 };
 
-export const createApiKey = async (apiKeyData: Omit<ApiKey, 'id' | 'createdAt'>): Promise<ApiKey> => {
-  const response = await api.post<ApiKey>('/api/ApiKey', apiKeyData);
+export const getApiKeyById = async (id: string): Promise<ApiKey> => {
+   // Assuming backend GET /api/ApiKey/{id} now includes AIModels
+  const response = await api.get<ApiKey>(`/api/ApiKey/${id}`);
   return response.data;
 };
 
-export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 'id' | 'createdAt'>>): Promise<ApiKey> => {
-  const response = await api.put<ApiKey>(`/api/ApiKey/${id}`, apiKeyData);
+
+export const createApiKey = async (apiKeyData: Omit<ApiKey, 'id' | 'createdAt' | 'AIModels'> & { modelIds?: string[] }): Promise<ApiKey> => {
+  // Backend expects form data, so we need to use FormData
+  const formData = new FormData();
+  formData.append('serviceType', apiKeyData.serviceType);
+  formData.append('key', apiKeyData.key);
+  if (apiKeyData.secret !== undefined && apiKeyData.secret !== null) formData.append('secret', apiKeyData.secret);
+  if (apiKeyData.endpoint !== undefined && apiKeyData.endpoint !== null) formData.append('endpoint', apiKeyData.endpoint);
+  if (apiKeyData.description !== undefined && apiKeyData.description !== null) formData.append('description', apiKeyData.description);
+  // Add modelIds if provided
+  if (apiKeyData.modelIds && apiKeyData.modelIds.length > 0) {
+      apiKeyData.modelIds.forEach(modelId => {
+          formData.append('modelIds', modelId);
+      });
+  }
+
+  const response = await api.post<ApiKey>('/api/ApiKey', formData, {
+     headers: {
+      'Content-Type': 'multipart/form-data' // Ensure correct content type for form data
+    }
+  });
   return response.data;
+};
+
+export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 'id' | 'createdAt' | 'AIModels'>> & { modelIds?: string[] }): Promise<void> => {
+   // Backend expects form data, so we need to use FormData
+  const formData = new FormData();
+  // Only append fields that are provided in the partial object
+  if (apiKeyData.serviceType !== undefined) formData.append('serviceType', apiKeyData.serviceType);
+  if (apiKeyData.key !== undefined) formData.append('key', apiKeyData.key);
+  if (apiKeyData.secret !== undefined) formData.append('secret', apiKeyData.secret);
+  if (apiKeyData.endpoint !== undefined) formData.append('endpoint', apiKeyData.endpoint);
+  if (apiKeyData.description !== undefined) formData.append('description', apiKeyData.description);
+  if (apiKeyData.isEnabled !== undefined) formData.append('isEnabled', apiKeyData.isEnabled.toString());
+
+  // Add modelIds if provided
+  // Note: Backend expects List<string> modelIds from form.
+  // If modelIds is explicitly set to an empty array, we should send it to clear models.
+  // If modelIds is undefined, we don't send the parameter, leaving existing models untouched.
+  if (apiKeyData.modelIds !== undefined) {
+       // Clear existing modelIds first by sending an empty list if needed, or just send the new list
+       // The backend PUT logic handles adding/removing based on the provided list vs existing.
+       apiKeyData.modelIds.forEach(modelId => {
+           formData.append('modelIds', modelId);
+       });
+       // If modelIds is an empty array, the loop won't run, and the 'modelIds' key won't be in formData.
+       // The backend needs to handle the absence of 'modelIds' or an empty list correctly.
+       // Based on the backend code, sending an empty list seems to be the way to remove all models.
+       // FormData doesn't easily support sending an *empty* list parameter explicitly if the list is empty.
+       // A common workaround is to send a special marker or rely on backend interpretation.
+       // Let's assume the backend correctly interprets the absence of the 'modelIds' key as "no change"
+       // and an empty list (if sent) as "remove all".
+       // To send an empty list explicitly, you might need to send an empty string for the key,
+       // or the backend might need to accept a JSON body instead of form data for complex updates.
+       // Sticking to form data as per backend code, we just append if the list is not empty.
+       // If you need to explicitly send an empty list via form data, backend might need adjustment
+       // or you might need to send a dummy value like `formData.append('modelIds', '');` if the list is empty.
+       // Let's assume the backend handles an empty list correctly if the parameter is present.
+       // To ensure the parameter is present even if the list is empty, we can add a check:
+       if (apiKeyData.modelIds.length === 0) {
+           // Append an empty value if the list is empty to signal removal
+           // This might depend on backend implementation, but sending an empty string is a common way
+           // to ensure the parameter key exists in the form data even with no values.
+           // The backend code seems to iterate over the values associated with the key,
+           // so an empty list of values should result in no models being added and existing ones being removed.
+           // Let's remove this explicit empty append as the backend code seems to handle the list correctly.
+           // If modelIds is an empty array, the forEach loop simply won't run, and the 'modelIds' key won't be added to formData.
+           // The backend PUT method checks `modelIds?.Distinct().ToList() ?? new List<string>()`. If the key is absent, `modelIds` will be null, resulting in an empty list. This seems correct.
+       } else {
+            apiKeyData.modelIds.forEach(modelId => {
+                formData.append('modelIds', modelId);
+            });
+       }
+  }
+
+
+  await api.put(`/api/ApiKey/${id}`, formData, {
+     headers: {
+      'Content-Type': 'multipart/form-data' // Ensure correct content type for form data
+    }
+  });
 };
 
 export const deleteApiKey = async (id: string): Promise<void> => {
   await api.delete(`/api/ApiKey/${id}`);
 };
+
+// --- AI Model API ---
+// Assuming a backend endpoint exists to get all AI Models
+export const getAllAIModels = async (): Promise<AIModel[]> => {
+  // Replace with the actual backend endpoint if different
+  const response = await api.get<AIModel[]>('/api/ApiKey/all-models'); // Using the new endpoint in ApiKeyController
+  return response.data;
+};
+
+
+// --- AI Model Usage Settings API ---
+
+export const getAIModelUsageSettings = async (): Promise<AIModelUsageSetting[]> => {
+  const response = await api.get<AIModelUsageSetting[]>('/api/ApiKey/model-usage-settings');
+  return response.data;
+};
+
+export const createAIModelUsageSetting = async (settingData: Omit<AIModelUsageSetting, 'id' | 'createdAt' | 'updatedAt' | 'aiModel'>): Promise<AIModelUsageSetting> => {
+   // Backend expects form data
+   const formData = new FormData();
+   formData.append('usageType', settingData.usageType);
+   formData.append('aiModelId', settingData.aiModelId);
+   formData.append('isEnabled', settingData.isEnabled.toString());
+
+   const response = await api.post<AIModelUsageSetting>('/api/ApiKey/model-usage-settings', formData, {
+      headers: {
+       'Content-Type': 'multipart/form-data'
+     }
+   });
+   return response.data;
+};
+
+export const updateAIModelUsageSetting = async (id: string, settingData: Partial<Omit<AIModelUsageSetting, 'id' | 'createdAt' | 'updatedAt' | 'aiModel'>>): Promise<void> => {
+   // Backend expects form data
+   const formData = new FormData();
+   // Only append fields that are provided in the partial object
+   if (settingData.usageType !== undefined) formData.append('usageType', settingData.usageType);
+   if (settingData.aiModelId !== undefined) formData.append('aiModelId', settingData.aiModelId);
+   if (settingData.isEnabled !== undefined) formData.append('isEnabled', settingData.isEnabled.toString());
+
+   await api.put(`/api/ApiKey/model-usage-settings/${id}`, formData, {
+      headers: {
+       'Content-Type': 'multipart/form-data'
+     }
+   });
+};
+
+export const deleteAIModelUsageSetting = async (id: string): Promise<void> => {
+  await api.delete(`/api/ApiKey/model-usage-settings/${id}`);
+};
+
 
 // --- Server Status API ---
 export const getServerStatus = async (): Promise<ServerStatus> => {
