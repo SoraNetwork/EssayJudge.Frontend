@@ -104,6 +104,7 @@ interface Essay {
   assignmentTitle?: string; // Make assignmentTitle optional to match Submission type
   finalScore?: number | null | undefined; // Make finalScore optional to match Submission type
   submissionDate: string; // Adjust type if it's a Date object
+  status?: string; // Assuming status is returned by searchSubmissions
   // Add other properties used in the template or headers
 }
 
@@ -117,19 +118,16 @@ interface Assignment {
 // Helper function to format date
 function formatDate(dateString: string) {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  // Add 8 hours for UTC+8
-  const date = new Date(dateString);
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options); // Use toLocaleString for both date and time
+  return new Date(dateString).toLocaleDateString(undefined, options);
 }
 
 // 表头定义
-const headers: any[] = [
-  { title: '学生姓名', key: 'studentName' },
-  { title: '作文题目', key: 'Title' },
+const headers = [
+  { title: '标题', key: 'title' },
+  { title: '学生', key: 'studentName' },
+  { title: '分数', key: 'finalScore' },
   { title: '提交时间', key: 'createdAt' },
-  { title: '得分', key: 'finalScore' },
-  { title: '操作', key: 'actions', sortable: false },
+  { title: '操作', key: 'actions', sortable: false }
 ]
 
 // 数据和状态
