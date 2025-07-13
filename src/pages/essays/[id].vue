@@ -15,7 +15,7 @@
             <v-card-text>
               <p><strong>标题:</strong> {{ essay.title }}</p>
               <p><strong>学生:</strong> {{ essay.student?.name }}</p>
-              <p><strong>班级:</strong> {{ essay.student?.class?.name ?? '未分配班级' }}</p>
+              <p><strong>班级:</strong> {{ classInfo?.name ?? '未分配班级' }}</p>
               <v-list-item>
                 <v-list-item-title class="text-subtitle-1">
                   <strong>系统评分:</strong>
@@ -35,8 +35,14 @@
               </v-list-item>
             </v-card-text>
             <v-card-actions class="pa-4">
-              <v-btn color="primary" block @click="imageDialog = true">查看原文图片</v-btn>
-              <v-btn color="secondary" block class="mt-2" @click="openEditDialog">修改分数</v-btn>
+              <v-row dense>
+                <v-col cols="12">
+                  <v-btn color="primary" block @click="imageDialog = true">查看原文图片</v-btn>
+                </v-col>
+                <v-col cols="12">
+                  <v-btn color="secondary" block @click="openEditDialog">修改分数</v-btn>
+                </v-col>
+              </v-row>
             </v-card-actions>
           </v-card>
         </v-col>
@@ -91,21 +97,113 @@
     </v-dialog>
 
     <!-- Edit Dialog -->
-    <v-dialog v-model="editDialog" persistent max-width="500px">
+    <v-dialog v-model="editDialog" persistent max-width="600px">
       <v-card>
-        <v-card-title>人工复评打分</v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model.number="editableScore"
-            label="复评分数"
-            type="number"
-            :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`]"
-          ></v-text-field>
-        </v-card-text>
-        <v-card-actions>
+        <v-toolbar color="primary" dark flat>
+          <v-toolbar-title>作文评分与分配</v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="editDialog = false">取消</v-btn>
-          <v-btn color="blue darken-1" text @click="updateScore">保存</v-btn>
+          <v-btn icon dark @click="editDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-toolbar>
+
+        <v-card-text class="pt-4">
+          <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field
+                  v-model.number="editableScore"
+                  label="复评分数"
+                  type="number"
+                  :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`]"
+                  :hint="`总分: ${essay.essayAssignment.totalScore}`"
+                  persistent-hint
+                  outlined
+                  dense
+                  clearable
+                >
+                  <template v-slot:append>
+                    <v-icon color="primary">mdi-pencil</v-icon>
+                  </template>
+                </v-text-field>
+              </v-col>
+              
+              <v-col cols="12">
+                <v-text-field
+                  v-model="searchQuery"
+                  label="搜索学生"
+                  placeholder="输入姓名、学号或班级进行搜索..."
+                  outlined
+                  dense
+                  clearable
+                  :loading="loadingStudents"
+                  :disabled="loadingStudents"
+                >
+                  <template v-slot:append>
+                    <v-icon color="primary">mdi-magnify</v-icon>
+                  </template>
+                </v-text-field>
+
+                <v-select
+                  v-model="selectedStudentId"
+                  :items="filteredStudents"
+                  item-title="name"
+                  item-value="id"
+                  label="选择学生"
+                  :loading="loadingStudents"
+                  :disabled="loadingStudents"
+                  :hint="currentClassInfo ? `班级: ${currentClassInfo.name}` : '未分配班级'"
+                  persistent-hint
+                  outlined
+                  dense
+                >
+                  <template v-slot:item="{ props, item }">
+                    <v-list-item v-bind="props">
+                      <template v-slot:prepend>
+                        <v-icon :color="item.raw.classId ? 'primary' : 'grey'">
+                          {{ item.raw.classId ? 'mdi-account-school' : 'mdi-account' }}
+                        </v-icon>
+                      </template>
+                      <v-list-item-title>
+                        {{ item.raw.name }}
+                        <span class="text-caption text--secondary ml-2">
+                          {{ item.raw.studentId }}
+                        </span>
+                      </v-list-item-title>
+                      <v-list-item-subtitle v-if="loadingClass && selectedStudentId === item.raw.id">
+                        <v-progress-linear indeterminate height="2"></v-progress-linear>
+                      </v-list-item-subtitle>
+                      <v-list-item-subtitle v-else>
+                        {{ getClassFromCache(item.raw.classId)?.name || '未分配班级' }}
+                      </v-list-item-subtitle>
+                    </v-list-item>
+                  </template>
+                </v-select>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn
+            variant="text"
+            color="grey-darken-1"
+            @click="editDialog = false"
+          >
+            取消
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            :loading="loading"
+            :disabled="editableScore === null"
+            @click="updateScore"
+          >
+            保存修改
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -114,19 +212,104 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getSubmissionById, updateSubmissionScore } from '@/services/apiService'; // Import from apiService
-import Vditor from 'vditor';
-import 'vditor/dist/index.css';
+import { getSubmissionById, updateSubmissionScore, getStudents, getClassById } from '@/services/apiService'
+import type { Student, Class } from '@/services/apiService'
+import Vditor from 'vditor'
+import 'vditor/dist/index.css'
 
 const route = useRoute()
 const essay = ref<any>(null)
 const loading = ref(true)
-const error = ref<string | null>(null);
-const imageDialog = ref(false);
-const editDialog = ref(false);
-const editableScore = ref<number | null>(null);
+const error = ref<string | null>(null)
+const imageDialog = ref(false)
+const editDialog = ref(false)
+const editableScore = ref<number | null>(null)
+const students = ref<Student[]>([])
+const selectedStudentId = ref<string | undefined>(undefined)
+const originalStudentId = ref<string | undefined>(undefined)
+const searchQuery = ref('')
+const loadingStudents = ref(false)
+const classInfo = ref<Class | null>(null)
+const loadingClass = ref(false)
+// 添加班级信息缓存
+const classCache = ref<Map<string, Class>>(new Map())
+const classCacheExpiry = ref<Map<string, number>>(new Map())
+const CACHE_EXPIRY_TIME = 5 * 60 * 1000 // 5分钟缓存过期时间
+
+const currentClassInfo = computed(() => {
+  if (selectedStudentId.value) {
+    const selectedStudent = students.value.find(s => s.id === selectedStudentId.value);
+    if (selectedStudent?.classId) {
+      // 如果有缓存的班级信息，优先使用缓存
+      const cachedClass = getClassFromCache(selectedStudent.classId);
+      if (cachedClass) {
+        return cachedClass;
+      }
+    }
+  }
+  return classInfo.value;
+});
+
+// 从缓存获取班级信息
+const getClassFromCache = (classId: string|undefined): Class | null => {
+  if(classId == undefined) return null;
+
+  const cachedClass = classCache.value.get(classId);
+  const expiryTime = classCacheExpiry.value.get(classId);
+  
+  if (cachedClass && expiryTime && Date.now() < expiryTime) {
+    return cachedClass;
+  }
+  
+  // 如果缓存过期，清除缓存
+  if (cachedClass) {
+    classCache.value.delete(classId);
+    classCacheExpiry.value.delete(classId);
+  }
+  
+  return null;
+};
+
+// 将班级信息存入缓存
+const setClassCache = (classId: string, classData: Class) => {
+  classCache.value.set(classId, classData);
+  classCacheExpiry.value.set(classId, Date.now() + CACHE_EXPIRY_TIME);
+};
+
+const fetchClassInfo = async (classId: string) => {
+  if (!classId) return;
+  
+  // 先尝试从缓存获取
+  const cachedClass = getClassFromCache(classId);
+  if (cachedClass) {
+    classInfo.value = cachedClass;
+    return;
+  }
+  
+  loadingClass.value = true;
+  try {
+    const data = await getClassById(classId);
+    classInfo.value = data;
+    // 存入缓存
+    setClassCache(classId, data);
+  } catch (err) {
+    console.error('Failed to load class info:', err);
+  } finally {
+    loadingClass.value = false;
+  }
+};
+
+// 将 computed 属性提到前面并添加类型
+const filteredStudents = computed<Student[]>(() => {
+  if (!searchQuery.value) return students.value;
+  const query = searchQuery.value.toLowerCase();
+  return students.value.filter(student => 
+    student.name.toLowerCase().includes(query) || 
+    student.studentId?.toLowerCase().includes(query)
+  );
+});
 
 const previewElement = ref<HTMLDivElement | null>(null);
 
@@ -142,16 +325,31 @@ const renderMarkdown = (markdown: string) => {
 };
 
 const fetchEssay = async () => {
-  const id = (route.params as { id: string }).id; // Assert that route.params has an id property of type string
+  const id = (route.params as { id: string }).id;
   try {
-    // Replace api.get with getSubmissionById
     const data = await getSubmissionById(id);
     essay.value = data;
+    // 获取作文当前学生的班级信息
+    if (data.student?.classId) {
+      await fetchClassInfo(data.student?.classId);
+    }
   } catch (err) {
     error.value = '加载作文失败，请稍后再试。'
     console.error(err)
   } finally {
     loading.value = false
+  }
+}
+
+const fetchStudents = async () => {
+  loadingStudents.value = true;
+  try {
+    students.value = await getStudents({});
+  } catch (err) {
+    console.error('Failed to load students:', err);
+    error.value = '加载学生列表失败';
+  } finally {
+    loadingStudents.value = false;
   }
 }
 
@@ -176,29 +374,56 @@ watch(essay, (newEssay) => {
 const openEditDialog = () => {
   if (essay.value) {
     editableScore.value = essay.value.score || essay.value.finalScore;
+    selectedStudentId.value = essay.value.studentId;
+    originalStudentId.value = essay.value.studentId;
+    searchQuery.value = '';
+    // 重新获取当前学生的班级信息
+    if (essay.value.student?.classId) {
+      fetchClassInfo(essay.value.student.classId);
+    }
     editDialog.value = true;
   }
 };
 
 const updateScore = async () => {
-  if (editableScore.value === null || essay.value === null) return; // Add null check for essay
-  const id = (route.params as { id: string }).id; // Assert that route.params has an id property of type string
+  if (editableScore.value === null || essay.value === null) return;
+  const id = (route.params as { id: string }).id;
+  
   try {
-    // Replace api.put with updateSubmissionScore
-    // Note: The original code used a POST to /api/EssaySubmissions/{id}/score.
-    // The apiService function updateSubmissionScore is implemented using PUT on the main resource.
-    // Ensure this matches your backend. If backend expects POST to /score endpoint, adjust apiService.
-    await updateSubmissionScore(id, editableScore.value);
+    // 只有当分配的学生发生改变时才传递 studentId
+    const studentChanged = selectedStudentId.value !== originalStudentId.value;
+    await updateSubmissionScore(
+      id, 
+      editableScore.value, 
+      studentChanged ? selectedStudentId.value : undefined
+    );
     editDialog.value = false;
-    await fetchEssay(); // Refresh data
+    await fetchEssay();
   } catch (err) {
-    console.error('Failed to update score:', err);
-    error.value = '更新分数失败。';
+    console.error('Failed to update:', err);
+    error.value = '更新失败';
   }
 };
 
-onMounted(() => {
-  fetchEssay();
+// 监听选中学生的变化
+watch(selectedStudentId, async (newStudentId) => {
+  if (newStudentId) {
+    const selectedStudent = students.value.find(s => s.id === newStudentId);
+    if (selectedStudent?.classId) {
+      await fetchClassInfo(selectedStudent.classId);
+    } else {
+      classInfo.value = null;
+    }
+  } else {
+    classInfo.value = null;
+  }
+});
+
+onMounted(async () => {
+  await Promise.all([
+    fetchEssay(),
+    fetchStudents()
+  ]);
 });
 
 </script>

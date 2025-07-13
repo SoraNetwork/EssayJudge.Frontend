@@ -18,7 +18,7 @@ export interface Student {
   studentCount?: number; // Used in Class list
 }
 
-interface Class {
+export interface Class {
   id: string;
   name: string;
   studentCount?: number; // Added for convenience in frontend
@@ -38,6 +38,11 @@ export interface Assignment {
   description?: string; // Added for convenience in frontend
 }
 
+export interface student{
+  name: string;
+  classId?: string; // Assuming student has a classId
+}
+
 export interface Submission {
   id: string;
   title: string; // Assuming submission has a title or gets it from assignment
@@ -54,6 +59,7 @@ export interface Submission {
   studentName?: string; // Added for convenience in frontend
   className?: string; // Added for convenience in frontend
   assignmentTitle?: string; // Added for convenience in frontend
+  student?: student; // Assuming student object is included in the response
 }
 
 // Define AIModel interface
@@ -262,17 +268,13 @@ export const submitSubmissionForEvaluation = async (id: string): Promise<void> =
   await api.post(`/EssaySubmission/${id}/evaluate`);
 };
 
-export const updateSubmissionScore = async (id: string, score: number): Promise<Submission> => {
-  // Assuming the backend endpoint is /EssaySubmission/{id}/score and accepts { score: number }
-  // Note: The original code used /api/EssaySubmissions/{id}/score, which might be incorrect based on other calls.
-  // Using /EssaySubmission/{id} with a PUT request and sending the full object including score might be more standard.
-  // Let's assume a specific endpoint for score update exists or use the PUT on the main resource.
-  // Based on the original code's PUT on /Student/{id}, let's assume PUT on /EssaySubmission/{id} is the way.
-  // However, the original code in [id].vue used a POST to /api/EssaySubmissions/{id}/score.
-  // Let's stick to the original POST endpoint for score update for now, assuming it's correct.
-  // If the backend uses PUT on the main resource, this function needs adjustment.
-   const response = await api.put<Submission>(`/EssaySubmission/${id}`, { finalScore: score });
-   return response.data;
+export const updateSubmissionScore = async (id: string, score: number, studentId?: string): Promise<void> => {
+  const formData = new FormData();
+  formData.append('score', score.toString());
+  if (studentId) {
+    formData.append('studentId', studentId);
+  }
+  await api.put(`/EssaySubmission/${id}`, formData);
 };
 
 
@@ -312,6 +314,10 @@ export const createApiKey = async (apiKeyData: Omit<ApiKey, 'id' | 'createdAt' |
     }
   });
   return response.data;
+};
+
+export const toggleApiKeyStatus = async (id: string): Promise<void> => {
+  await api.patch(`/api/ApiKey/${id}/toggle`);
 };
 
 export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 'id' | 'createdAt' | 'AIModels'>> & { modelIds?: string[] }): Promise<void> => {

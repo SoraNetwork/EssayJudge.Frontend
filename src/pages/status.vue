@@ -58,10 +58,10 @@
         <v-card>
           <v-card-title>构建信息</v-card-title>
           <v-list lines="one">
-            <v-list-item title="版本" :subtitle="status.build.version">
+            <v-list-item title="后端版本" :subtitle="status.build.version">
               <template v-slot:prepend><v-icon icon="mdi-tag-outline"></v-icon></template>
             </v-list-item>
-            <v-list-item title="Git Commit">
+            <v-list-item title="后端 Git Commit">
               <template v-slot:prepend><v-icon icon="mdi-source-commit"></v-icon></template>
               <template v-slot:subtitle>
                 <a
@@ -75,6 +75,26 @@
                   <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
                 </a>
                 <span v-else>{{ status.build.gitCommit }}</span>
+              </template>
+            </v-list-item>
+            <v-divider class="my-2"></v-divider>
+            <v-list-item title="前端版本" :subtitle="frontendVersion">
+              <template v-slot:prepend><v-icon icon="mdi-tag-outline"></v-icon></template>
+            </v-list-item>
+            <v-list-item title="前端 Git Commit">
+              <template v-slot:prepend><v-icon icon="mdi-source-commit"></v-icon></template>
+              <template v-slot:subtitle>
+                <a
+                  v-if="frontendGitCommit && frontendGitCommit !== 'N/A'"
+                  :href="`https://github.com/SoraNetwork/essayjudge.frontend/commit/${frontendGitCommit}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-decoration-none"
+                >
+                  {{ frontendGitCommit }}
+                  <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                </a>
+                <span v-else>{{ frontendGitCommit }}</span>
               </template>
             </v-list-item>
           </v-list>
@@ -147,6 +167,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getServerStatus, type ServerStatus } from '@/services/apiService';
+
+const frontendVersion = import.meta.env.VITE_APP_VERSION || 'N/A';
+const frontendGitCommit = import.meta.env.VITE_GIT_COMMIT || 'N/A';
 
 const status = ref<ServerStatus | null>(null);
 const loading = ref(true);

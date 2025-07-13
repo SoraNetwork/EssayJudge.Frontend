@@ -287,7 +287,8 @@
 import { ref, onMounted, watch } from 'vue'
 import {
   getApiKeys, createApiKey, updateApiKey, deleteApiKey as deleteApiKeyService, type ApiKey,
-  getAIModelUsageSettings, createAIModelUsageSetting, updateAIModelUsageSetting, deleteAIModelUsageSetting, getAllAIModels, type AIModelUsageSetting, type AIModel
+  getAIModelUsageSettings, createAIModelUsageSetting, updateAIModelUsageSetting, deleteAIModelUsageSetting, getAllAIModels, type AIModelUsageSetting, type AIModel,
+  toggleApiKeyStatus
 } from '@/services/apiService';
 
 // --- Tab State ---
@@ -431,7 +432,7 @@ const toggleApiKeyEnabled = async (item: ApiKey) => {
   item.isEnabled = !item.isEnabled;
 
   try {
-    await updateApiKey(item.id, { isEnabled: item.isEnabled });
+    await toggleApiKeyStatus(item.id);
     // No need to refetch the whole list if only toggling status
   } catch (error) {
     console.error('更新密钥状态失败:', error)
@@ -480,14 +481,14 @@ const commonModelReferences = [
     { id: "doubao-seed-1-6-flash-250615", provider: "火山引擎" },
     { id: "doubao-seed-1-6-thinking-250615", provider: "火山引擎" },
     { id: "deepseek-v3-250324", provider: "火山引擎" },
-    // OpenAI models
-    { id: "gpt-4o", provider: "OpenAI" },
-    { id: "gpt-3.5-turbo", provider: "OpenAI" },
+    // OpenAI models 
+    //{ id: "gpt-4o", provider: "OpenAI" },
+    //{ id: "gpt-3.5-turbo", provider: "OpenAI" },
     // Anthropic models
-    { id: "claude-3-opus-20240229", provider: "Anthropic" },
-    { id: "claude-3-sonnet-20240229", provider: "Anthropic" },
-    { id: "claude-3-haiku-20240307", provider: "Anthropic" },
-    // Add other common models as needed
+    //{ id: "claude-3-opus-20240229", provider: "Anthropic" },
+    //{ id: "claude-3-sonnet-20240229", provider: "Anthropic" },
+    //{ id: "claude-3-haiku-20240307", provider: "Anthropic" },
+    // Add other common models as needed 
 ];
 
 
@@ -616,7 +617,7 @@ const toggleSettingEnabled = async (item: AIModelUsageSetting) => {
     // Ensure all required fields for the backend model are sent
     await updateAIModelUsageSetting(item.id, {
       usageType: item.usageType, // Include existing usageType
-      aiModelId: item.aiModelId, // Include existing aiModelId
+      //aiModelId: item.id, // Include existing aiModelId
       isEnabled: item.isEnabled // Include the new isEnabled status
     });
     // No need to refetch the whole list if only toggling status

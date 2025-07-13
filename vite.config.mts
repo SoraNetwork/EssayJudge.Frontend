@@ -13,6 +13,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 
+import { execSync } from 'node:child_process'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -69,7 +71,11 @@ export default defineConfig({
       'unplugin-vue-router/data-loaders/basic',
     ],
   },
-  define: { 'process.env': {} },
+  define: {
+    'process.env': {}, 
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version),
+    'import.meta.env.VITE_GIT_COMMIT': JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('src', import.meta.url)),
