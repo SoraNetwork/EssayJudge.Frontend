@@ -126,8 +126,8 @@ function formatDate(dateString: string) {
 // 表头定义
 const headers: any[] = [
   { title: '学生姓名', key: 'studentName' },
-  { title: '测验题目', key: 'assignmentTitle' },
-  { title: '提交时间', key: 'submissionDate' },
+  { title: '作文题目', key: 'Title' },
+  { title: '提交时间', key: 'createdAt' },
   { title: '得分', key: 'finalScore' },
   { title: '操作', key: 'actions', sortable: false },
 ]
