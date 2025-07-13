@@ -24,7 +24,7 @@
                   </v-chip>
                 </v-list-item-title>
               </v-list-item>
-              <v-list-item v-if="essay.score">
+              <v-list-item v-if="essay.score && essay.score != 0">
                 <v-list-item-title class="text-subtitle-1">
                   <strong>人工复评:</strong>
                   <v-chip color="purple" dark small class="ml-2">
