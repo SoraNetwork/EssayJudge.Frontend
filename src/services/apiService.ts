@@ -12,7 +12,10 @@ export interface Student {
   name: string;
   studentId: string;
   classId?: string;
-  className?: string; // Added for convenience in frontend
+  class?: { // 添加嵌套的 class 对象
+    id: string;
+    name: string;
+  };
   phone?: string;
   email?: string;
   studentCount?: number; // Used in Class list

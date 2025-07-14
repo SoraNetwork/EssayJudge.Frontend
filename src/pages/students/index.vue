@@ -2,7 +2,10 @@
   <div>
     <div class="d-flex justify-space-between align-center mb-4">
       <h1 class="text-h4">学生管理</h1>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="dialog = true">添加学生</v-btn>
+      <div>
+        <v-btn color="secondary" prepend-icon="mdi-upload" @click="importDialog = true" class="mr-2">导入学生</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-plus" @click="dialog = true">添加学生</v-btn>
+      </div>
     </div>
 
     <!-- 筛选条件 -->
@@ -122,13 +125,39 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 导入学生对话框 -->
+    <v-dialog v-model="importDialog" max-width="500px">
+      <v-card>
+        <v-card-title>
+          <span class="text-h5">导入学生 (CSV 格式文本)</span>
+        </v-card-title>
+        <v-card-text>
+          <v-alert type="info" variant="tonal" class="mb-4">
+            请粘贴格式为 "姓名,学号,班级名称" 的文本，每行一条记录。
+          </v-alert>
+          <v-textarea
+            v-model="csvText"
+            label="粘贴学生列表 (CSV 格式)"
+            prepend-icon="mdi-clipboard-text"
+            :rules="[v => !!v || '请粘贴文本']"
+            rows="10"
+          ></v-textarea>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="error" variant="text" @click="importDialog = false; csvText = ''">取消</v-btn>
+          <v-btn color="primary" @click="uploadCsv" :loading="importing" :disabled="!csvText">上传并导入</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-// Import Student type from apiService
+// 从 apiService 导入 Student 类型
 import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
 
 interface Class {
@@ -136,16 +165,16 @@ interface Class {
   name: string;
 }
 
-// Define a type for the form data, based on the imported Student type
-// It allows classId to be null for the select component
-// Explicitly define properties needed for the form
+// 定义表单数据的类型，基于导入的 Student 类型
+// 允许 classId 为 null 以适应 select 组件
+// 显式定义表单所需的属性
 interface EditedStudent {
   id: string;
   name: string;
   studentId: string;
   classId: string | null;
-  // Add other properties from Student if needed in the form, e.g., className
-  className?: string;
+  // 如果表单中需要 Student 的其他属性，例如 className，请在此添加
+  className?: string; // Keep className here as it's used in the form/table
 }
 
 // 表格列定义
@@ -157,15 +186,23 @@ const headers = [
 ]
 
 // 数据和状态
-const students = ref<Student[]>([])
+// Update students ref type to include className for table display
+const students = ref<(Student & { className?: string })[]>([])
 const classes = ref<Class[]>([])
 const loading = ref(false)
-const dialog = ref(false)
+const dialog = ref(false) // 添加/编辑对话框
 const deleteDialog = ref(false)
-const saving = ref(false)
+const saving = ref(false) // 保存 (添加/编辑) 状态
 const deleting = ref(false)
 const isEditing = ref(false)
 const form = ref<any>(null)
+
+// 导入相关的新状态
+const importDialog = ref(false);
+// 将 csvFile 改为 csvText，类型改为 string
+const csvText = ref<string>(''); // 使用 string 存储粘贴的文本
+const importing = ref(false); // 导入加载状态
+
 
 // 筛选条件
 const filters = ref({
@@ -174,12 +211,11 @@ const filters = ref({
 });
 
 // 当前编辑的项目
-// 当前编辑的项目
-const editedItem = ref<EditedStudent>({ // Use the EditedStudent type
+const editedItem = ref<EditedStudent>({ // 使用 EditedStudent 类型
   id: '',
   name: '',
   studentId: '',
-  classId: null, // Allow null for initial state and no selection
+  classId: null, // 允许 null 作为初始状态和未选择状态
 })
 // 要删除的项目
 const itemToDelete = ref<Student | null>(null)
@@ -188,7 +224,7 @@ const itemToDelete = ref<Student | null>(null)
 async function fetchStudents() {
   loading.value = true
   try {
-    // Construct filters object, excluding null values
+    // 构建筛选对象，排除 null 值
     const effectiveFilters: { classId?: string; searchTerm?: string } = {};
     if (filters.value.classId !== null && filters.value.classId !== undefined) {
       effectiveFilters.classId = filters.value.classId;
@@ -198,7 +234,12 @@ async function fetchStudents() {
     }
 
     const data = await getStudents(effectiveFilters);
-    students.value = data || [];
+    // Map the data to add className derived from the nested class object
+    students.value = data.map(item => ({
+      ...item,
+      // Derive className from item.class.name if item.class exists
+      className: item.class?.name || '无班级' // Provide a default if class is null/undefined
+    })) || [];
   } catch (error) {
     console.error('获取学生列表失败:', error)
   } finally {
@@ -220,7 +261,13 @@ function resetEditedItem() {
 function editStudent(item: Student) {
   isEditing.value = true;
   // Ensure all properties are copied, including id
-  editedItem.value = { ...item, classId: item.classId || null }; // Handle potential null classId
+  // When editing, we need the classId for the select dropdown
+  editedItem.value = {
+    ...item,
+    classId: item.classId || null, // Use classId for editing
+    // className is not needed for the form, but keep it if EditedStudent requires it
+    // className: item.class?.name || '无班级' // This is derived, not needed for editing data
+  };
   dialog.value = true;
 }
 
@@ -244,8 +291,8 @@ async function saveStudent() {
     if (isEditing.value) {
       // Ensure id is passed for update
       if (!editedItem.value.id) {
-         console.error("Cannot update student without an ID.");
-         return; // Or handle this error appropriately
+         console.error("更新学生时缺少 ID。");
+         return; // 或者适当处理此错误
       }
       // Prepare data for update, excluding id and className, and handling null classId
       const dataToUpdate: { name: string; studentId: string; classId?: string } = {
@@ -255,20 +302,24 @@ async function saveStudent() {
       // Only include classId if it's not null, as the API expects string | undefined, not null
       if (editedItem.value.classId !== null) {
         dataToUpdate.classId = editedItem.value.classId;
+      } else {
+        // If classId is explicitly set to null in the form, send undefined or null depending on API
+        // Assuming API expects undefined to mean "no change" and null to mean "remove class"
+        // Let's send undefined if null is selected in the form, meaning no class change
+        // If you need to explicitly remove a student from a class, the API needs to support sending null/empty classId
+        // For now, if null is selected, we just don't include classId in the update payload.
       }
+
 
       await updateStudent(editedItem.value.id, dataToUpdate);
     } else {
       // Prepare data for create, excluding id and className
-      // The form validation ensures classId is not null here
-      const dataToCreate: { name: string; studentId: string; classId?: string } = {
+      // The form validation ensures classId is not null here for creation
+      const dataToCreate: { name: string; studentId: string; classId: string } = { // classId is required for creation
         name: editedItem.value.name,
         studentId: editedItem.value.studentId,
+        classId: editedItem.value.classId!, // Assert non-null because form validation requires it
       };
-      // Include classId only if it's not null
-      if (editedItem.value.classId !== null) {
-        dataToCreate.classId = editedItem.value.classId;
-      }
       await createStudent(dataToCreate);
     }
     dialog.value = false;
@@ -316,5 +367,107 @@ async function fetchClasses() {
   }
 }
 
+// --- CSV 导入的新方法 ---
+
+async function uploadCsv() {
+  // 检查是否有文本内容
+  if (!csvText.value) {
+    console.error("未粘贴文本内容。");
+    return;
+  }
+
+  importing.value = true;
+  const text = csvText.value;
+
+  // 获取班级列表并创建名称到ID的映射
+  let classNameToIdMap = new Map<string, string>();
+  try {
+    const classList = await getClasses();
+    classList.forEach(cls => {
+      classNameToIdMap.set(cls.name.trim(), cls.id);
+    });
+  } catch (error) {
+    console.error('获取班级列表失败，无法进行导入:', error);
+    importing.value = false;
+    // 可选：显示用户友好的错误消息
+    return;
+  }
+
+
+  const lines = text.split('\n').filter(line => line.trim() !== ''); // 按行分割，移除空行
+  // 存储准备导入的学生数据 (包含查找到的 classId)
+  const studentsToImport: { name: string; studentId: string; classId: string }[] = [];
+  let hasError = false;
+  let failedImports = 0; // Track failures during parsing/lookup
+
+  for (const line of lines) {
+    const parts = line.split(',');
+    // 期望格式: 姓名,学号,班级名称
+    if (parts.length === 3) {
+      const [name, studentId, className] = parts.map(p => p.trim());
+      // 检查字段是否为空
+      if (name && studentId && className) {
+         // 根据班级名称查找班级ID
+         const classId = classNameToIdMap.get(className);
+         if (classId) {
+            studentsToImport.push({ name, studentId, classId });
+         } else {
+            console.warn(`跳过学生 "${name}" (${studentId})：未找到班级名称 "${className}" 对应的班级ID。`);
+            failedImports++; // Increment failed count for lookup failures
+            hasError = true;
+         }
+      } else {
+         console.warn(`跳过无效行（字段为空）：${line}`);
+         failedImports++; // Increment failed count for parsing failures
+         hasError = true;
+      }
+    } else {
+      console.warn(`跳过无效行（字段数量错误）：${line}`);
+      failedImports++; // Increment failed count for parsing failures
+      hasError = true;
+    }
+  }
+
+  if (studentsToImport.length === 0) {
+      console.warn("粘贴的文本中未找到有效的学生数据或所有班级名称均无效。");
+      importing.value = false;
+      // 可选：显示用户友好的消息，说明有多少行被跳过
+      if (failedImports > 0) {
+          console.warn(`共跳过 ${failedImports} 行无效或班级名称未找到的记录。`);
+      }
+      return;
+  }
+
+  let successfulImports = 0;
+
+  // 现在 studentsToImport 包含 name, studentId, 和查找到的 classId
+  for (const studentData of studentsToImport) {
+    try {
+      // 使用现有的 createStudent API 调用，studentData 包含 name, studentId, classId
+      await createStudent(studentData);
+      successfulImports++;
+    } catch (error) {
+      console.error(`导入学生失败 ${studentData.name} (${studentData.studentId}):`, error);
+      failedImports++; // Increment failed count for API call failures
+      hasError = true; // 标记处理过程中存在错误
+    }
+  }
+
+  importing.value = false;
+  importDialog.value = false;
+  // 清空文本区域
+  csvText.value = ''; // 清空粘贴的文本
+
+  // 可选：显示摘要消息
+  if (hasError || failedImports > 0) {
+      console.warn(`CSV 文本导入完成，存在问题。成功：${successfulImports}，失败：${failedImports}。请检查控制台获取详情。`);
+      // 您可能希望在此处显示一个 snackbar 或 alert
+  } else {
+      console.log(`CSV 文本导入成功。总共导入学生：${successfulImports}。`);
+      // 您可能希望在此处显示一个成功 snackbar
+  }
+
+  fetchStudents(); // 导入后刷新学生列表
+}
 </script>
 
