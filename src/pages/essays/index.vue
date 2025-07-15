@@ -16,11 +16,20 @@
               v-model="filters.assignmentId"
               label="测验题目"
               :items="assignments"
-              item-title="title"
               item-value="id"
               clearable
               @update:model-value="fetchEssays"
-            ></v-select>
+            >
+              <!-- 参照用户提供的示例，修改选择项和列表项的显示 -->
+              <template v-slot:selection="{ item }">
+                <span>{{ item.raw.description }}</span>
+              </template>
+              <template v-slot:item="{ props, item }">
+                <v-list-item v-bind="props" :title="item.raw.description">
+                  <v-list-item-subtitle>{{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
+                </v-list-item>
+              </template>
+            </v-select>
           </v-col>
           <v-col cols="12" md="4">
             <v-select
@@ -42,7 +51,7 @@
       </v-card-text>
     </v-card>
 
-    <!-- 作文列表 -->
+    <!-- 学生列表 -->
     <v-card>
       <v-card-text>
         <v-data-table
@@ -112,13 +121,18 @@ interface Essay {
 interface Assignment {
   id: string | number;
   title: string;
+  createdAt: string; // Ensure createdAt is included for display
+  description?: string; // Ensure description is included for display
   // Add other properties if needed
 }
 
 // Helper function to format date
 function formatDate(dateString: string) {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  const date = new Date(dateString);
+  // 加8小时，转换为UTC+8
+  date.setHours(date.getHours() + 8);
+  return date.toLocaleString(undefined, options); // 使用toLocaleString同时显示日期和时间
 }
 
 // 表头定义
@@ -126,7 +140,7 @@ const headers = [
   { title: '标题', key: 'title' },
   { title: '学生', key: 'studentName' },
   { title: '分数', key: 'finalScore' },
-  { title: '提交时间', key: 'createdAt' },
+  { title: '提交时间', key: 'createdAt' }, // Assuming 'createdAt' is the key for submissionDate in the items
   { title: '操作', key: 'actions', sortable: false }
 ]
 
@@ -181,6 +195,10 @@ function getScoreColor(score: number | null | undefined) {
 async function fetchAssignments() {
   try {
     const data = await getAssignments();
+    // Ensure the data structure matches the Assignment interface,
+    // particularly including 'createdAt' and 'description' if the API provides them.
+    // If the API returns 'titleContext' instead of 'description', you might need to map it here.
+    // Assuming the API returns 'description' and 'createdAt' as per the template slots.
     assignments.value = data as unknown as Assignment[] || []
   } catch (error) {
     console.error('获取测验列表失败:', error)
