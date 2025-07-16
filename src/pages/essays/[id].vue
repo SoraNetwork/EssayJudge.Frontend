@@ -42,6 +42,12 @@
                 <v-col cols="12">
                   <v-btn color="secondary" block @click="openEditDialog">修改分数</v-btn>
                 </v-col>
+                <v-col cols="12">
+                  <v-btn color="info" block @click="exportToPDF" :loading="exportingPDF">
+                    <v-icon left>mdi-file-word</v-icon>
+                    导出Word
+                  </v-btn>
+                </v-col>
               </v-row>
             </v-card-actions>
           </v-card>
@@ -59,10 +65,9 @@
         <v-col cols="12" lg="8">
           <v-card>
             <v-card-title>综合评判</v-card-title>
-                        <v-card-text style="white-space: normal">
-              <div ref="previewElement" class="markdown-body"></div>
+            <v-card-text class="markdown-body">
+              <div v-html="renderedMarkdown"></div>
             </v-card-text>
-
           </v-card>
         </v-col>
         <v-col cols="12" lg="4">
@@ -115,7 +120,7 @@
                   v-model.number="editableScore"
                   label="复评分数"
                   type="number"
-                  :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`]"
+                  :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v > 0 || `分数必须大于0`]"
                   :hint="`总分: ${essay.essayAssignment.totalScore}`"
                   persistent-hint
                   outlined
@@ -208,6 +213,33 @@
       </v-card>
     </v-dialog>
 
+    <!-- 用于PDF导出的隐藏内容 -->
+    <div ref="pdfContent" style="display: none;">
+      <div class="pdf-container">
+        <h1>{{ essay?.title }}</h1>
+        
+        <div class="info-section">
+          <p><strong>学生姓名：</strong>{{ essay?.student?.name }}</p>
+          <p><strong>班级：</strong>{{ classInfo?.name }}</p>
+          <p><strong>年级：</strong>{{ essay?.essayAssignment?.grade }}</p>
+          <p><strong>题目：</strong>{{ essay?.essayAssignment?.titleContext }}</p>
+          <p><strong>得分：</strong>{{ essay?.finalScore }}</p>
+        </div>
+
+        <div class="judge-section">
+          <div v-html="renderedMarkdown"></div>
+        </div>
+
+        <div class="ai-results">
+          <h2>AI评分详情</h2>
+          <div v-for="result in essay?.aiResults" :key="result.id" class="ai-result-item">
+            <h3>{{ result.modelName }}</h3>
+            <p>{{ result.feedback }}</p>
+            <p class="score">得分：{{ result.score }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </v-container>
 </template>
 
@@ -216,8 +248,22 @@ import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getSubmissionById, updateSubmissionScore, getStudents, getClassById } from '@/services/apiService'
 import type { Student, Class } from '@/services/apiService'
-import Vditor from 'vditor'
-import 'vditor/dist/index.css'
+import MarkdownIt from 'markdown-it'
+import 'github-markdown-css/github-markdown.css'
+import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle, type IParagraphOptions } from 'docx'
+import { saveAs } from 'file-saver'
+
+// 初始化 markdown-it 时添加更多配置
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  breaks: true,    // 转换段落里的 '\n' 到 <br>
+  highlight: function (str, lang) {
+    // 可以在这里添加代码高亮功能
+    return str;
+  }
+})
 
 const route = useRoute()
 const essay = ref<any>(null)
@@ -311,18 +357,11 @@ const filteredStudents = computed<Student[]>(() => {
   );
 });
 
-const previewElement = ref<HTMLDivElement | null>(null);
-
-const renderMarkdown = (markdown: string) => {
-  if (previewElement.value) {
-    Vditor.preview(previewElement.value, markdown, {
-      after: () => {
-        // You can add any callbacks here if needed
-      },
-      mode: 'dark'
-    });
-  }
-};
+// 添加计算属性用于markdown渲染
+const renderedMarkdown = computed(() => {
+  if (!essay.value?.judgeResult) return '';
+  return md.render(essay.value.judgeResult);
+});
 
 const fetchEssay = async () => {
   const id = (route.params as { id: string }).id;
@@ -361,15 +400,6 @@ const getScoreColor = (score: number | null, totalScore: number) => {
   if (percentage >= 60) return 'orange'
   return 'red'
 }
-
-watch(essay, (newEssay) => {
-  if (newEssay?.judgeResult) {
-    nextTick(() => {
-      renderMarkdown(newEssay.judgeResult);
-    });
-  }
-}, { deep: true });
-
 
 const openEditDialog = () => {
   if (essay.value) {
@@ -426,61 +456,274 @@ onMounted(async () => {
   ]);
 });
 
+// 存储PDF导出内容的DOM引用
+const pdfContent = ref<HTMLElement | null>(null);
+// 控制导出按钮加载状态的标志
+const exportingPDF = ref(false);
+
+// 将Markdown文本转换为DOCX段落数组的函数
+const convertMarkdownToParagraphs = (markdownText: string): Array<Paragraph | Table> => {
+  // 将Markdown转换为HTML
+  const html = md.render(markdownText);
+  // 创建DOM解析器
+  const parser = new DOMParser();
+  // 解析HTML字符串为DOM文档
+  const doc = parser.parseFromString(html, 'text/html');
+  // 存储转换后的段落数组
+  const elements: Array<Paragraph | Table> = [];
+
+  // 处理单个DOM节点的函数，返回对应的DOCX段落对象
+  const processNode = (node: Element): Paragraph | Paragraph[] | Table => {
+    switch (node.tagName.toLowerCase()) {
+      // 处理一级标题
+      case 'h1':
+        return new Paragraph({ text: node.textContent || '', heading: HeadingLevel.HEADING_1 });
+      // 处理二级标题
+      case 'h2':
+        return new Paragraph({ text: node.textContent || '', heading: HeadingLevel.HEADING_2 });
+      // 处理三级标题
+      case 'h3':
+        return new Paragraph({ text: node.textContent || '', heading: HeadingLevel.HEADING_3 });
+      // 处理普通段落
+      case 'p':
+        return new Paragraph({ text: node.textContent || '' });
+      // 处理引用块
+      case 'blockquote':
+        return new Paragraph({
+          text: node.textContent || '',
+          indent: { left: 720 },
+          border: { left: { style: 'single', size: 12, color: '666666' } }
+        });
+      // 处理无序列表和有序列表
+      case 'ul':
+      case 'ol':
+        return Array.from(node.children).map(li => 
+          new Paragraph({
+            text: li.textContent || '',
+            bullet: { level: 0 }
+          })
+        );
+      // 处理代码块
+      case 'pre':
+        return new Paragraph({
+          text: node.textContent || '',
+          spacing: { before: 240, after: 240 },
+          shading: { type: 'solid', fill: 'F0F0F0' }
+        });
+      // 处理表格
+      case 'table':
+        const rows = Array.from(node.querySelectorAll('tr'));
+        return new Table({
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1 },
+            bottom: { style: BorderStyle.SINGLE, size: 1 },
+            left: { style: BorderStyle.SINGLE, size: 1 },
+            right: { style: BorderStyle.SINGLE, size: 1 },
+            insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+            insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+          },
+          rows: rows.map(row => {
+            const cells = Array.from(row.querySelectorAll('th, td'));
+            return new TableRow({
+              children: cells.map(cell => {
+                return new TableCell({
+                  children: [new Paragraph(cell.textContent || '')],
+                  verticalAlign: "center"
+                });
+              }),
+            });
+          }),
+        });
+      // 处理其他类型节点
+      default:
+        return new Paragraph({ text: node.textContent || '' });
+    }
+  };
+
+  // 遍历处理所有根节点
+  Array.from(doc.body.children).forEach(node => {
+    const result = processNode(node);
+    // 处理返回结果可能是数组的情况
+    if (Array.isArray(result)) {
+      elements.push(...result);
+    } else {
+      elements.push(result);
+    }
+  });
+
+  return elements;
+};
+
+// 导出为Word文档的主函数
+const exportToPDF = async () => {
+  // 检查是否有作文数据
+  if (!essay.value) return;
+  
+  // 设置导出状态为true
+  exportingPDF.value = true;
+  try {
+    // 创建Word文档对象
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            margin: {
+              top: "20mm",       // 默认值为20mm，减少5mm
+              right: "12.7mm",     // 保持默认值
+              bottom: "20mm",    // 默认值为20mm，减少5mm
+              left: "12.7mm",      // 保持默认值
+            }
+          }
+        },
+        children: [
+          // 添加作文标题
+          /*(new Paragraph({
+            text: essay.value.title,
+            heading: HeadingLevel.HEADING_1,
+          }),*/
+          // 添加学生信息
+          new Paragraph({
+            children: [
+              new TextRun({ text: "学生姓名：", bold: true }),
+              new TextRun(essay.value.student?.name || ""),
+            ],
+          }),
+          // 添加班级信息
+          new Paragraph({
+            children: [
+              new TextRun({ text: "班级：", bold: true }),
+              new TextRun(classInfo.value?.name || "未分配班级"),
+            ],
+          }),
+          // 添加年级信息
+          new Paragraph({
+            children: [
+              new TextRun({ text: "年级：", bold: true }),
+              new TextRun(essay.value.essayAssignment?.grade || ""),
+            ],
+          }),
+          // 添加题目信息
+          new Paragraph({
+            children: [
+              new TextRun({ text: "题目：", bold: true }),
+              new TextRun(essay.value.essayAssignment?.titleContext || ""),
+            ],
+          }),
+          // 添加得分信息
+          new Paragraph({
+            children: [
+              new TextRun({ text: "得分：", bold: true }),
+              new TextRun(essay.value.finalScore?.toString() || ""),
+            ],
+          }),
+          // 添加综合评判标题
+          /*
+          new Paragraph({
+            text: "综合评判",
+            heading: HeadingLevel.HEADING_2,
+          }),*/
+          // 添加转换后的评判内容
+          ...convertMarkdownToParagraphs(essay.value.judgeResult || ""),
+          // 添加AI评分详情标题
+          new Paragraph({
+            text: "AI评分详情",
+            heading: HeadingLevel.HEADING_2,
+          }),
+          // 添加所有AI评分结果
+          ...essay.value.aiResults.map((result: { modelName: any; feedback: string | IParagraphOptions; score: { toString: () => any } }) => [
+            new Paragraph({
+              text: result.modelName,
+              heading: HeadingLevel.HEADING_3,
+            }),
+            new Paragraph(result.feedback),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "得分：", bold: true }),
+                new TextRun(result.score?.toString() || "N/A"),
+              ],
+            }),
+          ]).flat(),
+        ],
+      }],
+    });
+
+    // 将文档转换为Blob对象
+    const buffer = await Packer.toBlob(doc);
+    // 使用FileSaver保存文件
+    saveAs(buffer, `${essay.value.title || '作文评分'}.docx`);
+  } catch (error) {
+    // 打印导出错误
+    console.error('Word导出失败:', error);
+  } finally {
+    // 重置导出状态
+    exportingPDF.value = false;
+  }
+};
+
 </script>
+
 <style>
 @import 'github-markdown-css/github-markdown.css';
 
-.v-card-text {
-    white-space: pre-wrap;
-    font-size: 1.2rem; /* 增加字体大小 */
-    line-height: 1.8; /* 调整行间距 */
-}
-
 .markdown-body {
-    box-sizing: border-box;
-    min-width: 200px;
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 25px;
-    background-color: inherit !important;
-    color: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  background-color: transparent !important;
+  color: inherit !important;
 }
 
-/* Custom styles for vditor rendered content */
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  font-size: 1.2rem !important;
-  margin-top: 12px !important;
-  margin-bottom: 8px !important;
-}
-
-.markdown-body p,
-.markdown-body ul,
-.markdown-body ol,
-.markdown-body li {
-  font-size: 1rem !important;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
 }
 
 .markdown-body p {
-    line-height: 1.6 !important;
+  margin: 0.5em 0;
 }
 
-/* Remove additional padding and margin from markdown-body if it's inside a v-card-text */
-.v-card-text > .markdown-body {
-    padding: 0;
-    margin: 0;
+.markdown-body pre,
+.markdown-body code {
+  background-color: rgba(110, 118, 129, 0.1) !important;
+  border-radius: 4px;
 }
 
-/* Remove margin from the first and last elements inside the markdown body */
-.markdown-body > :first-child {
-    margin-top: 0 !important;
+.markdown-body pre {
+  padding: 1em;
 }
 
-.markdown-body > :last-child {
-    margin-bottom: 0 !important;
+.markdown-body code {
+  padding: 0.2em 0.4em;
+}
+
+.markdown-body blockquote {
+  padding: 0 1em;
+  color: #8b949e;
+  border-left: 0.25em solid #30363d;
+}
+
+/* PDF导出样式 */
+.pdf-container {
+  padding: 20px;
+  font-family: "Microsoft YaHei", sans-serif;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.info-section,
+.judge-section,
+.ai-results,
+.ai-result-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 20px;
+  width: 100%;
 }
 </style>

@@ -258,8 +258,8 @@ const headers = [
   { title: '学生', key: 'studentName' },
   { title: '班级', key: 'className' },
   { title: '状态', key: 'status' },
-  { title: '分数', key: 'score' },
-  { title: '提交时间', key: 'submissionDate' },
+  { title: '分数', key: 'finalScore' },
+  { title: '提交时间', key: 'createdAt' },
   { title: '操作', key: 'actions', sortable: false }
 ]
 
