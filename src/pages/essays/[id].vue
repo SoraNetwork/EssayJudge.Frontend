@@ -59,10 +59,9 @@
         <v-col cols="12" lg="8">
           <v-card>
             <v-card-title>综合评判</v-card-title>
-                        <v-card-text style="white-space: normal">
-              <div ref="previewElement" class="markdown-body"></div>
+            <v-card-text class="markdown-body">
+              <div v-html="renderedMarkdown"></div>
             </v-card-text>
-
           </v-card>
         </v-col>
         <v-col cols="12" lg="4">
@@ -216,8 +215,20 @@ import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getSubmissionById, updateSubmissionScore, getStudents, getClassById } from '@/services/apiService'
 import type { Student, Class } from '@/services/apiService'
-import Vditor from 'vditor'
-import 'vditor/dist/index.css'
+import MarkdownIt from 'markdown-it'
+import 'github-markdown-css/github-markdown.css'
+
+// 初始化 markdown-it 时添加更多配置
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  breaks: true,    // 转换段落里的 '\n' 到 <br>
+  highlight: function (str, lang) {
+    // 可以在这里添加代码高亮功能
+    return str;
+  }
+})
 
 const route = useRoute()
 const essay = ref<any>(null)
@@ -311,18 +322,11 @@ const filteredStudents = computed<Student[]>(() => {
   );
 });
 
-const previewElement = ref<HTMLDivElement | null>(null);
-
-const renderMarkdown = (markdown: string) => {
-  if (previewElement.value) {
-    Vditor.preview(previewElement.value, markdown, {
-      after: () => {
-        // You can add any callbacks here if needed
-      },
-      mode: 'dark'
-    });
-  }
-};
+// 添加计算属性用于markdown渲染
+const renderedMarkdown = computed(() => {
+  if (!essay.value?.judgeResult) return '';
+  return md.render(essay.value.judgeResult);
+});
 
 const fetchEssay = async () => {
   const id = (route.params as { id: string }).id;
@@ -361,15 +365,6 @@ const getScoreColor = (score: number | null, totalScore: number) => {
   if (percentage >= 60) return 'orange'
   return 'red'
 }
-
-watch(essay, (newEssay) => {
-  if (newEssay?.judgeResult) {
-    nextTick(() => {
-      renderMarkdown(newEssay.judgeResult);
-    });
-  }
-}, { deep: true });
-
 
 const openEditDialog = () => {
   if (essay.value) {
@@ -427,60 +422,51 @@ onMounted(async () => {
 });
 
 </script>
+
 <style>
 @import 'github-markdown-css/github-markdown.css';
 
-.v-card-text {
-    white-space: pre-wrap;
-    font-size: 1.2rem; /* 增加字体大小 */
-    line-height: 1.8; /* 调整行间距 */
-}
-
 .markdown-body {
-    box-sizing: border-box;
-    min-width: 200px;
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 25px;
-    background-color: inherit !important;
-    color: inherit !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  background-color: transparent !important;
+  color: inherit !important;
 }
 
-/* Custom styles for vditor rendered content */
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  font-size: 1.2rem !important;
-  margin-top: 12px !important;
-  margin-bottom: 8px !important;
-}
-
-.markdown-body p,
-.markdown-body ul,
-.markdown-body ol,
-.markdown-body li {
-  font-size: 1rem !important;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
 }
 
 .markdown-body p {
-    line-height: 1.6 !important;
+  margin: 0.5em 0;
 }
 
-/* Remove additional padding and margin from markdown-body if it's inside a v-card-text */
-.v-card-text > .markdown-body {
-    padding: 0;
-    margin: 0;
+.markdown-body pre,
+.markdown-body code {
+  background-color: rgba(110, 118, 129, 0.1) !important;
+  border-radius: 4px;
 }
 
-/* Remove margin from the first and last elements inside the markdown body */
-.markdown-body > :first-child {
-    margin-top: 0 !important;
+.markdown-body pre {
+  padding: 1em;
 }
 
-.markdown-body > :last-child {
-    margin-bottom: 0 !important;
+.markdown-body code {
+  padding: 0.2em 0.4em;
+}
+
+.markdown-body blockquote {
+  padding: 0 1em;
+  color: #8b949e;
+  border-left: 0.25em solid #30363d;
 }
 </style>
