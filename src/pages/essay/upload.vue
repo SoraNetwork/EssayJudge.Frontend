@@ -1,236 +1,154 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <h2 class="text-h4 mb-4">学生作文提交</h2>
-      </v-col>
+  <div>
+    <h1 class="text-h4 mb-4">学生作文提交</h1>
 
-      <v-col cols="12">
-        <v-stepper v-model="currentStep">
-          <v-stepper-header>
-            <v-stepper-item step="1">
-              学生信息
-            </v-stepper-item>
+    <v-card>
+      <v-card-text>
+        <v-form @submit.prevent="submitEssay">
+          <!-- 班级选择 -->
+          <v-select
+            v-model="selectedClass"
+            :items="classes"
+            item-title="name"
+            item-value="id"
+            label="选择班级"
+            :loading="loadingClasses"
+            :error-messages="classError"
+            class="mb-4"
+          />
 
-            <v-stepper-divider></v-stepper-divider>
+          <!-- 学生选择 -->
+          <v-select
+            v-model="selectedStudent"
+            :items="filteredStudents"
+            item-title="name"
+            item-value="studentId"
+            label="选择学生"
+            :loading="loadingStudents"
+            :error-messages="studentError"
+            :disabled="!selectedClass"
+            persistent-hint
+            hint="选择学生后将自动填充学号"
+            class="mb-4"
+          >
+            <template v-slot:selection="{ item }">
+              <span>{{ item.raw.name }} ({{ item.raw.studentId }})</span>
+            </template>
+            <template v-slot:item="{ props, item }">
+              <v-list-item v-bind="props">
+                <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                <v-list-item-subtitle>学号: {{ item.raw.studentId }}</v-list-item-subtitle>
+              </v-list-item>
+            </template>
+          </v-select>
 
-            <v-stepper-item step="2">
-              作文提交
-            </v-stepper-item>
-          </v-stepper-header>
+          <!-- 学号显示 -->
+          <v-text-field
+            v-model="studentId"
+            label="学号"
+            readonly
+            :error-messages="studentIdError"
+            class="mb-4"
+          />
 
-          <v-stepper-window>
-            <!-- 第一步：学生信息 -->
-            <v-stepper-window-item step="1">
-              <v-card>
-                <v-card-text>
-                  <v-row>
-                    <v-col cols="12" sm="6">
-                      <v-select
-                        v-model="selectedClass"
-                        :items="classes"
-                        item-title="name"
-                        item-value="id"
-                        label="选择班级"
-                        :loading="loadingClasses"
-                        :error-messages="classError"
-                        persistent-hint
-                        hint="请先选择班级"
-                      />
-                    </v-col>
-                    <v-col cols="12" sm="6">
-                      <v-select
-                        v-model="selectedStudent"
-                        :items="filteredStudents"
-                        item-title="name"
-                        item-value="studentId"
-                        label="选择学生"
-                        :loading="loadingStudents"
-                        :disabled="!selectedClass"
-                        :error-messages="studentError"
-                        persistent-hint
-                        hint="选择学生后将自动填充学号"
-                      >
-                        <template v-slot:item="{ item }">
-                          <v-list-item-title>
-                            {{ (item as StudentSelectItem).raw.name }} ({{ (item as StudentSelectItem).raw.studentId }})
-                          </v-list-item-title>
-                        </template>
-                      </v-select>
-                    </v-col>
-                    <v-col cols="12" sm="6">
-                      <v-text-field
-                        v-model="studentId"
-                        label="学号验证（8位）"
-                        :rules="studentIdRules"
-                        :error-messages="studentIdError"
-                        readonly
-                        persistent-hint
-                        hint="学号将根据选择的学生自动填充"
-                      />
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-                <v-card-actions>
-                  <v-spacer/>
-                  <v-btn
-                    color="primary"
-                    :disabled="!isStep1Valid"
-                    @click="validateStudentAndProceed"
-                    :loading="validatingStudent"
-                  >
-                    下一步
-                    <v-icon icon="mdi-chevron-right" end></v-icon>
-                  </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-stepper-window-item>
+          <!-- 作业选择 -->
+          <v-select
+            v-model="selectedAssignment"
+            :items="assignments"
+            item-title="description"
+            item-value="id"
+            label="选择作业"
+            :loading="loadingAssignments"
+            :error-messages="assignmentError"
+            :disabled="!selectedStudent"
+            persistent-hint
+            hint="选择要提交的作业"
+            class="mb-4"
+          >
+            <template v-slot:selection="{ item }">
+              <span>{{ item.raw.description || '未命名作业' }}</span>
+            </template>
+            <template v-slot:item="{ props, item }">
+              <v-list-item v-bind="props">
+                <v-list-item-title>{{ item.raw.description || '未命名作业' }}</v-list-item-title>
+                <v-list-item-subtitle>创建时间: {{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
+              </v-list-item>
+            </template>
+          </v-select>
 
-            <!-- 第二步：作业选择和图片上传 -->
-            <v-stepper-window-item step="2">
-              <v-card>
-                <v-card-text>
-                  <v-row>
-                    <v-col cols="12" sm="6">
-                      <v-select
-                        v-model="selectedAssignment"
-                        :items="assignments"
-                        item-title="description"
-                        item-value="id"
-                        label="选择作业"
-                        :loading="loadingAssignments"
-                        :error-messages="assignmentError"
-                      >
-                        <template v-slot:item="{ item }">
-                          <v-list-item-title>{{ (item as AssignmentSelectItem).raw.description || '未命名作业' }}</v-list-item-title>
-                          <v-list-item-subtitle>
-                            总分: {{ (item as AssignmentSelectItem).raw.totalScore }} | 年级: {{ (item as AssignmentSelectItem).raw.grade }}
-                          </v-list-item-subtitle>
-                        </template>
-                      </v-select>
-                    </v-col>
+          <!-- 分栏数 -->
+          <v-text-field
+            v-model.number="columnCount"
+            type="number"
+            label="分栏数"
+            min="1"
+            max="4"
+            :rules="columnRules"
+            class="mb-4"
+          />
 
-                    <v-col cols="12" sm="6">
-                      <v-text-field
-                        v-model="columnCount"
-                        type="number"
-                        label="分栏数"
-                        min="1"
-                        max="4"
-                        :rules="[v => !!v || '请输入分栏数', v => v > 0 && v <= 4 || '分栏数必须在1-4之间']"
-                      ></v-text-field>
-                    </v-col>
-                    
-                    <v-col cols="12">
-                      <v-file-input
-                        v-model="imageFile"
-                        label="上传作文图片"
-                        accept="image/*"
-                        prepend-icon="mdi-camera"
-                        :error-messages="imageError"
-                        show-size
-                        @change="handleImageSelected"
-                      >
-                        <template v-slot:selection="{ fileNames }">
-                          <template v-for="fileName in fileNames" :key="fileName">
-                            <v-chip
-                              size="small"
-                              label
-                              color="primary"
-                              class="me-2"
-                            >
-                              {{ fileName }}
-                            </v-chip>
-                          </template>
-                        </template>
-                      </v-file-input>
-                    </v-col>
+          <!-- 图片上传 -->
+          <v-file-input
+            v-model="imageFile"
+            label="上传作文图片"
+            accept="image/*"
+            :error-messages="imageError"
+            show-size
+            @change="handleImageSelected"
+            class="mb-4"
+          />
 
-                    <v-col cols="12" v-if="processedImageUrl">
-                      <v-card variant="outlined">
-                        <v-card-title class="text-subtitle-1">
-                          图片预览
-                          <v-chip
-                            color="success"
-                            size="small"
-                            class="ml-2"
-                          >
-                            已处理
-                          </v-chip>
-                        </v-card-title>
-                        <v-card-text>
-                          <v-img
-                            :src="`/essayfiles/${processedImageUrl}`"
-                            max-height="500"
-                            contain
-                            class="mx-auto"
-                          />
-                        </v-card-text>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-                <v-card-actions>
-                  <v-btn 
-                    @click="currentStep = 1"
-                    prepend-icon="mdi-chevron-left"
-                  >
-                    返回
-                  </v-btn>
-                  <v-spacer/>
-                  <v-btn
-                    color="primary"
-                    :disabled="!isStep2Valid"
-                    :loading="submitting"
-                    @click="submitEssay"
-                  >
-                    提交作文
-                  </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-stepper-window-item>
-          </v-stepper-window>
-        </v-stepper>
-      </v-col>
-    </v-row>
+          <!-- 图片预览 -->
+          <v-card v-if="processedImageUrl" variant="outlined" class="mb-4">
+            <v-card-title class="text-subtitle-1">
+              图片预览
+              <v-chip color="success" size="small" class="ml-2">已处理</v-chip>
+            </v-card-title>
+            <v-card-text>
+              <v-img
+                :src="`/essayfiles/${processedImageUrl}`"
+                max-height="500"
+                contain
+                class="mx-auto"
+              />
+            </v-card-text>
+          </v-card>
+
+          <!-- 提交按钮 -->
+          <div class="d-flex justify-end">
+            <v-btn
+              type="submit"
+              color="primary"
+              :loading="submitting"
+              :disabled="!isFormValid"
+            >
+              提交作文
+            </v-btn>
+          </div>
+        </v-form>
+      </v-card-text>
+    </v-card>
 
     <!-- 成功提示 -->
     <v-dialog v-model="showSuccessDialog" persistent max-width="400">
       <v-card>
         <v-card-title class="text-h5">提交成功</v-card-title>
-        <v-card-text>
-          作文已成功提交，我们会尽快进行批改。
-        </v-card-text>
+        <v-card-text>作文已成功提交，我们会尽快进行批改。</v-card-text>
         <v-card-actions>
           <v-spacer/>
-          <v-btn
-            color="primary"
-            @click="resetForm"
-          >
-            确定
-          </v-btn>
+          <v-btn color="primary" @click="resetForm">确定</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- 错误提示 -->
-    <v-snackbar
-      v-model="showError"
-      color="error"
-      timeout="3000"
-    >
+    <v-snackbar v-model="showError" color="error" timeout="3000">
       {{ errorMessage }}
       <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="showError = false"
-        >
-          关闭
-        </v-btn>
+        <v-btn color="white" variant="text" @click="showError = false">关闭</v-btn>
       </template>
     </v-snackbar>
-  </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -282,9 +200,6 @@ const router = useRouter()
 const showError = ref(false)
 const errorMessage = ref('')
 
-// 表单步骤
-const currentStep = ref(1)
-
 // 学生信息相关
 const classes = ref<Class[]>([])
 const selectedClass = ref('')
@@ -324,21 +239,38 @@ const imageError = ref('')
 const submitting = ref(false)
 const showSuccessDialog = ref(false)
 
-// 表单验证
-const isStep1Valid = computed(() => {
-  return selectedClass.value && 
-         selectedStudent.value && 
-         studentId.value.length === 8 &&
-         filteredStudents.value.some(s => s.studentId === studentId.value)
-})
+// 当前步骤
+const currentStep = ref(1)
 
-const isStep2Valid = computed(() => {
-  return selectedAssignment.value && 
+// 日期格式化
+function formatDate(dateString: string) {
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+  const date = new Date(dateString);
+  date.setHours(date.getHours() + 8); // UTC+8
+  return date.toLocaleString(undefined, options);
+}
+
+// 分栏数验证规则
+const columnRules = [
+  (v: number) => !!v || '请输入分栏数',
+  (v: number) => v >= 1 && v <= 4 || '分栏数必须在1-4之间'
+]
+
+// 表单验证
+const isFormValid = computed(() => {
+  return selectedClass.value &&
+         selectedStudent.value &&
+         studentId.value &&
+         selectedAssignment.value &&
          processedImageUrl.value &&
          columnCount.value >= 1 &&
-         columnCount.value <= 4 &&
-         typeof columnCount.value === 'number' &&
-         Number.isInteger(columnCount.value)
+         columnCount.value <= 4
 })
 
 // 显示错误消息
@@ -388,7 +320,7 @@ async function fetchAssignments(studentId: string) {
   }
 }
 
-// 验证学生信息并进入下一步
+// 验证学生信息并获取作业
 async function validateStudentAndProceed() {
   try {
     validatingStudent.value = true
@@ -403,13 +335,6 @@ async function validateStudentAndProceed() {
 
     // 获取该学生可提交的作业
     await fetchAssignments(studentId.value)
-    
-    if (!assignmentError.value && assignments.value.length > 0) {
-      // 进入下一步
-      currentStep.value = 2
-    } else if (assignments.value.length === 0) {
-      showErrorMessage('该学生当前没有可提交的作业')
-    }
   } catch (error: any) {
     studentIdError.value = '验证学生信息失败'
     showErrorMessage(error.message || '验证学生信息失败')
@@ -428,13 +353,27 @@ async function handleImageSelected(file: File | null) {
 
   try {
     const formData = new FormData()
+
+    // 添加文件到FormData，使用'file'作为键名
     formData.append('file', file)
 
     const response = await axios.post('/essay/studentupload/checkimg', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
+      },
+      validateStatus: function (status) {
+        return status < 500 // 允许400错误被捕获
       }
     })
+
+    if (response.status === 400) {
+      // 处理验证错误
+      const errors = response.data.errors
+      if (errors?.file?.length > 0) {
+        throw new Error(errors.file[0])
+      }
+      throw new Error('图片验证失败')
+    }
 
     if (response.data?.success && response.data?.processedImageUrl) {
       processedImageUrl.value = response.data.processedImageUrl
@@ -443,7 +382,7 @@ async function handleImageSelected(file: File | null) {
       throw new Error(response.data?.message || '图片处理失败')
     }
   } catch (error: any) {
-    imageError.value = '图片处理失败'
+    imageError.value = error.message || '图片处理失败'
     processedImageUrl.value = ''
     showErrorMessage(error.response?.data?.message || error.message || '图片处理失败')
   }
@@ -451,7 +390,7 @@ async function handleImageSelected(file: File | null) {
 
 // 提交作文
 async function submitEssay() {
-  if (!isStep2Valid.value) {
+  if (!isFormValid.value) {
     showErrorMessage('请完整填写所有必要信息')
     return
   }
@@ -461,12 +400,16 @@ async function submitEssay() {
     const submission = {
       studentId: studentId.value,
       essayAssignmentId: selectedAssignment.value,
-      processedImageUrl: processedImageUrl.value,
-      columnCount: Number(columnCount.value)
+      processedImageUrl: processedImageUrl.value.replace(/^\/essayfiles\//, ''), // 移除路径前缀
+      columnCount: Math.floor(Number(columnCount.value)) // 确保是整数
     }
 
-    await axios.post('/essay/studentupload/submit', submission)
-    showSuccessDialog.value = true
+    const response = await axios.post('/essay/studentupload/submit', submission)
+    if (response.data?.success) {
+      showSuccessDialog.value = true
+    } else {
+      throw new Error(response.data?.message || '提交失败')
+    }
   } catch (error: any) {
     console.error('提交作文失败:', error)
     showErrorMessage(error.response?.data?.message || '提交作文失败')
@@ -512,16 +455,21 @@ watch(selectedClass, (newClassId) => {
 })
 
 // 监听学生选择变化
-watch(selectedStudent, (newStudentId) => {
+watch(selectedStudent, async (newStudentId) => {
   if (newStudentId) {
     const student = filteredStudents.value.find(s => s.studentId === newStudentId)
     if (student) {
       studentId.value = student.studentId
       studentError.value = ''
       studentIdError.value = ''
+      // 当选择新学生时，自动获取该学生的作业列表
+      await fetchAssignments(student.studentId)
     }
   } else {
     studentId.value = ''
+    // 清空作业列表
+    assignments.value = []
+    selectedAssignment.value = ''
   }
 })
 
