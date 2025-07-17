@@ -353,9 +353,10 @@ async function handleImageSelected(file: File | null) {
 
   try {
     const formData = new FormData()
-
+    
+    
     // 添加文件到FormData，使用'file'作为键名
-    formData.append('file', file)
+    formData.append('file', imageFile.value);
 
     const response = await axios.post('/essay/studentupload/checkimg', formData, {
       headers: {
