@@ -106,10 +106,11 @@
             </v-card-title>
             <v-card-text>
               <v-img
-                :src="`/essayfiles/${processedImageUrl}`"
+                :src="`${baseURL}${processedImageUrl}`"
                 max-height="500"
                 contain
-                class="mx-auto"
+                class="mx-auto cursor-pointer"
+                @click="showImageDialog = true"
               />
             </v-card-text>
           </v-card>
@@ -141,6 +142,19 @@
       </v-card>
     </v-dialog>
 
+    <!-- 图片放大显示 -->
+    <v-dialog v-model="showImageDialog" max-width="90vw">
+      <v-card>
+        <v-card-text class="pa-0">
+          <v-img :src="`${baseURL}${processedImageUrl}`" contain />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" @click="showImageDialog = false">关闭</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- 错误提示 -->
     <v-snackbar v-model="showError" color="error" timeout="3000">
       {{ errorMessage }}
@@ -155,6 +169,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/services/axiosInstance'
+import { baseURL } from '@/services/axiosInstance'
 
 // 类型定义
 interface Student {
@@ -238,6 +253,7 @@ const processedImageUrl = ref('')
 const imageError = ref('')
 const submitting = ref(false)
 const showSuccessDialog = ref(false)
+const showImageDialog = ref(false)
 
 // 当前步骤
 const currentStep = ref(1)
@@ -344,8 +360,8 @@ async function validateStudentAndProceed() {
 }
 
 // 处理图片选择
-async function handleImageSelected(file: File | null) {
-  if (!file) {
+async function handleImageSelected() {
+  if (!imageFile.value) {
     imageError.value = '请选择图片'
     processedImageUrl.value = ''
     return
@@ -401,7 +417,7 @@ async function submitEssay() {
     const submission = {
       studentId: studentId.value,
       essayAssignmentId: selectedAssignment.value,
-      processedImageUrl: processedImageUrl.value.replace(/^\/essayfiles\//, ''), // 移除路径前缀
+      processedImageUrl: processedImageUrl.value,
       columnCount: Math.floor(Number(columnCount.value)) // 确保是整数
     }
 
