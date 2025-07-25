@@ -5,6 +5,12 @@
     <v-card>
       <v-card-text>
         <v-form @submit.prevent="submitEssay">
+          <!-- 提交方式选择 -->
+          <v-btn-toggle v-model="submitMode" mandatory class="mb-4">
+            <v-btn value="image">图片上传</v-btn>
+            <v-btn value="text">文字输入</v-btn>
+          </v-btn-toggle>
+
           <!-- 班级选择 -->
           <v-select
             v-model="selectedClass"
@@ -76,8 +82,9 @@
             </template>
           </v-select>
 
-          <!-- 分栏数 -->
+          <!-- 分栏数 (仅图片模式) -->
           <v-text-field
+            v-if="submitMode === 'image'"
             v-model.number="columnCount"
             type="number"
             label="分栏数"
@@ -87,33 +94,48 @@
             class="mb-4"
           />
 
-          <!-- 图片上传 -->
-          <v-file-input
-            v-model="imageFile"
-            label="上传作文图片"
-            accept="image/*"
-            :error-messages="imageError"
-            show-size
-            @change="handleImageSelected"
-            class="mb-4"
-          />
+          <!-- 图片上传模式 -->
+          <div v-if="submitMode === 'image'">
+            <!-- 图片上传 -->
+            <v-file-input
+              v-model="imageFile"
+              label="上传作文图片"
+              accept="image/*"
+              :error-messages="imageError"
+              show-size
+              @change="handleImageSelected"
+              class="mb-4"
+            />
 
-          <!-- 图片预览 -->
-          <v-card v-if="processedImageUrl" variant="outlined" class="mb-4">
-            <v-card-title class="text-subtitle-1">
-              图片预览
-              <v-chip color="success" size="small" class="ml-2">已处理</v-chip>
-            </v-card-title>
-            <v-card-text>
-              <v-img
-                :src="`${baseURL}${processedImageUrl}`"
-                max-height="500"
-                contain
-                class="mx-auto cursor-pointer"
-                @click="showImageDialog = true"
-              />
-            </v-card-text>
-          </v-card>
+            <!-- 图片预览 -->
+            <v-card v-if="processedImageUrl" variant="outlined" class="mb-4">
+              <v-card-title class="text-subtitle-1">
+                图片预览
+                <v-chip color="success" size="small" class="ml-2">已处理</v-chip>
+              </v-card-title>
+              <v-card-text>
+                <v-img
+                  :src="`${baseURL}${processedImageUrl}`"
+                  max-height="500"
+                  contain
+                  class="mx-auto cursor-pointer"
+                  @click="showImageDialog = true"
+                />
+              </v-card-text>
+            </v-card>
+          </div>
+
+          <!-- 文字输入模式 -->
+          <div v-else>
+            <v-textarea
+              v-model="essayText"
+              label="输入作文内容"
+              :rules="textRules"
+              rows="10"
+              clearable
+              class="mb-4"
+            />
+          </div>
 
           <!-- 提交按钮 -->
           <div class="d-flex justify-end">
@@ -215,6 +237,9 @@ const router = useRouter()
 const showError = ref(false)
 const errorMessage = ref('')
 
+// 提交方式
+const submitMode = ref<'image' | 'text'>('image')
+
 // 学生信息相关
 const classes = ref<Class[]>([])
 const selectedClass = ref('')
@@ -251,6 +276,11 @@ const columnCount = ref(1)
 const imageFile = ref<File | null>(null)
 const processedImageUrl = ref('')
 const imageError = ref('')
+
+// 文字相关
+const essayText = ref('')
+
+// 提交状态
 const submitting = ref(false)
 const showSuccessDialog = ref(false)
 const showImageDialog = ref(false)
@@ -278,15 +308,30 @@ const columnRules = [
   (v: number) => v >= 1 && v <= 4 || '分栏数必须在1-4之间'
 ]
 
+// 文字验证规则
+const textRules = [
+  (v: string) => !!v || '请输入作文内容',
+  (v: string) => v.length >= 10 || '作文内容至少需要10个字符'
+]
+
 // 表单验证
 const isFormValid = computed(() => {
-  return selectedClass.value &&
-         selectedStudent.value &&
-         studentId.value &&
-         selectedAssignment.value &&
-         processedImageUrl.value &&
-         columnCount.value >= 1 &&
-         columnCount.value <= 4
+  if (submitMode.value === 'image') {
+    return selectedClass.value &&
+           selectedStudent.value &&
+           studentId.value &&
+           selectedAssignment.value &&
+           processedImageUrl.value &&
+           columnCount.value >= 1 &&
+           columnCount.value <= 4
+  } else {
+    return selectedClass.value &&
+           selectedStudent.value &&
+           studentId.value &&
+           selectedAssignment.value &&
+           essayText.value &&
+           essayText.value.length >= 10
+  }
 })
 
 // 显示错误消息
@@ -370,7 +415,6 @@ async function handleImageSelected() {
   try {
     const formData = new FormData()
     
-    
     // 添加文件到FormData，使用'file'作为键名
     formData.append('file', imageFile.value);
 
@@ -414,18 +458,44 @@ async function submitEssay() {
 
   try {
     submitting.value = true
-    const submission = {
-      studentId: studentId.value,
-      essayAssignmentId: selectedAssignment.value,
-      processedImageUrl: processedImageUrl.value,
-      columnCount: Math.floor(Number(columnCount.value)) // 确保是整数
-    }
+    
+    if (submitMode.value === 'image') {
+      // 图片模式提交
+      const formData = new FormData()
+      formData.append('StudentId', studentId.value)
+      formData.append('EssayAssignmentId', selectedAssignment.value)
+      formData.append('ProcessedImageUrl', processedImageUrl.value)
+      formData.append('ColumnCount', Math.floor(Number(columnCount.value)).toString())
 
-    const response = await axios.post('/essay/studentupload/submit', submission)
-    if (response.data?.success) {
-      showSuccessDialog.value = true
+      const response = await axios.post('/essay/studentupload/submit', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data?.success) {
+        showSuccessDialog.value = true
+      } else {
+        throw new Error(response.data?.message || '提交失败')
+      }
     } else {
-      throw new Error(response.data?.message || '提交失败')
+      // 文字模式提交
+      const formData = new FormData()
+      formData.append('StudentId', studentId.value)
+      formData.append('EssayAssignmentId', selectedAssignment.value)
+      formData.append('PrasedText', essayText.value)
+
+      const response = await axios.post('/essay/studentupload/submit/hasprased', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      if (response.data?.success) {
+        showSuccessDialog.value = true
+      } else {
+        throw new Error(response.data?.message || '提交失败')
+      }
     }
   } catch (error: any) {
     console.error('提交作文失败:', error)
@@ -445,6 +515,7 @@ function resetForm() {
   columnCount.value = 1
   imageFile.value = null
   processedImageUrl.value = ''
+  essayText.value = ''
   showSuccessDialog.value = false
   showError.value = false
   errorMessage.value = ''
@@ -497,6 +568,14 @@ watch(columnCount, (newValue) => {
   }
   if (columnCount.value < 1) columnCount.value = 1
   if (columnCount.value > 4) columnCount.value = 4
+})
+
+// 监听提交模式变化，重置相关字段
+watch(submitMode, () => {
+  imageFile.value = null
+  processedImageUrl.value = ''
+  essayText.value = ''
+  imageError.value = ''
 })
 </script>
 
