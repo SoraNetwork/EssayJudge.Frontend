@@ -46,6 +46,7 @@
             <v-spacer></v-spacer>
             <v-btn to="/register" variant="text">注册账号</v-btn>
             <v-btn color="primary" @click="login" :loading="loading">登录</v-btn>
+            
           </v-card-actions>
         </v-card>
       </v-col>

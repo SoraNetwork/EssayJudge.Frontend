@@ -113,6 +113,16 @@
         >
           立即登录
         </v-btn>
+        <v-btn
+          variant="outlined"
+          color="info"
+          size="large"
+          to="/essay/upload"
+          prepend-icon="mdi-upload"
+          class="ml-4"
+        >
+          学生作文上传
+        </v-btn>
       </v-col>
     </v-row>
   </div>

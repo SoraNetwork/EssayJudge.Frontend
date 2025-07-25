@@ -473,7 +473,7 @@ async function submitEssay() {
         }
       })
       
-      if (response.data?.success) {
+      if (response.status === 200) {
         showSuccessDialog.value = true
       } else {
         throw new Error(response.data?.message || '提交失败')
@@ -491,7 +491,7 @@ async function submitEssay() {
         }
       })
       
-      if (response.data?.success) {
+      if (response.status === 200) {
         showSuccessDialog.value = true
       } else {
         throw new Error(response.data?.message || '提交失败')
