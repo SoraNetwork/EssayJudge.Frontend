@@ -18,6 +18,7 @@ jobs:
       - name: Replace API URL
         run: |
           sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts
+          sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/axiosInstance.ts
           
       - name: Build
         run: | 
@@ -27,6 +28,7 @@ jobs:
       - name: Replace API URL
         run: |
           sed -i 's#https://api.ej.xingsora.cn#http://localhost:5000#g' ./src/services/api.ts
+          sed -i 's#https://api.ej.xingsora.cn#http://localhost:5000#g' ./src/services/axiosInstance.ts
           
       - name: Push
         continue-on-error: true
