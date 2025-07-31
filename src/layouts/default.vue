@@ -1,5 +1,12 @@
 <template>
   <v-app>
+    <v-progress-linear
+      v-if="appStore.loading"
+      indeterminate
+      color="primary"
+      style="position: fixed; top: 0; z-index: 9999;"
+    ></v-progress-linear>
+
     <v-navigation-drawer
       v-model="drawer"
       app
@@ -76,12 +83,14 @@
 import { ref, computed, onMounted, watch } from 'vue' // 导入 watch
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAppStore } from '@/stores/app'
 import { useTheme } from 'vuetify'
 import { usePreferredDark } from '@vueuse/core' // 导入 usePreferredDark
 import { getServerStatus, type ServerStatus } from '@/services/apiService';
 
 const router = useRouter()
 const authStore = useAuthStore()
+const appStore = useAppStore()
 const drawer = ref(false)
 const theme = useTheme()
 const preferredDark = usePreferredDark() // 获取系统主题偏好
