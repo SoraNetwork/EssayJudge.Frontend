@@ -8,11 +8,6 @@
       persistent
       :scrim="scrimColor"
     >
-      <v-progress-circular
-        color="primary"
-        indeterminate
-        size="64"
-      />
     </v-overlay>
   </v-app>
 </template>
