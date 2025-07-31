@@ -1,40 +1,35 @@
-name: Build
+name: Build and Deploy
 on:
   workflow_dispatch:
   push:
+    branches:
+      - v2 # 建议指定只在 v2 分支上触发
 jobs:
-  Build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
-        with:
-          ref: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.2.0
-        
-      - name: Replace API URL
+
+      - name: Replace API URL for Build
         run: |
           sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts
           sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/axiosInstance.ts
-          
+
       - name: Build
-        run: | 
+        run: |
           npm install
           npm run build
 
-      - name: Replace API URL
-        run: |
-          sed -i 's#https://api.ej.xingsora.cn#http://localhost:5000#g' ./src/services/api.ts
-          sed -i 's#https://api.ej.xingsora.cn#http://localhost:5000#g' ./src/services/axiosInstance.ts
-          
-      - name: Push
-        continue-on-error: true
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "GitHub-actions[bot]"
-          git add .
-          git commit -m "SEJ-F/${{github.sha}} From CI"
-          git push origin v2
+      - name: Deploy to dist branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: dist # <-- 这里已修改为您指定的分支
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: "Deploy SEJ-F/${{github.sha}} From CI"
