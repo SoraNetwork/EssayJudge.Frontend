@@ -26,10 +26,11 @@
           <v-col cols="12" md="4">
             <v-text-field
               v-model="filters.searchTerm"
-              label="搜索学生"
+              label="按姓名搜索学生"
               prepend-icon="mdi-magnify"
               clearable
-              @keyup.enter="fetchStudents"
+              @input="handleLocalSearch"
+              placeholder="输入学生姓名搜索"
             ></v-text-field>
           </v-col>
           <v-col cols="12" md="4">
@@ -41,12 +42,12 @@
       </v-card-text>
     </v-card>
 
-    <!-- 学生列表 -->
+    <!-- 原有的学生列表表格 -->
     <v-card>
       <v-card-text>
         <v-data-table
           :headers="headers"
-          :items="students"
+          :items="filteredStudents"
           :loading="loading"
           loading-text="加载中..."
           no-data-text="暂无数据"
@@ -156,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 // 从 apiService 导入 Student 类型
 import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
 
@@ -203,6 +204,9 @@ const importDialog = ref(false);
 const csvText = ref<string>(''); // 使用 string 存储粘贴的文本
 const importing = ref(false); // 导入加载状态
 
+// 添加新的状态
+// const searchResults = ref<(Student & { className?: string })[]>([]);
+// const searchLoading = ref(false);
 
 // 筛选条件
 const filters = ref({
@@ -469,5 +473,26 @@ async function uploadCsv() {
 
   fetchStudents(); // 导入后刷新学生列表
 }
+
+// 添加计算属性用于过滤学生
+const filteredStudents = computed(() => {
+  if (!filters.value.searchTerm) {
+    return students.value;
+  }
+  const searchTerm = filters.value.searchTerm.toLowerCase().trim();
+  return students.value.filter(student => 
+    student.name.toLowerCase().includes(searchTerm)
+  );
+});
+
+// 本地搜索处理
+function handleLocalSearch(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  filters.value.searchTerm = value;
+  // 不需要调用后端API，computed属性会自动处理过滤
+}
+
+// 移除原有的handleSearch函数
 </script>
+}
 

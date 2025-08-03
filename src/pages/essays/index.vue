@@ -32,15 +32,13 @@
             </v-select>
           </v-col>
           <v-col cols="12" md="4">
-            <v-select
-              v-model="filters.studentId"
-              label="学生"
-              :items="students"
-              item-title="name"
-              item-value="id"
+            <v-text-field
+              v-model="filters.studentName"
+              label="搜索学生"
+              prepend-icon="mdi-magnify"
               clearable
-              @update:model-value="fetchEssays"
-            ></v-select>
+              placeholder="输入学生姓名搜索"
+            ></v-text-field>
           </v-col>
           <v-col cols="12" md="4">
             <v-btn color="primary" @click="fetchEssays" prepend-icon="mdi-refresh">
@@ -56,7 +54,7 @@
       <v-card-text>
         <v-data-table
           :headers="headers"
-          :items="essays"
+          :items="filteredEssays"
           :loading="loading"
           loading-text="加载中..."
           no-data-text="暂无数据"
@@ -103,8 +101,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { searchSubmissions, getAssignments, getStudents, submitSubmissionForEvaluation } from '@/services/apiService';
+import { ref, computed, onMounted } from 'vue'
+import { searchSubmissions, getAssignments, submitSubmissionForEvaluation } from '@/services/apiService';
 
 // Define interface for Essay item
 interface Essay {
@@ -147,26 +145,34 @@ const headers = [
 // 数据和状态
 const essays = ref<Essay[]>([]) // Type the ref with the Essay interface
 const assignments = ref<Assignment[]>([]) // Explicitly type assignments as Assignment[]
-interface Student {
-  id: string | number;
-  name: string;
-  // Add other properties if needed
-}
-const students = ref<Student[]>([])
 const loading = ref(false)
 const evaluating = ref('')
 
 // 筛选条件
 const filters = ref({
   assignmentId: undefined,
-  studentId: undefined
+  studentName: '', // 改为存储搜索关键字
 })
+
+// 添加计算属性用于过滤作文列表
+const filteredEssays = computed(() => {
+  if (!filters.value.studentName) {
+    return essays.value;
+  }
+  const searchTerm = filters.value.studentName.toLowerCase().trim();
+  return essays.value.filter(essay => 
+    essay.studentName?.toLowerCase().includes(searchTerm)
+  );
+});
 
 // 获取所有作文
 async function fetchEssays() {
   loading.value = true
   try {
-    const data = await searchSubmissions(filters.value);
+    const filterParams = {
+      assignmentId: filters.value.assignmentId
+    };
+    const data = await searchSubmissions(filterParams);
     essays.value = data || []
   } catch (error) {
     console.error('获取作文列表失败:', error)
@@ -205,16 +211,6 @@ async function fetchAssignments() {
   }
 }
 
-// 获取所有学生
-async function fetchStudents() {
-  try {
-    const data = await getStudents({}); // Pass empty filters
-    students.value = data || []
-  } catch (error) {
-    console.error('获取学生列表失败:', error)
-  }
-}
-
 // 提交作文评测
 async function submitForEvaluation(item: any) {
   evaluating.value = item.id
@@ -233,6 +229,5 @@ async function submitForEvaluation(item: any) {
 onMounted(() => {
   fetchEssays();
   fetchAssignments();
-  fetchStudents();
 });
 </script>
