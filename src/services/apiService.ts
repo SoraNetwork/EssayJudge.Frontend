@@ -18,13 +18,13 @@ export interface Student {
   };
   phone?: string;
   email?: string;
-  studentCount?: number; // Used in Class list
+  studentCount?: number; // 用于班级列表
 }
 
 export interface Class {
   id: string;
   name: string;
-  studentCount?: number; // Added for convenience in frontend
+  studentCount?: number; // 为方便前端使用而添加
 }
 
 export interface Assignment {
@@ -36,36 +36,36 @@ export interface Assignment {
   baseScore?: number;
   scoringCriteria?: string;
   createdAt: string;
-  titleContext?: string; // For title context
+  titleContext?: string; // 用于标题上下文
   updatedAt: string;
-  description?: string; // Added for convenience in frontend
+  description?: string; // 为方便前端使用而添加
 }
 
 export interface student{
   name: string;
-  classId?: string; // Assuming student has a classId
+  classId?: string; // 假设学生有 classId
 }
 
 export interface Submission {
   id: string;
-  title: string; // Assuming submission has a title or gets it from assignment
+  title: string; // 假设提交有标题或从作业中获取
   studentId: string;
   assignmentId: string;
   imageUrl: string;
   parsedText?: string;
-  aiResults?: any[]; // Define a more specific type if needed
+  aiResults?: any[]; // 如果需要，定义更具体的类型
   judgeResult?: string;
   finalScore?: number;
   status: 'Submitted' | 'Evaluating' | 'Evaluated';
   createdAt: string;
-  submissionDate: string; // Alias for createdAt or a separate field? Check backend
-  studentName?: string; // Added for convenience in frontend
-  className?: string; // Added for convenience in frontend
-  assignmentTitle?: string; // Added for convenience in frontend
-  student?: student; // Assuming student object is included in the response
+  submissionDate: string; // createdAt 的别名还是一个单独的字段？检查后端
+  studentName?: string; // 为方便前端使用而添加
+  className?: string; // 为方便前端使用而添加
+  assignmentTitle?: string; // 为方便前端使用而添加
+  student?: student; // 假设响应中包含学生对象
 }
 
-// Define AIModel interface
+// 定义 AIModel 接口
 export interface AIModel {
   id: string;
   modelId: string;
@@ -82,15 +82,15 @@ export interface ApiKey {
   description?: string;
   isEnabled: boolean;
   createdAt: string;
-  AIModels?: AIModel[]; // Add AIModels property
+  AIModels?: AIModel[]; // 添加 AIModels 属性
 }
 
-// Define AIModelUsageSetting interface
+// 定义 AIModelUsageSetting 接口
 export interface AIModelUsageSetting {
   id: string;
   usageType: string;
   aiModelId: string;
-  aiModel?: AIModel; // Include the related AIModel object
+  aiModel?: AIModel; // 包含相关的 AIModel 对象
   isEnabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -284,27 +284,27 @@ export const updateSubmissionScore = async (id: string, score: number, studentId
 // --- API Key 管理 API ---
 
 export const getApiKeys = async (): Promise<ApiKey[]> => {
-  // Assuming backend GET /api/ApiKey now includes AIModels
+  // 假设后端 GET /api/ApiKey 现在包含 AIModels
   const response = await api.get<ApiKey[]>('/api/ApiKey');
   return response.data;
 };
 
 export const getApiKeyById = async (id: string): Promise<ApiKey> => {
-   // Assuming backend GET /api/ApiKey/{id} now includes AIModels
+   // 假设后端 GET /api/ApiKey/{id} 现在包含 AIModels
   const response = await api.get<ApiKey>(`/api/ApiKey/${id}`);
   return response.data;
 };
 
 
 export const createApiKey = async (apiKeyData: Omit<ApiKey, 'id' | 'createdAt' | 'AIModels'> & { modelIds?: string[] }): Promise<ApiKey> => {
-  // Backend expects form data, so we need to use FormData
+  // 后端需要表单数据，所以我们使用 FormData
   const formData = new FormData();
   formData.append('serviceType', apiKeyData.serviceType);
   formData.append('key', apiKeyData.key);
   if (apiKeyData.secret !== undefined && apiKeyData.secret !== null) formData.append('secret', apiKeyData.secret);
   if (apiKeyData.endpoint !== undefined && apiKeyData.endpoint !== null) formData.append('endpoint', apiKeyData.endpoint);
   if (apiKeyData.description !== undefined && apiKeyData.description !== null) formData.append('description', apiKeyData.description);
-  // Add modelIds if provided
+  // 如果提供了 modelIds，则添加
   if (apiKeyData.modelIds && apiKeyData.modelIds.length > 0) {
       apiKeyData.modelIds.forEach(modelId => {
           formData.append('modelIds', modelId);
@@ -313,7 +313,7 @@ export const createApiKey = async (apiKeyData: Omit<ApiKey, 'id' | 'createdAt' |
 
   const response = await api.post<ApiKey>('/api/ApiKey', formData, {
      headers: {
-      'Content-Type': 'multipart/form-data' // Ensure correct content type for form data
+      'Content-Type': 'multipart/form-data' // 确保表单数据的 Content-Type 正确
     }
   });
   return response.data;
@@ -324,9 +324,9 @@ export const toggleApiKeyStatus = async (id: string): Promise<void> => {
 };
 
 export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 'id' | 'createdAt' | 'AIModels'>> & { modelIds?: string[] }): Promise<void> => {
-   // Backend expects form data, so we need to use FormData
+   // 后端需要表单数据，所以我们使用 FormData
   const formData = new FormData();
-  // Only append fields that are provided in the partial object
+  // 只附加在部分对象中提供的字段
   if (apiKeyData.serviceType !== undefined) formData.append('serviceType', apiKeyData.serviceType);
   if (apiKeyData.key !== undefined) formData.append('key', apiKeyData.key);
   if (apiKeyData.secret !== undefined) formData.append('secret', apiKeyData.secret);
@@ -334,39 +334,39 @@ export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 
   if (apiKeyData.description !== undefined) formData.append('description', apiKeyData.description);
   if (apiKeyData.isEnabled !== undefined) formData.append('isEnabled', apiKeyData.isEnabled.toString());
 
-  // Add modelIds if provided
-  // Note: Backend expects List<string> modelIds from form.
-  // If modelIds is explicitly set to an empty array, we should send it to clear models.
-  // If modelIds is undefined, we don't send the parameter, leaving existing models untouched.
+  // 如果提供了 modelIds，则添加
+  // 注意：后端需要表单中的 List<string> modelIds。
+  // 如果 modelIds 显式设置为空数组，我们应该发送它来清除模型。
+  // 如果 modelIds 未定义，我们不发送该参数，保留现有模型不变。
   if (apiKeyData.modelIds !== undefined) {
-       // Clear existing modelIds first by sending an empty list if needed, or just send the new list
-       // The backend PUT logic handles adding/removing based on the provided list vs existing.
+       // 如果需要，首先通过发送一个空列表来清除现有的 modelIds，或者只发送新的列表
+       // 后端 PUT 逻辑根据提供的列表与现有列表来处理添加/删除。
        apiKeyData.modelIds.forEach(modelId => {
            formData.append('modelIds', modelId);
        });
-       // If modelIds is an empty array, the loop won't run, and the 'modelIds' key won't be in formData.
-       // The backend needs to handle the absence of 'modelIds' or an empty list correctly.
-       // Based on the backend code, sending an empty list seems to be the way to remove all models.
-       // FormData doesn't easily support sending an *empty* list parameter explicitly if the list is empty.
-       // A common workaround is to send a special marker or rely on backend interpretation.
-       // Let's assume the backend correctly interprets the absence of the 'modelIds' key as "no change"
-       // and an empty list (if sent) as "remove all".
-       // To send an empty list explicitly, you might need to send an empty string for the key,
-       // or the backend might need to accept a JSON body instead of form data for complex updates.
-       // Sticking to form data as per backend code, we just append if the list is not empty.
-       // If you need to explicitly send an empty list via form data, backend might need adjustment
-       // or you might need to send a dummy value like `formData.append('modelIds', '');` if the list is empty.
-       // Let's assume the backend handles an empty list correctly if the parameter is present.
-       // To ensure the parameter is present even if the list is empty, we can add a check:
+       // 如果 modelIds 是一个空数组，循环将不会运行，'modelIds' 键也不会在 formData 中。
+       // 后端需要正确处理 'modelIds' 的缺失或空列表。
+       // 根据后端代码，发送一个空列表似乎是删除所有模型的方法。
+       // 如果列表为空，FormData 不容易支持显式发送一个 *空* 列表参数。
+       // 一个常见的解决方法是发送一个特殊标记或依赖于后端的解释。
+       // 让我们假设后端正确地将 'modelIds' 键的缺失解释为“无变化”
+       // 并将空列表（如果发送）解释为“全部删除”。
+       // 要显式发送一个空列表，您可能需要为空键发送一个空字符串，
+       // 或者后端可能需要接受 JSON 主体而不是表单数据来进行复杂更新。
+       // 按照后端代码，我们只在列表不为空时附加。
+       // 如果您需要通过表单数据显式发送一个空列表，后端可能需要调整
+       // 或者如果列表为空，您可能需要发送一个像 `formData.append('modelIds', '');` 这样的虚拟值。
+       // 让我们假设如果参数存在，后端会正确处理空列表。
+       // 为确保即使列表为空参数也存在，我们可以添加一个检查：
        if (apiKeyData.modelIds.length === 0) {
-           // Append an empty value if the list is empty to signal removal
-           // This might depend on backend implementation, but sending an empty string is a common way
-           // to ensure the parameter key exists in the form data even with no values.
-           // The backend code seems to iterate over the values associated with the key,
-           // so an empty list of values should result in no models being added and existing ones being removed.
-           // Let's remove this explicit empty append as the backend code seems to handle the list correctly.
-           // If modelIds is an empty array, the forEach loop simply won't run, and the 'modelIds' key won't be added to formData.
-           // The backend PUT method checks `modelIds?.Distinct().ToList() ?? new List<string>()`. If the key is absent, `modelIds` will be null, resulting in an empty list. This seems correct.
+           // 如果列表为空，则附加一个空值以表示删除
+           // 这可能取决于后端的实现，但发送一个空字符串是一种常见的方式
+           // 以确保即使没有值，参数键也存在于表单数据中。
+           // 后端代码似乎会遍历与键关联的值，
+           // 因此，一个空的值列表应该导致不添加任何模型并删除现有的模型。
+           // 让我们删除这个显式的空附加，因为后端代码似乎可以正确处理列表。
+           // 如果 modelIds 是一个空数组，forEach 循环将不会运行，'modelIds' 键也不会被添加到 formData 中。
+           // 后端 PUT 方法检查 `modelIds?.Distinct().ToList() ?? new List<string>()`。如果键不存在，`modelIds` 将为 null，从而导致一个空列表。这似乎是正确的。
        } else {
             apiKeyData.modelIds.forEach(modelId => {
                 formData.append('modelIds', modelId);
@@ -377,7 +377,7 @@ export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 
 
   await api.put(`/api/ApiKey/${id}`, formData, {
      headers: {
-      'Content-Type': 'multipart/form-data' // Ensure correct content type for form data
+      'Content-Type': 'multipart/form-data' // 确保表单数据的 Content-Type 正确
     }
   });
 };
@@ -387,10 +387,10 @@ export const deleteApiKey = async (id: string): Promise<void> => {
 };
 
 // --- AI Model API ---
-// Assuming a backend endpoint exists to get all AI Models
+// 假设存在一个后端端点来获取所有 AI 模型
 export const getAllAIModels = async (): Promise<AIModel[]> => {
-  // Replace with the actual backend endpoint if different
-  const response = await api.get<AIModel[]>('/api/ApiKey/all-models'); // Using the new endpoint in ApiKeyController
+  // 如果不同，请替换为实际的后端端点
+  const response = await api.get<AIModel[]>('/api/ApiKey/all-models'); // 使用 ApiKeyController 中的新端点
   return response.data;
 };
 
@@ -403,7 +403,7 @@ export const getAIModelUsageSettings = async (): Promise<AIModelUsageSetting[]> 
 };
 
 export const createAIModelUsageSetting = async (settingData: Omit<AIModelUsageSetting, 'id' | 'createdAt' | 'updatedAt' | 'aiModel'>): Promise<AIModelUsageSetting> => {
-   // Backend expects form data
+   // 后端需要表单数据
    const formData = new FormData();
    formData.append('usageType', settingData.usageType);
    formData.append('aiModelId', settingData.aiModelId);
@@ -418,9 +418,9 @@ export const createAIModelUsageSetting = async (settingData: Omit<AIModelUsageSe
 };
 
 export const updateAIModelUsageSetting = async (id: string, settingData: Partial<Omit<AIModelUsageSetting, 'id' | 'createdAt' | 'updatedAt' | 'aiModel'>>): Promise<void> => {
-   // Backend expects form data
+   // 后端需要表单数据
    const formData = new FormData();
-   // Only append fields that are provided in the partial object
+   // 只附加在部分对象中提供的字段
    if (settingData.usageType !== undefined) formData.append('usageType', settingData.usageType);
    if (settingData.aiModelId !== undefined) formData.append('aiModelId', settingData.aiModelId);
    if (settingData.isEnabled !== undefined) formData.append('isEnabled', settingData.isEnabled.toString());
