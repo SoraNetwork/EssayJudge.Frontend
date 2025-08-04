@@ -1,4 +1,6 @@
 import api from './api';
+// import { api as axiosApi } from '@/plugins/axios';
+// import { api as axiosApi } from './plugins/axios'; // Removed due to missing module
 
 // 定义通用的 API 响应类型 (根据后端实际返回结构调整)
 interface ApiResponse<T> {
@@ -323,63 +325,20 @@ export const toggleApiKeyStatus = async (id: string): Promise<void> => {
   await api.patch(`/api/ApiKey/${id}/toggle`);
 };
 
-export const updateApiKey = async (id: string, apiKeyData: Partial<Omit<ApiKey, 'id' | 'createdAt' | 'AIModels'>> & { modelIds?: string[] }): Promise<void> => {
-   // 后端需要表单数据，所以我们使用 FormData
-  const formData = new FormData();
-  // 只附加在部分对象中提供的字段
-  if (apiKeyData.serviceType !== undefined) formData.append('serviceType', apiKeyData.serviceType);
-  if (apiKeyData.key !== undefined) formData.append('key', apiKeyData.key);
-  if (apiKeyData.secret !== undefined) formData.append('secret', apiKeyData.secret);
-  if (apiKeyData.endpoint !== undefined) formData.append('endpoint', apiKeyData.endpoint);
-  if (apiKeyData.description !== undefined) formData.append('description', apiKeyData.description);
-  if (apiKeyData.isEnabled !== undefined) formData.append('isEnabled', apiKeyData.isEnabled.toString());
+// Define ApiKeyUpdateDto type based on expected update fields
+export interface ApiKeyUpdateDto {
+  serviceType?: string;
+  key?: string;
+  secret?: string;
+  endpoint?: string;
+  description?: string;
+  isEnabled?: boolean;
+  modelIds?: string[];
+}
 
-  // 如果提供了 modelIds，则添加
-  // 注意：后端需要表单中的 List<string> modelIds。
-  // 如果 modelIds 显式设置为空数组，我们应该发送它来清除模型。
-  // 如果 modelIds 未定义，我们不发送该参数，保留现有模型不变。
-  if (apiKeyData.modelIds !== undefined) {
-       // 如果需要，首先通过发送一个空列表来清除现有的 modelIds，或者只发送新的列表
-       // 后端 PUT 逻辑根据提供的列表与现有列表来处理添加/删除。
-       apiKeyData.modelIds.forEach(modelId => {
-           formData.append('modelIds', modelId);
-       });
-       // 如果 modelIds 是一个空数组，循环将不会运行，'modelIds' 键也不会在 formData 中。
-       // 后端需要正确处理 'modelIds' 的缺失或空列表。
-       // 根据后端代码，发送一个空列表似乎是删除所有模型的方法。
-       // 如果列表为空，FormData 不容易支持显式发送一个 *空* 列表参数。
-       // 一个常见的解决方法是发送一个特殊标记或依赖于后端的解释。
-       // 让我们假设后端正确地将 'modelIds' 键的缺失解释为“无变化”
-       // 并将空列表（如果发送）解释为“全部删除”。
-       // 要显式发送一个空列表，您可能需要为空键发送一个空字符串，
-       // 或者后端可能需要接受 JSON 主体而不是表单数据来进行复杂更新。
-       // 按照后端代码，我们只在列表不为空时附加。
-       // 如果您需要通过表单数据显式发送一个空列表，后端可能需要调整
-       // 或者如果列表为空，您可能需要发送一个像 `formData.append('modelIds', '');` 这样的虚拟值。
-       // 让我们假设如果参数存在，后端会正确处理空列表。
-       // 为确保即使列表为空参数也存在，我们可以添加一个检查：
-       if (apiKeyData.modelIds.length === 0) {
-           // 如果列表为空，则附加一个空值以表示删除
-           // 这可能取决于后端的实现，但发送一个空字符串是一种常见的方式
-           // 以确保即使没有值，参数键也存在于表单数据中。
-           // 后端代码似乎会遍历与键关联的值，
-           // 因此，一个空的值列表应该导致不添加任何模型并删除现有的模型。
-           // 让我们删除这个显式的空附加，因为后端代码似乎可以正确处理列表。
-           // 如果 modelIds 是一个空数组，forEach 循环将不会运行，'modelIds' 键也不会被添加到 formData 中。
-           // 后端 PUT 方法检查 `modelIds?.Distinct().ToList() ?? new List<string>()`。如果键不存在，`modelIds` 将为 null，从而导致一个空列表。这似乎是正确的。
-       } else {
-            apiKeyData.modelIds.forEach(modelId => {
-                formData.append('modelIds', modelId);
-            });
-       }
-  }
-
-
-  await api.put(`/api/ApiKey/${id}`, formData, {
-     headers: {
-      'Content-Type': 'multipart/form-data' // 确保表单数据的 Content-Type 正确
-    }
-  });
+export const updateApiKey = async (id: string, data: ApiKeyUpdateDto) => {
+  const response = await api.put(`/api/ApiKey/${id}`, data);
+  return response.data;
 };
 
 export const deleteApiKey = async (id: string): Promise<void> => {

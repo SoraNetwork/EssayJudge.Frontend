@@ -70,6 +70,7 @@
                   @click="confirmDeleteApiKey(item)"
                 >
                   <v-icon>mdi-delete</v-icon>
+                  <v-tooltip activator="parent" location="top">删除密钥</v-tooltip>
                 </v-btn>
               </template>
             </v-data-table>
@@ -398,9 +399,16 @@ const saveApiKey = async () => {
   savingApiKey.value = true
   try {
     const dataToSave = {
-      ...editedApiKey.value,
-      modelIds: editedApiKey.value.modelIds
+      id: editedApiKey.value.id,
+      serviceType: editedApiKey.value.serviceType,
+      key: editedApiKey.value.key,
+      secret: editedApiKey.value.secret,
+      endpoint: editedApiKey.value.endpoint,
+      description: editedApiKey.value.description,
+      isEnabled: editedApiKey.value.isEnabled,
+      aiModels: editedApiKey.value.modelIds || []
     }
+
     if (isEditingApiKey.value) {
       await updateApiKey(editedApiKey.value.id, dataToSave);
       console.log('API密钥更新成功');
@@ -412,18 +420,11 @@ const saveApiKey = async () => {
     await fetchApiKeys()
   } catch (error: any) {
     console.error('保存 API 密钥失败:', error)
-    // 添加更详细的错误信息显示
     const errorMessage = error.response?.data?.message || '操作失败，请重试';
     console.error(errorMessage);
   } finally {
     savingApiKey.value = false
   }
-}
-
-// Confirm delete API Key
-const confirmDeleteApiKey = (item: ApiKey) => {
-  apiKeyToDelete.value = item
-  apiKeyDeleteDialog.value = true
 }
 
 // Delete API key with enhanced error handling
@@ -433,17 +434,24 @@ const deleteApiKey = async () => {
   deletingApiKey.value = true
   try {
     await deleteApiKeyService(apiKeyToDelete.value.id);
-    apiKeyDeleteDialog.value = false
+    apiKeyDeleteDialog.value = false;
     console.log('API密钥删除成功');
-    await fetchApiKeys()
+    // 刷新列表
+    await fetchApiKeys();
   } catch (error: any) {
-    console.error('删除 API 密钥失败:', error)
+    console.error('删除 API 密钥失败:', error);
     const errorMessage = error.response?.data?.message || '删除失败，请重试';
     console.error(errorMessage);
   } finally {
-    deletingApiKey.value = false
-    apiKeyToDelete.value = null
+    deletingApiKey.value = false;
+    apiKeyToDelete.value = null;
   }
+}
+
+// Confirm delete API Key
+const confirmDeleteApiKey = (item: ApiKey) => {
+  apiKeyToDelete.value = item;
+  apiKeyDeleteDialog.value = true;
 }
 
 // Toggle API Key enabled status

@@ -49,7 +49,7 @@
       </v-card-text>
     </v-card>
 
-    <!-- 学生列表 -->
+    <!-- 作文列表 -->
     <v-card>
       <v-card-text>
         <v-data-table
@@ -59,18 +59,18 @@
           loading-text="加载中..."
           no-data-text="暂无数据"
         >
-          <template v-slot:item.submissionDate="{ item }">
+          <template v-slot:item.createdAt="{ item }">
             {{ formatDate(item.submissionDate) }}
           </template>
           <template v-slot:item.finalScore="{ item }">
             <v-chip
               :color="getScoreColor(item.finalScore)"
-              text-color="white"
-              v-if="item.finalScore !== null && item.finalScore !== undefined"
+              :text-color="item.finalScore ? 'white' : 'default'"
+              size="small"
+              variant="flat"
             >
-              {{ item.finalScore }}
+              {{ item.finalScore ?? '未评分' }}
             </v-chip>
-            <span v-else>未评分</span>
           </template>
           <template v-slot:item.actions="{ item }">
             <v-btn
@@ -138,7 +138,7 @@ const headers = [
   { title: '标题', key: 'title' },
   { title: '学生', key: 'studentName' },
   { title: '分数', key: 'finalScore' },
-  { title: '提交时间', key: 'createdAt' }, // Assuming 'createdAt' is the key for submissionDate in the items
+  { title: '提交时间', key: 'createdAt' },
   { title: '操作', key: 'actions', sortable: false }
 ]
 
@@ -181,20 +181,15 @@ async function fetchEssays() {
   }
 }
 
-// 根据分数获取颜色
+// 根据分数获取颜色 - 优化版本
 function getScoreColor(score: number | null | undefined) {
   if (score === null || score === undefined) {
-    return undefined; // Or a default color like 'grey'
+    return 'grey-lighten-1';
   }
-  if (score >= 90) {
-    return 'green';
-  } else if (score >= 75) {
-    return 'light-green';
-  } else if (score >= 60) {
-    return 'orange';
-  } else {
-    return 'red';
-  }
+  if (score >= 50) return 'success';
+  if (score >= 42) return 'info';
+  if (score >= 38) return 'warning';
+  return 'error';
 }
 
 // 获取所有测验
