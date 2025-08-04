@@ -60,7 +60,7 @@
           no-data-text="暂无数据"
         >
           <template v-slot:item.createdAt="{ item }">
-            {{ formatDate(item.submissionDate) }}
+            {{ formatDate(item.createdAt) }}
           </template>
           <template v-slot:item.finalScore="{ item }">
             <v-chip
@@ -108,9 +108,9 @@ import { searchSubmissions, getAssignments, submitSubmissionForEvaluation } from
 interface Essay {
   id: string | number; // Adjust type based on your API response
   studentName?: string | null | undefined; // Allow studentName to be null or undefined and optional
-  assignmentTitle?: string; // Make assignmentTitle optional to match Submission type
+  title?: string; // Make assignmentTitle optional to match Submission type
   finalScore?: number | null | undefined; // Make finalScore optional to match Submission type
-  submissionDate: string; // Adjust type if it's a Date object
+  createdAt: string; // Adjust type if it's a Date object
   status?: string; // Assuming status is returned by searchSubmissions
   // Add other properties used in the template or headers
 }

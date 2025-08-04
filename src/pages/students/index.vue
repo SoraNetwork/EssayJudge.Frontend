@@ -57,14 +57,6 @@
               icon
               variant="text"
               size="small"
-              @click="editStudent(item)"
-            >
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              size="small"
               color="error"
               @click="confirmDelete(item)"
             >
