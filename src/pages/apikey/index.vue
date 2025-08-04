@@ -184,6 +184,7 @@
                     size="x-small"
                     class="ma-1"
                     variant="outlined"
+                    @click="addModelId(model.id)"
                 >
                     {{ model.id }} ({{ model.provider }})
                 </v-chip>
@@ -284,7 +285,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   getApiKeys, createApiKey, updateApiKey, deleteApiKey as deleteApiKeyService, type ApiKey,
   getAIModelUsageSettings, createAIModelUsageSetting, updateAIModelUsageSetting, deleteAIModelUsageSetting, getAllAIModels, type AIModelUsageSetting, type AIModel,
@@ -337,6 +338,18 @@ const editedApiKey = ref({ ...defaultApiKeyItem })
 // API Key item to delete
 const apiKeyToDelete = ref<ApiKey | null>(null)
 
+// Function to add model ID from reference chips with notification
+const addModelId = (modelId: string) => {
+  if (!editedApiKey.value.modelIds.includes(modelId)) {
+    editedApiKey.value.modelIds.push(modelId);
+    // 可以在这里添加提示信息
+    console.log(`已添加模型: ${modelId}`);
+  } else {
+    // 可以在这里添加提示信息
+    console.log(`模型 ${modelId} 已存在`);
+  }
+}
+
 // Fetch all API keys
 const fetchApiKeys = async () => {
   apiKeysLoading.value = true
@@ -377,7 +390,7 @@ const closeApiKeyDialog = () => {
   apiKeyDialog.value = false
 }
 
-// Save API key
+// Save API key with enhanced error handling
 const saveApiKey = async () => {
   const { valid } = await apiKeyForm.value.validate()
   if (!valid) return
@@ -385,18 +398,23 @@ const saveApiKey = async () => {
   savingApiKey.value = true
   try {
     const dataToSave = {
-        ...editedApiKey.value,
-        modelIds: editedApiKey.value.modelIds
+      ...editedApiKey.value,
+      modelIds: editedApiKey.value.modelIds
     }
     if (isEditingApiKey.value) {
       await updateApiKey(editedApiKey.value.id, dataToSave);
+      console.log('API密钥更新成功');
     } else {
       await createApiKey(dataToSave);
+      console.log('API密钥创建成功');
     }
     closeApiKeyDialog()
     await fetchApiKeys()
-  } catch (error) {
+  } catch (error: any) {
     console.error('保存 API 密钥失败:', error)
+    // 添加更详细的错误信息显示
+    const errorMessage = error.response?.data?.message || '操作失败，请重试';
+    console.error(errorMessage);
   } finally {
     savingApiKey.value = false
   }
@@ -408,7 +426,7 @@ const confirmDeleteApiKey = (item: ApiKey) => {
   apiKeyDeleteDialog.value = true
 }
 
-// Delete API key
+// Delete API key with enhanced error handling
 const deleteApiKey = async () => {
   if (!apiKeyToDelete.value) return
 
@@ -416,9 +434,12 @@ const deleteApiKey = async () => {
   try {
     await deleteApiKeyService(apiKeyToDelete.value.id);
     apiKeyDeleteDialog.value = false
+    console.log('API密钥删除成功');
     await fetchApiKeys()
-  } catch (error) {
+  } catch (error: any) {
     console.error('删除 API 密钥失败:', error)
+    const errorMessage = error.response?.data?.message || '删除失败，请重试';
+    console.error(errorMessage);
   } finally {
     deletingApiKey.value = false
     apiKeyToDelete.value = null
@@ -629,31 +650,13 @@ const toggleSettingEnabled = async (item: AIModelUsageSetting) => {
   }
 }
 
-
-// --- Lifecycle Hooks and Watchers ---
-
-// Fetch data on page mount
+// lifecycle hooks
 onMounted(() => {
-  // Fetch data for the initial tab
-  if (currentTab.value === 'apiKeys') {
-    fetchApiKeys();
-  } else {
-    fetchUsageSettings();
-    fetchAvailableModels(); // Models are needed for the settings tab
-  }
-});
-
-// Watch for tab changes to fetch data if needed
-watch(currentTab, (newTab) => {
-  if (newTab === 'apiKeys' && apiKeys.value.length === 0 && !apiKeysLoading.value) {
-    fetchApiKeys();
-  } else if (newTab === 'modelUsage' && usageSettings.value.length === 0 && !settingsLoading.value) {
-    fetchUsageSettings();
-  }
-  // Always fetch available models when switching to the modelUsage tab
-  if (newTab === 'modelUsage' && availableModels.value.length === 0) {
-      fetchAvailableModels();
-  }
+  // 初始加载所需数据
+  fetchApiKeys();
+  fetchUsageSettings();
+  fetchAvailableModels();
 });
 
 </script>
+
