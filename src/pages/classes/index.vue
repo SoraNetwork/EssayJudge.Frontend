@@ -15,6 +15,9 @@
           loading-text="加载中..."
           no-data-text="暂无数据"
         >
+          <template v-slot:item.name="{ item }">
+            <v-btn :to="`/classes/${item.id}`" variant="text" color="primary">{{ item.name }}</v-btn>
+          </template>
           <template v-slot:item.studentCount="{ item }">
             <v-chip color="primary" variant="outlined">
               {{ item.studentCount || 0 }}
