@@ -15,7 +15,7 @@
     <div v-else>
       <!-- 测验信息卡片 -->
       <v-card class="mb-6">
-        <v-card-title class="text-h5">{{ assignment.title }}</v-card-title>
+        <v-card-title class="text-h5">{{ assignment.titleContext }}</v-card-title>
 
         <v-card-text>
           <v-row>
@@ -210,7 +210,7 @@ const assignmentId = computed(() => (route.params as { id: string }).id)
 // 状态变量
 const assignment = ref<any>({
   id: '',
-  title: '',
+  titleContext: '',
   grade: null,
   totalScore: null,
   baseScore: null,
@@ -231,7 +231,7 @@ const form = ref<any>(null)
 const editedItem = ref<any>({
   id: '',
   grade: null,
-  title: '',
+  titleContext: '',
   totalScore: null,
   baseScore: null,
   scoringCriteria: '',
@@ -239,18 +239,18 @@ const editedItem = ref<any>({
 
 // Define grades for the select input
 const grades = ref([
-  { grade: '一年级', string: 'Grade1' },
-  { grade: '二年级', string: 'Grade2' },
-  { grade: '三年级', string: 'Grade3' },
-  { grade: '四年级', string: 'Grade4' },
-  { grade: '五年级', string: 'Grade5' },
-  { grade: '六年级', string: 'Grade6' },
-  { grade: '初一', string: 'Junior1' },
-  { grade: '初二', string: 'Junior2' },
-  { grade: '初三', string: 'Junior3' },
-  { grade: '高一', string: 'Senior1' },
-  { grade: '高二', string: 'Senior2' },
-  { grade: '高三', string: 'Senior3' },
+  { grade: '一年级', string: '一年级' },
+  { grade: '二年级', string: '二年级' },
+  { grade: '三年级', string: '三年级' },
+  { grade: '四年级', string: '四年级' },
+  { grade: '五年级', string: '五年级' },
+  { grade: '六年级', string: '六年级' },
+  { grade: '初一', string: '初一' },
+  { grade: '初二', string: '初二' },
+  { grade: '初三', string: '初三' },
+  { grade: '高一', string: '高一' },
+  { grade: '高二', string: '高二' },
+  { grade: '高三', string: '高三' },
 ]);
 
 // 表格列定义
@@ -291,7 +291,7 @@ async function fetchAssignmentDetails() {
     // 初始化编辑项
     editedItem.value = {
       id: assignment.value.id,
-      title: assignment.value.title,
+      titleContext: assignment.value.titleContext,
       grade: assignment.value.grade,
       totalScore: assignment.value.totalScore,
       baseScore: assignment.value.baseScore,
@@ -348,7 +348,7 @@ async function saveAssignment() {
 
   saving.value = true
   try {
-    await updateAssignment(assignment.value.id, editedItem.value);
+    await updateAssignment(editedItem.value);
 
     // 关闭对话框并刷新数据
     editDialog.value = false

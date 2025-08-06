@@ -221,7 +221,7 @@ export const createAssignment = async (assignmentData: Omit<Assignment, 'id' | '
 };
 
 // 修改测验更新函数
-export const updateAssignment = async (assignmentData: Assignment, value?: any): Promise<Assignment> => {
+export const updateAssignment = async (assignmentData: Assignment): Promise<Assignment> => {
   const response = await api.put<Assignment>('/EssayAssignment', assignmentData, {
     headers: {
       'Content-Type': 'application/json'
