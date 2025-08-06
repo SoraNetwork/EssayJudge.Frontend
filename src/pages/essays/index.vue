@@ -26,7 +26,7 @@
               </template>
               <template v-slot:item="{ props, item }">
                 <v-list-item v-bind="props" :title="item.raw.description">
-                  <v-list-item-subtitle>{{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
+                  <v-list-item-subtitle>{{ formatDateUTC8(item.raw.createdAt) }}</v-list-item-subtitle>
                 </v-list-item>
               </template>
             </v-select>
@@ -60,7 +60,7 @@
           no-data-text="暂无数据"
         >
           <template v-slot:item.createdAt="{ item }">
-            {{ formatDate(item.createdAt) }}
+            {{ formatDateUTC8(item.createdAt) }}
           </template>
           <template v-slot:item.finalScore="{ item }">
             <v-chip
@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { searchSubmissions, getAssignments, submitSubmissionForEvaluation } from '@/services/apiService';
+import { formatDateUTC8 } from '@/utils/dateUtils';
 
 // Define interface for Essay item
 interface Essay {
@@ -122,15 +123,6 @@ interface Assignment {
   createdAt: string; // Ensure createdAt is included for display
   description?: string; // Ensure description is included for display
   // Add other properties if needed
-}
-
-// Helper function to format date
-function formatDate(dateString: string) {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const date = new Date(dateString);
-  // 加8小时，转换为UTC+8
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options); // 使用toLocaleString同时显示日期和时间
 }
 
 // 表头定义

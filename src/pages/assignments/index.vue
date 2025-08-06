@@ -16,7 +16,7 @@
           no-data-text="暂无数据"
         >
           <template v-slot:item.createdAt="{ item }">
-            {{ formatDate(item.createdAt) }}
+            {{ formatDateUTC8(item.createdAt) }}
           </template>
           <template v-slot:item.actions="{ item }">
             <v-btn
@@ -122,15 +122,7 @@
 <script setup lang="ts">
 import { ref, onMounted, /*watch*/ } from 'vue'
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
-
-// 辅助函数：格式化日期并加8小时
-function formatDate(dateString: string) {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const date = new Date(dateString);
-  // 加8小时，转换为UTC+8
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options); // 使用toLocaleString同时显示日期和时间
-}
+import { formatDateUTC8 } from '@/utils/dateUtils';
 
 // 数据和状态
 const loading = ref(false)

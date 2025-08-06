@@ -71,9 +71,9 @@
           <v-card-text>
             <v-data-table :headers="headers" :items="recentSubmissions" :loading="loading.recentSubmissions"
               loading-text="加载中..." no-data-text="暂无数据">
-              <template v-slot:item.createdAt="{ item }">
-                {{ new Date(item.createdAt).toLocaleString() }}
-              </template>
+          <template v-slot:item.createdAt="{ item }">
+            {{ formatDateUTC8(item.createdAt) }}
+          </template>
               <template v-slot:item.actions="{ item }">
                 <v-btn icon variant="text" size="small" :to="`/essays/${item.id}`">
                   <v-icon>mdi-eye</v-icon>
@@ -107,6 +107,8 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getAssignments, getStudents, searchSubmissions, type Submission } from '@/services/apiService'; // Import from apiService
 import { useRouter } from 'vue-router'
+import { formatDateUTC8 } from '@/utils/dateUtils';
+
 
 // Loading states
 const loading = ref({
