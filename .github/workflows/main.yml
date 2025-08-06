@@ -17,6 +17,8 @@ jobs:
       - name: Create .env.local file
         run: |
           echo "VITE_API_BASE_URL=${{ secrets.EJ_BASE_URL }}" >> .env.local
+          echo "VITE_APP_TITLE=${{ secrets.EJ_HEAD_TITLE }}" >> .env.local
+          echo "VITE_FOOTER_TEXT=${{ secrets.EJ_FOOT_TITLE }}" >> .env.local
 
       - name: Build
         run: |
