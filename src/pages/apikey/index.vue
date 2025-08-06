@@ -296,14 +296,13 @@ const saveApiKey = async () => {
   savingApiKey.value = true
   try {
     const dataToSave = {
-      id: editedApiKey.value.id,
       serviceType: editedApiKey.value.serviceType,
       key: editedApiKey.value.key,
       secret: editedApiKey.value.secret,
       endpoint: editedApiKey.value.endpoint,
       description: editedApiKey.value.description,
       isEnabled: editedApiKey.value.isEnabled,
-      aiModels: editedApiKey.value.modelIds || []
+      modelIds: editedApiKey.value.modelIds || []
     }
 
     if (isEditingApiKey.value) {
