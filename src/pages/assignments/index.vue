@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, /*watch*/ } from 'vue'
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
 
 // 辅助函数：格式化日期并加8小时
@@ -135,6 +135,15 @@ function formatDate(dateString: string) {
 // 数据和状态
 const loading = ref(false)
 const dialog = ref(false)
+/*
+watch(dialog, (newValue, oldValue) => {
+  // 当对话框从打开状态变为关闭状态时
+  if (oldValue === true && newValue === false) {
+    // 刷新页面
+    window.location.reload();
+  }
+});*/
+
 // 表格列定义
 const headers = [
   { title: '描述', key: 'description' }, 
@@ -255,12 +264,8 @@ const saveAssignment = async () => {
       await createAssignment(dataToSend);
     }
 
-    // 关闭对话框并刷新列表
+    // 关闭对话框，watcher会处理刷新和重置
     dialog.value = false
-    await fetchAssignments(); // 刷新列表
-
-    // 重置表单
-    resetForm()
   } catch (error) {
     console.error('保存测验失败:', error)
   } finally {
