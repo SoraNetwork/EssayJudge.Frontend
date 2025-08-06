@@ -2,10 +2,12 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
-const BaseURL = import.meta.env.VITE_API_BASE_URL;
+export const baseURL = "http://localhost:5000" // 后端API基础URL
+//const BaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 // 创建axios实例
 const api = axios.create({
-  baseURL: BaseURL, // 后端API基础URL
+  baseURL: baseURL, // 后端API基础URL
+  //baseURL: BaseURL, // 后端API基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json' // 默认使用 JSON
@@ -19,9 +21,9 @@ api.interceptors.request.use(
     if (authStore.token) {
       config.headers['Authorization'] = `Bearer ${authStore.token}`
     }
-    // 如果是文件上传，axios 会自动设置正确的 Content-Type 和边界，因此我们不需要手动设置
+    // 如果是文件上传，需要设置 Content-Type 为 multipart/form-data
     if (config.data instanceof FormData) {
-        delete config.headers['Content-Type'];
+        config.headers['Content-Type'] = 'multipart/form-data';
     } else {
         // 否则确保是 application/json
         config.headers['Content-Type'] = 'application/json';

@@ -3,9 +3,10 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
 // 创建axios实例
-const BaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+//const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const api = axios.create({
-  baseURL: BaseURL, // 后端API基础URL
+  //baseURL: baseURL, // 后端API基础URL
+  baseURL: 'http://localhost:5000', // 后端API基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'multipart/form-data'
