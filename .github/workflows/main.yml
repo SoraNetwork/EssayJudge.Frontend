@@ -14,10 +14,9 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.2.0
 
-      - name: Replace API URL for Build
+      - name: Create .env.local file
         run: |
-          sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts
-          sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/axiosInstance.ts
+          echo "VITE_API_BASE_URL=${{ secrets.EJ_BASE_URL }}" >> .env.local
 
       - name: Build
         run: |
