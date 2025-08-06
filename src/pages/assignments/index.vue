@@ -176,6 +176,7 @@ interface EditedAssignment {
   scoringCriteria: string;
   description: string | null; 
   titleContext: string | null; // 标题内容
+  createdAt?: string | null; // 原始创建时间
 }
 
 // 当前编辑的项目 - 与表单字段保持一致
@@ -200,10 +201,8 @@ const confirmDelete = (item: any) => {
 }
 
 // 编辑测验
-const editAssignment = (item: Assignment) => { // 使用导入的类型
-  isEditing.value = true
-  // 从item复制属性，包括后端返回的新属性
-  // 确保表单需要的所有属性都被复制
+const editAssignment = (item: Assignment) => {
+  isEditing.value = true;
   editedItem.value = {
     id: item.id,
     grade: item.grade || null,
@@ -211,10 +210,10 @@ const editAssignment = (item: Assignment) => { // 使用导入的类型
     baseScore: item.baseScore || null,
     scoringCriteria: item.scoringCriteria || '',
     description: item.description || null, 
-    titleContext: item.titleContext || null, // 标题内容
-    // description and prompt are not in the new editedItem structure
+    titleContext: item.titleContext || null,
+    createdAt: item.createdAt || null, // 保存原始创建时间
   }
-  dialog.value = true
+  dialog.value = true;
 }
 
 // 获取所有测验
@@ -239,28 +238,26 @@ const saveAssignment = async () => {
 
   saving.value = true
   try {
-    // 构造API所需数据
-    const dataToSend: Omit<Assignment, "createdAt" | "id" | "updatedAt"> = {
-      scoringCriteria: editedItem.value.scoringCriteria,
-      // 将表单模型中的null转换为undefined，适配API可选字段
-      grade: editedItem.value.grade || undefined,
-      totalScore: editedItem.value.totalScore || undefined,
-      baseScore: editedItem.value.baseScore || undefined,
-      titleContext: editedItem.value.titleContext || undefined,
-      description: editedItem.value.description || undefined, 
-    };
-
     if (isEditing.value) {
-      // 用updateAssignment替换api.put
-      await updateAssignment(editedItem.value.id, dataToSend); // 传递dataToSend
+      // 编辑测验，发送包含所有必需字段的完整对象
+      await updateAssignment(editedItem.value as unknown as Assignment);
     } else {
-      // 用createAssignment替换api.post
-      await createAssignment(dataToSend); // 传递dataToSend
+      // 新建测验
+      const dataToSend: Omit<Assignment, "createdAt" | "id" | "updatedAt"> = {
+        scoringCriteria: editedItem.value.scoringCriteria,
+        // 将表单模型中的null转换为undefined，适配API可选字段
+        grade: editedItem.value.grade || undefined,
+        totalScore: editedItem.value.totalScore || undefined,
+        baseScore: editedItem.value.baseScore || undefined,
+        titleContext: editedItem.value.titleContext || undefined,
+        description: editedItem.value.description || undefined, 
+      };
+      await createAssignment(dataToSend);
     }
 
     // 关闭对话框并刷新列表
     dialog.value = false
-    window.location.reload(); // 添加页面刷新
+    await fetchAssignments(); // 刷新列表
 
     // 重置表单
     resetForm()
@@ -280,7 +277,7 @@ const deleteAssignment = async () => {
     // 用deleteAssignment替换api.delete
     await deleteAssignmentApi(itemToDelete.value.id);
     deleteDialog.value = false
-    window.location.reload(); // 添加页面刷新
+    await fetchAssignments(); // 刷新列表
   } catch (error) {
     console.error('删除测验失败:', error)
   } finally {

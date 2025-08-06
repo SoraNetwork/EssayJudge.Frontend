@@ -200,7 +200,13 @@ export const deleteClass = async (id: string): Promise<void> => {
 // --- 测验管理 API ---
 
 export const getAssignments = async (): Promise<Assignment[]> => {
-  const response = await api.get<Assignment[]>('/EssayAssignment');
+  const response = await api.get<Assignment[]>('/EssayAssignment', {
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    }
+  });
   return response.data;
 };
 
@@ -214,8 +220,13 @@ export const createAssignment = async (assignmentData: Omit<Assignment, 'id' | '
   return response.data;
 };
 
-export const updateAssignment = async (id: string, assignmentData: Partial<Omit<Assignment, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Assignment> => {
-  const response = await api.put<Assignment>(`/EssayAssignment/${id}`, assignmentData);
+// 修改测验更新函数
+export const updateAssignment = async (assignmentData: Assignment): Promise<Assignment> => {
+  const response = await api.put<Assignment>('/EssayAssignment', assignmentData, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
   return response.data;
 };
 

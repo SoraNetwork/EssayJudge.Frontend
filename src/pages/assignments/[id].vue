@@ -69,7 +69,7 @@
                   <div class="text-subtitle-2">作文提交数量</div>
                 </v-card-text>
               </v-card>
-
+              <!--
               <v-btn
                 block
                 color="primary"
@@ -77,7 +77,7 @@
                 @click="editDialog = true"
               >
                 编辑测验
-              </v-btn>
+              </v-btn> -->
             </v-col>
           </v-row>
         </v-card-text>
