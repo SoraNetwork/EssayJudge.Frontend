@@ -128,6 +128,81 @@ export interface ServerStatus {
 }
 
 
+// --- 学生作文上传 API ---
+
+// 用于 /essay/studentupload/studentinfo 的接口
+export interface StudentForUpload {
+  id: string;
+  studentId: string;
+  name: string;
+}
+
+export interface ClassWithStudents {
+  id: string;
+  name: string;
+  createdAt: string;
+  students: StudentForUpload[];
+}
+
+// 用于 /essay/studentupload/query/{shortId} 的接口
+export interface QueriedEssay {
+  id: string;
+  studentName: string;
+  studentId: string;
+  createdAt: string;
+  status: string;
+  score?: number;
+}
+
+export const getStudentInfoForUpload = async (): Promise<ClassWithStudents[]> => {
+  const response = await api.get<ClassWithStudents[]>('/essay/studentupload/studentinfo');
+  return response.data;
+};
+
+export const getAssignmentsForStudent = async (studentId: string): Promise<Assignment[]> => {
+  const response = await api.get<Assignment[]>(`/essay/studentupload/assignments/${studentId}`);
+  return response.data;
+};
+
+export const checkEssayImage = async (imageFile: File): Promise<{ success: boolean; processedImageUrl: string; message?: string }> => {
+  const formData = new FormData();
+  formData.append('file', imageFile);
+  const response = await api.post<{ success: boolean; processedImageUrl: string; message?: string }>('/essay/studentupload/checkimg', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    validateStatus: (status) => status < 500,
+  });
+  return response.data;
+};
+
+export const submitEssayWithImage = async (data: { studentId: string; essayAssignmentId: string; processedImageUrl: string; columnCount: number }): Promise<{ id: string }> => {
+  const formData = new FormData();
+  formData.append('StudentId', data.studentId);
+  formData.append('EssayAssignmentId', data.essayAssignmentId);
+  formData.append('ProcessedImageUrl', data.processedImageUrl);
+  formData.append('ColumnCount', data.columnCount.toString());
+  const response = await api.post<{ id: string }>('/essay/studentupload/submit', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const submitEssayWithText = async (data: { studentId: string; essayAssignmentId: string; prasedText: string }): Promise<{ id: string }> => {
+  const formData = new FormData();
+  formData.append('StudentId', data.studentId);
+  formData.append('EssayAssignmentId', data.essayAssignmentId);
+  formData.append('PrasedText', data.prasedText);
+  const response = await api.post<{ id: string }>('/essay/studentupload/submit/hasprased', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const queryEssayByShortId = async (shortId: string): Promise<QueriedEssay> => {
+  const response = await api.get<QueriedEssay>(`/essay/studentupload/query/${shortId}`);
+  return response.data;
+};
+
+
 // --- 学生管理 API ---
 
 export const getStudents = async (filters: { classId?: string, searchTerm?: string }): Promise<Student[]> => {

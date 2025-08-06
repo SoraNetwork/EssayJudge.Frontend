@@ -72,11 +72,11 @@
             class="mb-4"
           >
             <template v-slot:selection="{ item }">
-              <span>{{ item.raw.description || '未命名作业' }}</span>
+              <span>{{ item.raw.description || '请选择作业' }}</span>
             </template>
             <template v-slot:item="{ props, item }">
               <v-list-item v-bind="props">
-                <v-list-item-title>{{ item.raw.description || '未命名作业' }}</v-list-item-title>
+                <v-list-item-title>{{ item.raw.description || '请选择作业' }}</v-list-item-title>
                 <v-list-item-subtitle>创建时间: {{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
               </v-list-item>
             </template>
@@ -115,7 +115,7 @@
               </v-card-title>
               <v-card-text>
                 <v-img
-                  :src="`${baseURL}${processedImageUrl}`"
+                  :src="fullProcessedImageUrl"
                   max-height="500"
                   contain
                   class="mx-auto cursor-pointer"
@@ -140,6 +140,13 @@
           <!-- 提交按钮 -->
           <div class="d-flex justify-end">
             <v-btn
+              color="secondary"
+              class="mr-4"
+              @click="navigateToQuery"
+            >
+              查询作文
+            </v-btn>
+            <v-btn
               type="submit"
               color="primary"
               :loading="submitting"
@@ -155,11 +162,16 @@
     <!-- 成功提示 -->
     <v-dialog v-model="showSuccessDialog" persistent max-width="400">
       <v-card>
-        <v-card-title class="text-h5">提交成功</v-card-title>
-        <v-card-text>作文已成功提交，我们会尽快进行批改。</v-card-text>
+        <v-card-title class="text-h5">作文提交成功</v-card-title>
+        <v-card-text>
+          <p>您的作文查询ID为:</p>
+          <p class="text-h6 text-center my-2"><strong>{{ submittedEssayShortId }}</strong></p>
+          <p class="text-caption">您可以使用此ID在查询页面跟踪作文状态。</p>
+        </v-card-text>
         <v-card-actions>
           <v-spacer/>
-          <v-btn color="primary" @click="resetForm">确定</v-btn>
+          <v-btn color="primary" variant="text" @click="goToQueryPage">前往查询</v-btn>
+          <v-btn color="primary" @click="confirmAndReload">确定</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -168,7 +180,7 @@
     <v-dialog v-model="showImageDialog" max-width="90vw">
       <v-card>
         <v-card-text class="pa-0">
-          <v-img :src="`${baseURL}${processedImageUrl}`" contain />
+          <v-img :src="fullProcessedImageUrl" contain />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -190,33 +202,42 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from '@/services/axiosInstance'
-import  baseURL  from '@/services/axiosInstance'
+import { 
+  getStudentInfoForUpload, 
+  getAssignmentsForStudent, 
+  checkEssayImage,
+  submitEssayWithImage,
+  submitEssayWithText,
+  type ClassWithStudents as Class, 
+  type Student as Student, 
+  type Assignment 
+} from '@/services/apiService'
+import  api  from '@/services/api'
 
-// 类型定义
-interface Student {
-  id: string
-  studentId: string
-  name: string
-}
+// 类型定义 (现在可以从 apiService 导入)
+// interface Student {
+//   id: string
+//   studentId: string
+//   name: string
+// }
 
-interface Class {
-  id: string
-  name: string
-  createdAt: string
-  students: Student[]
-}
+// interface Class {
+//   id: string
+//   name: string
+//   createdAt: string
+//   students: Student[]
+// }
 
-interface Assignment {
-  id: string
-  grade: string
-  description: string
-  totalScore: number
-  baseScore: number
-  titleContext?: string
-  scoringCriteria?: string
-  createdAt: string
-}
+// interface Assignment {
+//   id: string
+//   grade: string
+//   description: string
+//   totalScore: number
+//   baseScore: number
+//   titleContext?: string
+//   scoringCriteria?: string
+//   createdAt: string
+// }
 
 // 为Student和Assignment分别定义SelectItem类型
 interface StudentSelectItem {
@@ -232,6 +253,10 @@ interface AssignmentSelectItem {
 }
 
 const router = useRouter()
+
+function navigateToQuery() {
+  router.push('/essay/query')
+}
 
 // 错误处理
 const showError = ref(false)
@@ -277,6 +302,19 @@ const imageFile = ref<File | null>(null)
 const processedImageUrl = ref('')
 const imageError = ref('')
 
+// 根据 processedImageUrl 计算完整的 URL
+const fullProcessedImageUrl = computed(() => {
+  if (!processedImageUrl.value) return ''
+  // 如果已经是完整的 URL，则直接使用
+  if (processedImageUrl.value.startsWith('http')) {
+    return processedImageUrl.value
+  }
+  // 否则，与 axios 的 baseURL 拼接
+  const baseURL = api.defaults.baseURL || ''
+  // 确保 baseURL 和路径之间只有一个斜杠
+  return `${baseURL.replace(/\/$/, '')}/${processedImageUrl.value.replace(/^\//, '')}`
+})
+
 // 文字相关
 const essayText = ref('')
 
@@ -284,6 +322,7 @@ const essayText = ref('')
 const submitting = ref(false)
 const showSuccessDialog = ref(false)
 const showImageDialog = ref(false)
+const submittedEssayShortId = ref('')
 
 // 当前步骤
 const currentStep = ref(1)
@@ -345,9 +384,9 @@ async function fetchClasses() {
   try {
     loadingClasses.value = true
     classError.value = ''
-    const response = await axios.get('/essay/studentupload/studentinfo')
-    if (response.data && Array.isArray(response.data)) {
-      classes.value = response.data
+    const response = await getStudentInfoForUpload()
+    if (response && Array.isArray(response)) {
+      classes.value = response
     } else {
       throw new Error('获取班级数据格式错误')
     }
@@ -364,9 +403,9 @@ async function fetchAssignments(studentId: string) {
   try {
     loadingAssignments.value = true
     assignmentError.value = ''
-    const response = await axios.get(`/essay/studentupload/assignments/${studentId}`)
-    if (response.data && Array.isArray(response.data)) {
-      assignments.value = response.data
+    const response = await getAssignmentsForStudent(studentId)
+    if (response && Array.isArray(response)) {
+      assignments.value = response
       if (assignments.value.length === 0) {
         assignmentError.value = '当前没有可提交的作业'
       }
@@ -413,34 +452,13 @@ async function handleImageSelected() {
   }
 
   try {
-    const formData = new FormData()
-    
-    // 添加文件到FormData，使用'file'作为键名
-    formData.append('file', imageFile.value);
+    const response = await checkEssayImage(imageFile.value)
 
-    const response = await axios.post('/essay/studentupload/checkimg', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      validateStatus: function (status) {
-        return status < 500 // 允许400错误被捕获
-      }
-    })
-
-    if (response.status === 400) {
-      // 处理验证错误
-      const errors = response.data.errors
-      if (errors?.file?.length > 0) {
-        throw new Error(errors.file[0])
-      }
-      throw new Error('图片验证失败')
-    }
-
-    if (response.data?.success && response.data?.processedImageUrl) {
-      processedImageUrl.value = response.data.processedImageUrl
+    if (response?.success && response?.processedImageUrl) {
+      processedImageUrl.value = response.processedImageUrl
       imageError.value = ''
     } else {
-      throw new Error(response.data?.message || '图片处理失败')
+      throw new Error(response?.message || '图片处理失败')
     }
   } catch (error: any) {
     imageError.value = error.message || '图片处理失败'
@@ -461,40 +479,32 @@ async function submitEssay() {
     
     if (submitMode.value === 'image') {
       // 图片模式提交
-      const formData = new FormData()
-      formData.append('StudentId', studentId.value)
-      formData.append('EssayAssignmentId', selectedAssignment.value)
-      formData.append('ProcessedImageUrl', processedImageUrl.value)
-      formData.append('ColumnCount', Math.floor(Number(columnCount.value)).toString())
-
-      const response = await axios.post('/essay/studentupload/submit', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const response = await submitEssayWithImage({
+        studentId: studentId.value,
+        essayAssignmentId: selectedAssignment.value,
+        processedImageUrl: processedImageUrl.value,
+        columnCount: Math.floor(Number(columnCount.value))
       })
       
-      if (response.status === 200) {
+      if (response?.id) {
+        submittedEssayShortId.value = response.id.slice(-8)
         showSuccessDialog.value = true
       } else {
-        throw new Error(response.data?.message || '提交失败')
+        throw new Error('提交失败')
       }
     } else {
       // 文字模式提交
-      const formData = new FormData()
-      formData.append('StudentId', studentId.value)
-      formData.append('EssayAssignmentId', selectedAssignment.value)
-      formData.append('PrasedText', essayText.value)
-
-      const response = await axios.post('/essay/studentupload/submit/hasprased', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const response = await submitEssayWithText({
+        studentId: studentId.value,
+        essayAssignmentId: selectedAssignment.value,
+        prasedText: essayText.value
       })
       
-      if (response.status === 200) {
+      if (response?.id) {
+        submittedEssayShortId.value = response.id.slice(-8)
         showSuccessDialog.value = true
       } else {
-        throw new Error(response.data?.message || '提交失败')
+        throw new Error('提交失败')
       }
     }
   } catch (error: any) {
@@ -503,6 +513,19 @@ async function submitEssay() {
   } finally {
     submitting.value = false
   }
+}
+
+// 前往查询页面
+function goToQueryPage() {
+  const shortId = submittedEssayShortId.value
+  resetForm()
+  router.push({ path: '/essay/query', query: { id: shortId } })
+}
+
+// 确认并刷新页面
+function confirmAndReload() {
+  showSuccessDialog.value = false
+  window.location.reload()
 }
 
 // 重置表单
@@ -516,6 +539,7 @@ function resetForm() {
   imageFile.value = null
   processedImageUrl.value = ''
   essayText.value = ''
+  submittedEssayShortId.value = ''
   showSuccessDialog.value = false
   showError.value = false
   errorMessage.value = ''
