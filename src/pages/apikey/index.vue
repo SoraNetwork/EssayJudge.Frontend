@@ -66,7 +66,7 @@
                   @change="toggleSettingEnabled(item)"></v-switch>
               </template>
               <template v-slot:item.createdAt="{ item }">
-                {{ new Date(item.createdAt).toLocaleString() }}
+                {{ formatDateUTC8(item.createdAt) }}
               </template>
               <template v-slot:item.actions="{ item }">
                 <v-btn icon variant="text" size="small" @click="editSetting(item)">
