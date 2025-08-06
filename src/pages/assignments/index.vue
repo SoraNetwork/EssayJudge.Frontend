@@ -135,14 +135,13 @@ function formatDate(dateString: string) {
 // 数据和状态
 const loading = ref(false)
 const dialog = ref(false)
-/*
 watch(dialog, (newValue, oldValue) => {
   // 当对话框从打开状态变为关闭状态时
   if (oldValue === true && newValue === false) {
     // 刷新页面
     window.location.reload();
   }
-});*/
+});
 
 // 表格列定义
 const headers = [
