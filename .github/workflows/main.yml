@@ -18,10 +18,12 @@ jobs:
         run: |
           echo "VITE_FOOTER_TEXT=${{ secrets.EJ_FOOT_TITLE }}" >> .env.local
           echo "VITE_APP_TITLE=${{ secrets.EJ_HEAD_TITLE }}" >> .env.local
-      - name: Replace API URL for Build
-        run: |
-          sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts
-          sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/axiosInstance.ts
+          echo "VITE_API_BASE_URL=${{ secrets.EJ_API_BASE_URL }}" >> .env.local
+
+      #- name: Replace API URL for Build
+      #  run: |
+      #    sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts
+      #    sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/axiosInstance.ts
          
       - name: Build
         run: |

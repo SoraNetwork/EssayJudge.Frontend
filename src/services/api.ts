@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 //const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const api = axios.create({
   //baseURL: baseURL, // 后端API基础URL
-  baseURL: 'http://localhost:5000', // 后端API基础URL
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/', // 后端API基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'multipart/form-data'

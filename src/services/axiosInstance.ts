@@ -2,7 +2,7 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
-export const baseURL = "http://localhost:5000" // 后端API基础URL
+export const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000' // 后端API基础URL
 //const BaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 // 创建axios实例
 const api = axios.create({
