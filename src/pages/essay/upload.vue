@@ -191,7 +191,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '@/services/axiosInstance'
-import { baseURL } from '@/services/axiosInstance'
+import  baseURL  from '@/services/axiosInstance'
 
 // 类型定义
 interface Student {
