@@ -35,7 +35,7 @@
       color="primary"
     >
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>作文评测系统</v-toolbar-title>
+      <v-toolbar-title>{{ appTitle }}</v-toolbar-title>
       <v-spacer></v-spacer>
 
       <!-- Status Info Button -->
@@ -74,7 +74,7 @@
     </v-main>
 
     <v-footer app>
-      <span>&copy; {{ new Date().getFullYear() }} - 作文评测系统</span>
+      <span>Copyright &copy; {{ new Date().getFullYear() }} - SoraEssayJudge   <a class="text-md select-none font-semibold text-neutral-500 dark:text-neutral-400" href="https://beian.miit.gov.cn/">浙ICP备2024113182号-1</a></span>
     </v-footer>
   </v-app>
 </template>
@@ -88,6 +88,8 @@ import { useTheme } from 'vuetify'
 import { usePreferredDark } from '@vueuse/core' // 导入 usePreferredDark
 import { getServerStatus, type ServerStatus } from '@/services/apiService';
 
+const appTitle = import.meta.env.VITE_APP_TITLE || '作文评测系统';
+const footerText = import.meta.env.VITE_FOOTER_TEXT || appTitle;
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
