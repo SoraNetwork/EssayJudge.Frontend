@@ -2,10 +2,10 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
-export const baseURL = "http://localhost:5000" // 后端API基础URL
+const BaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 // 创建axios实例
 const api = axios.create({
-  baseURL: baseURL, // 后端API基础URL
+  baseURL: BaseURL, // 后端API基础URL
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json' // 默认使用 JSON
