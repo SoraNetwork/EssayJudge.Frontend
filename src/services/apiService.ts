@@ -293,6 +293,10 @@ export const updateSubmissionScore = async (id: string, score: number, studentId
   await api.put(`/EssaySubmission/${id}`, formData);
 };
 
+export const deleteSubmission = async (id: string): Promise<void> => {
+  await api.delete(`/EssaySubmission`, { params: { id } });
+};
+
 
 // --- API Key 管理 API ---
 

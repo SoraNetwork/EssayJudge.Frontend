@@ -93,16 +93,46 @@
               <v-icon>mdi-check-circle</v-icon>
               <v-tooltip activator="parent" location="top">提交评测</v-tooltip>
             </v-btn>
+            <v-btn
+              icon
+              variant="text"
+              size="small"
+              color="error"
+              @click="deleteEssay(item)"
+              :loading="deleting === item.id"
+            >
+              <v-icon>mdi-delete</v-icon>
+              <v-tooltip activator="parent" location="top">删除作文</v-tooltip>
+            </v-btn>
           </template>
         </v-data-table>
       </v-card-text>
     </v-card>
+
+    <!-- 删除确认对话框 -->
+    <v-dialog v-model="deleteDialog" persistent max-width="320">
+      <v-card>
+        <v-card-title class="text-h5">
+          确认删除
+        </v-card-title>
+        <v-card-text>您确定要删除这篇作文吗？此操作无法撤销。</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey-darken-1" text @click="closeDeleteDialog">
+            取消
+          </v-btn>
+          <v-btn color="error" text @click="confirmDeleteEssay">
+            删除
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { searchSubmissions, getAssignments, submitSubmissionForEvaluation } from '@/services/apiService';
+import { searchSubmissions, getAssignments, submitSubmissionForEvaluation, deleteSubmission } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
 
 // Define interface for Essay item
@@ -138,7 +168,10 @@ const headers = [
 const essays = ref<Essay[]>([]) // Type the ref with the Essay interface
 const assignments = ref<Assignment[]>([]) // Explicitly type assignments as Assignment[]
 const loading = ref(false)
-const evaluating = ref('')
+const evaluating = ref<string | number>('')
+const deleting = ref<string | number>('')
+const deleteDialog = ref(false)
+const essayToDelete = ref<Essay | null>(null)
 
 // 筛选条件
 const filters = ref({
@@ -199,16 +232,45 @@ async function fetchAssignments() {
 }
 
 // 提交作文评测
-async function submitForEvaluation(item: any) {
+async function submitForEvaluation(item: Essay) {
   evaluating.value = item.id
   try {
-    await submitSubmissionForEvaluation(item.id);
+    await submitSubmissionForEvaluation(String(item.id));
     // 刷新作文列表
     await fetchEssays()
   } catch (error) {
     console.error('提交评测失败:', error)
   } finally {
     evaluating.value = ''
+  }
+}
+
+// 打开删除确认对话框
+function deleteEssay(item: Essay) {
+  essayToDelete.value = item;
+  deleteDialog.value = true;
+}
+
+// 关闭删除确认对话框
+function closeDeleteDialog() {
+  deleteDialog.value = false;
+  essayToDelete.value = null;
+}
+
+// 确认删除作文
+async function confirmDeleteEssay() {
+  if (!essayToDelete.value) return;
+
+  deleting.value = essayToDelete.value.id;
+  try {
+    await deleteSubmission(String(essayToDelete.value.id));
+    // 刷新作文列表
+    await fetchEssays();
+  } catch (error) {
+    console.error('删除作文失败:', error);
+  } finally {
+    deleting.value = '';
+    closeDeleteDialog();
   }
 }
 
