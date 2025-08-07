@@ -152,8 +152,8 @@ export interface QueriedEssay {
     studentId: string;
   };
   createdAt: string;
-  status: string;
-  score?: number;
+  isError: boolean;
+  finalScore?: number;
 }
 
 export const getStudentInfoForUpload = async (): Promise<ClassWithStudents[]> => {
@@ -486,7 +486,6 @@ export const updateAIModelUsageSetting = async (id: string, settingData: Partial
 export const deleteAIModelUsageSetting = async (id: string): Promise<void> => {
   await api.delete(`/api/ApiKey/model-usage-settings/${id}`);
 };
-
 
 // --- Server Status API ---
 export const getServerStatus = async (): Promise<ServerStatus> => {

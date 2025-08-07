@@ -47,8 +47,7 @@
           <v-list-item title="学生姓名" :subtitle="essay.student.name" />
           <v-list-item title="学号" :subtitle="essay.student.studentId" />
           <v-list-item title="提交时间" :subtitle="formatDate(essay.createdAt)" />
-          <v-list-item title="状态" :subtitle="essay.status" />
-          <v-list-item v-if="essay.score" title="得分" :subtitle="essay.score" />
+          <v-list-item title="状态" :subtitle="displayStatus" />
         </v-list>
       </v-card-text>
       <!--
@@ -63,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { queryEssayByShortId, type QueriedEssay as Essay } from '@/services/apiService'
 
@@ -74,6 +73,17 @@ const shortId = ref('')
 const essay = ref<Essay | null>(null)
 const loading = ref(false)
 const error = ref('')
+
+const displayStatus = computed(() => {
+  if (!essay.value) return ''
+  if (essay.value.finalScore !== null && essay.value.finalScore !== undefined) {
+    return `批改完成，分数为 ${essay.value.finalScore}`
+  }
+  if (essay.value.isError) {
+    return '批改错误'
+  }
+  return '批改中'
+})
 
 const shortIdRules = [
   (v: string) => !!v || '请输入ID',
