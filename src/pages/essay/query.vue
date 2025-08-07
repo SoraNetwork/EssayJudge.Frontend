@@ -44,19 +44,20 @@
       <v-card-text>
         <v-list lines="two">
           <v-list-item title="作文ID" :subtitle="essay.id" />
-          <v-list-item title="学生姓名" :subtitle="essay.studentName" />
-          <v-list-item title="学号" :subtitle="essay.studentId" />
+          <v-list-item title="学生姓名" :subtitle="essay.student.name" />
+          <v-list-item title="学号" :subtitle="essay.student.studentId" />
           <v-list-item title="提交时间" :subtitle="formatDate(essay.createdAt)" />
           <v-list-item title="状态" :subtitle="essay.status" />
           <v-list-item v-if="essay.score" title="得分" :subtitle="essay.score" />
         </v-list>
       </v-card-text>
+      <!--
       <v-card-actions>
         <v-spacer />
         <v-btn color="primary" @click="goToEssayDetail">
           查看详情
         </v-btn>
-      </v-card-actions>
+      </v-card-actions>-->
     </v-card>
   </div>
 </template>

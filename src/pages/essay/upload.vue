@@ -165,7 +165,16 @@
         <v-card-title class="text-h5">作文提交成功</v-card-title>
         <v-card-text>
           <p>您的作文查询ID为:</p>
-          <p class="text-h6 text-center my-2"><strong>{{ submittedEssayShortId }}</strong></p>
+          <div
+            class="copy-container text-h6 text-center my-2"
+            @click="copyToClipboard(submittedEssayShortId)"
+          >
+            <strong>{{ submittedEssayShortId }}</strong>
+            <div class="copy-overlay">
+              <span v-if="!isCopied">点击复制</span>
+              <span v-else>已复制!</span>
+            </div>
+          </div>
           <p class="text-caption">您可以使用此ID在查询页面跟踪作文状态。</p>
         </v-card-text>
         <v-card-actions>
@@ -323,6 +332,7 @@ const submitting = ref(false)
 const showSuccessDialog = ref(false)
 const showImageDialog = ref(false)
 const submittedEssayShortId = ref('')
+const isCopied = ref(false)
 
 // 当前步骤
 const currentStep = ref(1)
@@ -487,7 +497,7 @@ async function submitEssay() {
       })
       
       if (response?.id) {
-        submittedEssayShortId.value = response.id.slice(-8)
+        submittedEssayShortId.value = response.id.slice(-8).toUpperCase()
         showSuccessDialog.value = true
       } else {
         throw new Error('提交失败')
@@ -501,7 +511,7 @@ async function submitEssay() {
       })
       
       if (response?.id) {
-        submittedEssayShortId.value = response.id.slice(-8)
+        submittedEssayShortId.value = response.id.slice(-8).toUpperCase()
         showSuccessDialog.value = true
       } else {
         throw new Error('提交失败')
@@ -512,6 +522,21 @@ async function submitEssay() {
     showErrorMessage(error.response?.data?.message || '提交作文失败')
   } finally {
     submitting.value = false
+  }
+}
+
+// 复制到剪贴板
+async function copyToClipboard(text: string) {
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    isCopied.value = true
+    setTimeout(() => {
+      isCopied.value = false
+    }, 2000)
+  } catch (err) {
+    console.error('复制失败: ', err)
+    showErrorMessage('复制ID失败')
   }
 }
 
@@ -540,6 +565,7 @@ function resetForm() {
   processedImageUrl.value = ''
   essayText.value = ''
   submittedEssayShortId.value = ''
+  isCopied.value = false
   showSuccessDialog.value = false
   showError.value = false
   errorMessage.value = ''
@@ -606,5 +632,34 @@ watch(submitMode, () => {
 <style scoped>
 .v-card {
   margin-bottom: 16px;
+}
+
+.copy-container {
+  position: relative;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.copy-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.copy-container:hover .copy-overlay {
+  opacity: 1;
 }
 </style>
