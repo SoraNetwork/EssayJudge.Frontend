@@ -88,7 +88,7 @@
     <!-- 未登录状态 -->
     <v-row v-else>
       <v-col cols="12" class="text-center">
-        <v-img src="@/assets/logo.svg" height="200" class="mx-auto mb-6" contain></v-img>
+        <v-img src="https://static.wikia.nocookie.net/minecraft_zh_gamepedia/images/5/55/Enchanted_Book.gif" height="200" class="mx-auto mb-6" contain></v-img>
         <h1 class="text-h3 mb-6">作文评测系统</h1>
         <p class="text-body-1 mb-6">请登录以使用系统功能</p>
         <v-btn color="primary" size="large" to="/login">
