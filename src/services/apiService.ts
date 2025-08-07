@@ -154,6 +154,7 @@ export interface QueriedEssay {
   createdAt: string;
   isError: boolean;
   finalScore?: number;
+  judgeResult?: string;
 }
 
 export const getStudentInfoForUpload = async (): Promise<ClassWithStudents[]> => {

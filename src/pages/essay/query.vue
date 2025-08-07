@@ -58,6 +58,13 @@
         </v-btn>
       </v-card-actions>-->
     </v-card>
+
+    <v-card v-if="essay && essay.judgeResult" class="mt-4">
+      <v-card-title>综合评判</v-card-title>
+      <v-card-text class="markdown-body">
+        <div v-html="renderedMarkdown"></div>
+      </v-card-text>
+    </v-card>
   </div>
 </template>
 
@@ -65,6 +72,15 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { queryEssayByShortId, type QueriedEssay as Essay } from '@/services/apiService'
+import MarkdownIt from 'markdown-it'
+import 'github-markdown-css/github-markdown.css'
+
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  breaks: true,
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -73,6 +89,11 @@ const shortId = ref('')
 const essay = ref<Essay | null>(null)
 const loading = ref(false)
 const error = ref('')
+
+const renderedMarkdown = computed(() => {
+  if (!essay.value?.judgeResult) return ''
+  return md.render(essay.value.judgeResult)
+})
 
 const displayStatus = computed(() => {
   if (!essay.value) return ''
@@ -101,6 +122,9 @@ async function queryEssay() {
     error.value = '请输入有效的8位作文ID。'
     return
   }
+  // 自动转为大写
+  shortId.value = shortId.value.toUpperCase()
+  
   loading.value = true
   error.value = ''
   essay.value = null
@@ -135,15 +159,23 @@ function formatDate(dateString: string) {
 
 onMounted(() => {
   if (route.query.id && typeof route.query.id === 'string') {
-    shortId.value = route.query.id
+    shortId.value = route.query.id.toUpperCase()
     queryEssay()
   }
 })
 
 watch(() => route.query.id, (newId) => {
-  if (newId && typeof newId === 'string' && newId !== shortId.value) {
-    shortId.value = newId
+  if (newId && typeof newId === 'string' && newId.toUpperCase() !== shortId.value) {
+    shortId.value = newId.toUpperCase()
     queryEssay()
   }
 })
 </script>
+
+<style>
+.markdown-body {
+  background-color: transparent !important;
+  color: inherit !important;
+  font-size: 1rem;
+}
+</style>
