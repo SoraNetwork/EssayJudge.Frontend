@@ -147,6 +147,7 @@ export interface ClassWithStudents {
 // 用于 /essay/studentupload/query/{shortId} 的接口
 export interface QueriedEssay {
   id: string;
+  title: string;
   student: {
     name: string;
     studentId: string;
