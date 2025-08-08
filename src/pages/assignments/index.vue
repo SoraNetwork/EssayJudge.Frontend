@@ -5,12 +5,22 @@
       <v-btn color="primary" prepend-icon="mdi-plus" @click="dialog = true">新建测验</v-btn>
     </div>
 
+    <!-- 搜索框 -->
+    <v-text-field
+      v-model="searchTerm"
+      label="搜索作文题目"
+      prepend-inner-icon="mdi-magnify"
+      clearable
+      class="mb-4"
+      @input="handleSearch"
+    ></v-text-field>
+
     <!-- 测验列表 -->
     <v-card>
       <v-card-text>
         <v-data-table
           :headers="headers"
-          :items="assignments"
+          :items="filteredAssignments"
           :loading="loading"
           loading-text="加载中..."
           no-data-text="暂无数据"
@@ -120,13 +130,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, /*watch*/ } from 'vue'
+import { ref, onMounted, computed } from 'vue';
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
 
 // 数据和状态
 const loading = ref(false)
 const dialog = ref(false)
+const searchTerm = ref('')
 watch(dialog, (newValue, oldValue) => {
   // 当对话框从打开状态变为关闭状态时
   if (oldValue === true && newValue === false) {
@@ -193,6 +204,23 @@ const editedItem = ref<EditedAssignment>({
 
 // 待删除的项
 const itemToDelete = ref<any>(null) // <-- 新增itemToDelete的ref
+
+// 根据搜索词过滤作业列表
+const filteredAssignments = computed(() => {
+  if (!searchTerm.value) {
+    return assignments.value;
+  }
+  
+  const term = searchTerm.value.toLowerCase();
+  return assignments.value.filter(assignment => 
+    assignment.description && assignment.description.toLowerCase().includes(term)
+  );
+});
+
+// 处理搜索输入
+const handleSearch = () => {
+  // 搜索逻辑在computed中处理，这里可以添加防抖等逻辑
+};
 
 // 确认删除测验
 const confirmDelete = (item: any) => {
