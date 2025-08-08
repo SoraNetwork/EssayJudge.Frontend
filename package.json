@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@bytemd/vue-next": "^1.22.0",
+    "@fluentui/web-components": "^2.6.1",
     "@fontsource/roboto": "5.2.5",
     "@mdi/font": "7.4.47",
+    "@microsoft/fast-element": "^2.6.0",
     "@vueuse/core": "^13.4.0",
     "axios": "^1.10.0",
     "bytemd": "^1.22.0",
@@ -22,6 +24,7 @@
     "file-saver": "^2.0.5",
     "github-markdown-css": "^5.8.1",
     "html2pdf.js": "^0.10.3",
+    "lodash-es": "^4.17.21",
     "vue": "^3.5.13",
     "vuetify": "^3.8.1"
   },

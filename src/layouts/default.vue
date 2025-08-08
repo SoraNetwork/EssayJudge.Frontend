@@ -35,7 +35,7 @@
       color="primary"
     >
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-toolbar-title>{{ appTitle }}</v-toolbar-title>
+      <v-toolbar-title @click="$router.push('/')" style="cursor: pointer;">{{ appTitle }}</v-toolbar-title>
       <v-spacer></v-spacer>
 
       <!-- Status Info Button -->
@@ -74,7 +74,7 @@
     </v-main>
 
     <v-footer app>
-      <span>Copyright &copy; {{ new Date().getFullYear() }} - SoraEssayJudge   <a class="text-md select-none font-semibold text-neutral-500 dark:text-neutral-400" href="https://beian.miit.gov.cn/">浙ICP备2024113182号-1</a></span>
+      <span>Copyright &copy; {{ new Date().getFullYear() }} - SoraEssayJudge &nbsp;&nbsp; <a class="text-md select-none font-semibold text-neutral-500 dark:text-neutral-400" href="https://beian.miit.gov.cn/">浙ICP备2024113182号-1</a></span>
     </v-footer>
   </v-app>
 </template>
