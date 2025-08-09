@@ -69,7 +69,7 @@
               size="small"
               variant="flat"
             >
-              {{ item.finalScore ?? '未评分' }}
+              {{ getDisplayScore(item) }}
             </v-chip>
           </template>
           <template v-slot:item.actions="{ item }">
@@ -141,6 +141,7 @@ interface Essay {
   studentName?: string | null | undefined; // Allow studentName to be null or undefined and optional
   title?: string; // Make assignmentTitle optional to match Submission type
   finalScore?: number | null | undefined; // Make finalScore optional to match Submission type
+  score?: number | null | undefined; // 添加score字段
   createdAt: string; // Adjust type if it's a Date object
   status?: string; // Assuming status is returned by searchSubmissions
   // Add other properties used in the template or headers
@@ -189,6 +190,16 @@ const filteredEssays = computed(() => {
     essay.studentName?.toLowerCase().includes(searchTerm)
   );
 });
+
+// 获取显示分数的逻辑 - 新增函数
+function getDisplayScore(item: Essay) {
+  // 如果score存在且不为0，则优先显示score
+  if (item.score !== null && item.score !== undefined && item.score !== 0) {
+    return item.score;
+  }
+  // 否则显示finalScore或'未评分'
+  return item.finalScore ?? '未评分';
+}
 
 // 获取所有作文
 async function fetchEssays() {
