@@ -13,7 +13,7 @@
           <v-card>
             <v-card-title class="text-h5">作文信息</v-card-title>
             <v-card-text>
-              <p><strong>标题:</strong> {{ essay.title }}</p>
+              <p><strong>测验题目:</strong> {{ essay.essayAssignment.description }}</p>
               <p><strong>学生:</strong> {{ essay.student?.name }}</p>
               <p><strong>班级:</strong> {{ classInfo?.name ?? '未分配班级' }}</p>
               <v-list-item>
@@ -37,7 +37,7 @@
             <v-card-actions class="pa-4">
               <v-row dense>
                 <v-col cols="12">
-                  <v-btn color="primary" block @click="imageDialog = true">查看原文图片</v-btn>
+                  <v-btn color="primary" block @click="imageDialog = true" v-if="essay.imageUrl">查看原文图片</v-btn>
                 </v-col>
                 <v-col cols="12">
                   <v-btn color="secondary" block @click="openEditDialog">修改分数</v-btn>
