@@ -144,6 +144,7 @@ interface Essay {
   score?: number | null | undefined; // 添加score字段
   createdAt: string; // Adjust type if it's a Date object
   status?: string; // Assuming status is returned by searchSubmissions
+  isPrased?: boolean; // Assuming isPrased is returned by searchSubmissions
   // Add other properties used in the template or headers
 }
 
