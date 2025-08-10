@@ -360,7 +360,7 @@ export const uploadEssaySubmission = async (assignmentId: string, imageFile: Fil
 };
 
 export const submitSubmissionForEvaluation = async (id: string): Promise<void> => {
-  await api.post(`/EssaySubmission/${id}/evaluate`);
+  await api.patch(`/EssaySubmission/${id}/rejudge`);
 };
 
 export const updateSubmissionScore = async (id: string, score: number, studentId?: string): Promise<void> => {

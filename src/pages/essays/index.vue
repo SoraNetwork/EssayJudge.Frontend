@@ -87,11 +87,11 @@
               size="small"
               color="primary"
               @click="submitForEvaluation(item)"
-              :disabled="item.finalScore !== null && item.finalScore !== undefined"
+              :disabled="!item.isPrased"
               :loading="evaluating === item.id"
             >
-              <v-icon>mdi-check-circle</v-icon>
-              <v-tooltip activator="parent" location="top">提交评测</v-tooltip>
+              <v-icon>mdi-refresh</v-icon>
+              <v-tooltip activator="parent" location="top">重新评测</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -242,15 +242,14 @@ async function fetchAssignments() {
   }
 }
 
-// 提交作文评测
+// 修改提交评测方法
 async function submitForEvaluation(item: Essay) {
   evaluating.value = item.id
   try {
     await submitSubmissionForEvaluation(String(item.id));
-    // 刷新作文列表
     await fetchEssays()
   } catch (error) {
-    console.error('提交评测失败:', error)
+    console.error('重新评测失败:', error)
   } finally {
     evaluating.value = ''
   }
