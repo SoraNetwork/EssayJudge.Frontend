@@ -96,7 +96,7 @@
     <!-- Image Dialog -->
     <v-dialog v-model="imageDialog" max-width="800px">
       <v-card>
-        <v-img :src="`http://localhost:5000${essay?.imageUrl}`"></v-img>
+        <v-img :src="`${import.meta.env.VITE_API_BASE_URL}${essay?.imageUrl}`"></v-img>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="primary" text @click="imageDialog = false">关闭</v-btn>
