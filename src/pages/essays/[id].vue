@@ -16,6 +16,9 @@
               <p><strong>测验题目:</strong> {{ essay.essayAssignment.description }}</p>
               <p><strong>学生:</strong> {{ essay.student?.name }}</p>
               <p><strong>班级:</strong> {{ classInfo?.name ?? '未分配班级' }}</p>
+              <p v-if="essay.isError" class="error--text">
+                <strong>错误信息:</strong> {{ essay.errorMessage }}
+              </p>
               <v-list-item>
                 <v-list-item-title class="text-subtitle-1">
                   <strong>系统评分:</strong>
@@ -395,9 +398,9 @@ const fetchStudents = async () => {
 const getScoreColor = (score: number | null, totalScore: number) => {
   if (score === null) return 'grey'
   const percentage = (score / totalScore) * 100
-  if (percentage >= 90) return 'green'
-  if (percentage >= 75) return 'light-green'
-  if (percentage >= 60) return 'orange'
+  if (percentage >= 50) return 'green'
+  if (percentage >= 42) return 'light-green'
+  if (percentage >= 38) return 'orange'
   return 'red'
 }
 

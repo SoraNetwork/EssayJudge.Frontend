@@ -2,9 +2,14 @@
   <div>
     <div class="d-flex justify-space-between align-center mb-4">
       <h1 class="text-h4">作文管理</h1>
-      <v-btn color="primary" to="/essays/upload" prepend-icon="mdi-upload">
-        上传批改
-      </v-btn>
+      <div>
+        <v-btn variant="outlined" color="info" to="/essay/upload" prepend-icon="mdi-upload" class="mr-2">
+          作文上传（学生版）
+        </v-btn>
+        <v-btn color="primary" to="/essays/upload" prepend-icon="mdi-upload">
+          上传批改
+        </v-btn>
+      </div>
     </div>
 
     <!-- 筛选条件 -->

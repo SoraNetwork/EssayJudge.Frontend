@@ -15,14 +15,23 @@
     <div v-else>
       <!-- 测验信息卡片 -->
       <v-card class="mb-6">
-        <v-card-title class="text-h5">{{ assignment.titleContext }}</v-card-title>
+        <v-card-title class="text-h5">{{ assignment.description }}</v-card-title>
 
         <v-card-text>
           <v-row>
             <v-col cols="12" md="8">
+              <div class="text-subtitle-1 mb-2">作文题目</div>
+              <v-sheet class="pa-4 rounded" color="grey-lighten-4">
+                <div class="text-body-1" style="white-space: pre-wrap; line-height: 1.8;">
+                  {{ assignment.titleContext }}
+                </div>
+              </v-sheet>
+            </v-col>
+            <v-col cols="12" md="8">
               <div class="text-subtitle-1 mb-2">评分标准</div>
               <v-sheet class="pa-4 rounded" color="grey-lighten-4">
-                <div class="text-body-1" style="white-space: pre-wrap; line-height: 1.8;">{{ assignment.scoringCriteria || '未设置评分标准' }}</div>
+                <div class="text-body-1" style="white-space: pre-wrap; line-height: 1.8;">{{
+                  assignment.scoringCriteria || '未设置评分标准' }}</div>
               </v-sheet>
             </v-col>
 
@@ -41,7 +50,8 @@
                     <v-icon color="primary">mdi-star-circle</v-icon>
                   </template>
                   <v-list-item-title>总分 / 基础分</v-list-item-title>
-                  <v-list-item-subtitle>{{ assignment.totalScore || 'N/A' }} / {{ assignment.baseScore || 'N/A' }}</v-list-item-subtitle>
+                  <v-list-item-subtitle>{{ assignment.totalScore || 'N/A' }} / {{ assignment.baseScore || 'N/A'
+                    }}</v-list-item-subtitle>
                 </v-list-item>
 
                 <v-list-item>
@@ -87,31 +97,15 @@
       <v-card>
         <v-card-title class="d-flex justify-space-between align-center">
           <span>作文提交列表</span>
-          <v-text-field
-            v-model="search"
-            append-inner-icon="mdi-magnify"
-            label="搜索学生"
-            single-line
-            hide-details
-            density="compact"
-            style="max-width: 300px"
-          ></v-text-field>
+          <v-text-field v-model="search" append-inner-icon="mdi-magnify" label="搜索学生" single-line hide-details
+            density="compact" style="max-width: 300px"></v-text-field>
         </v-card-title>
 
         <v-card-text>
-          <v-data-table
-            :headers="headers"
-            :items="filteredSubmissions"
-            :loading="loadingSubmissions"
-            loading-text="加载中..."
-            no-data-text="暂无作文提交"
-          >
+          <v-data-table :headers="headers" :items="filteredSubmissions" :loading="loadingSubmissions"
+            loading-text="加载中..." no-data-text="暂无作文提交">
             <template v-slot:item.status="{ item }">
-              <v-chip
-                :color="getStatusColor(item.status)"
-                variant="outlined"
-                size="small"
-              >
+              <v-chip :color="getStatusColor(item.status)" variant="outlined" size="small">
                 {{ getStatusText(item.status) }}
               </v-chip>
             </template>
@@ -128,12 +122,7 @@
             </template>
 
             <template v-slot:item.actions="{ item }">
-              <v-btn
-                icon
-                variant="text"
-                size="small"
-                :to="`/essays/${item.id}`"
-              >
+              <v-btn icon variant="text" size="small" :to="`/essays/${item.id}`">
                 <v-icon>mdi-eye</v-icon>
               </v-btn>
             </template>
@@ -148,41 +137,16 @@
 
           <v-card-text>
             <v-form ref="form" @submit.prevent="saveAssignment">
-              <v-select
-                v-model="editedItem.grade"
-                :items="grades"
-                item-title="grade"
-                item-value="string"
-                label="选择年级"
-                required
-              ></v-select>
-              <v-text-field
-                v-model="editedItem.title"
-                label="标题"
-                :rules="[v => !!v || '标题不能为空']"
-                required
-              ></v-text-field>
-              <v-text-field
-                v-model="editedItem.totalScore"
-                label="总分"
-                type="number"
-                :rules="[v => (v !== null && v !== undefined && v > 0) || '总分必须大于0']"
-                required
-              ></v-text-field>
-              <v-text-field
-                v-model="editedItem.baseScore"
-                label="基础分"
-                type="number"
-                :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']"
-                required
-              ></v-text-field>
-              <v-textarea
-                v-model="editedItem.scoringCriteria"
-                label="评分标准"
-                :rules="[v => !!v || '评分标准不能为空']"
-                required
-                rows="5"
-              ></v-textarea>
+              <v-select v-model="editedItem.grade" :items="grades" item-title="grade" item-value="string" label="选择年级"
+                required></v-select>
+              <v-text-field v-model="editedItem.title" label="标题" :rules="[v => !!v || '标题不能为空']"
+                required></v-text-field>
+              <v-text-field v-model="editedItem.totalScore" label="总分" type="number"
+                :rules="[v => (v !== null && v !== undefined && v > 0) || '总分必须大于0']" required></v-text-field>
+              <v-text-field v-model="editedItem.baseScore" label="基础分" type="number"
+                :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']" required></v-text-field>
+              <v-textarea v-model="editedItem.scoringCriteria" label="评分标准" :rules="[v => !!v || '评分标准不能为空']" required
+                rows="5"></v-textarea>
             </v-form>
           </v-card-text>
 

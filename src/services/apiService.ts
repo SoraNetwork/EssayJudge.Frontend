@@ -55,6 +55,8 @@ export interface Submission {
   assignmentId: string;
   imageUrl: string;
   parsedText?: string;
+  isError?: boolean;
+  errorMessage?: string; // 如果有错误信息
   aiResults?: any[]; // 如果需要，定义更具体的类型
   judgeResult?: string;
   finalScore?: number;
