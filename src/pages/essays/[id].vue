@@ -96,7 +96,7 @@
     <!-- Image Dialog -->
     <v-dialog v-model="imageDialog" max-width="800px">
       <v-card>
-        <v-img :src="`${import.meta.env.VITE_API_BASE_URL}${essay?.imageUrl}`"></v-img>
+        <v-img :src="imageUrl"></v-img>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn color="primary" text @click="imageDialog = false">关闭</v-btn>
@@ -286,6 +286,12 @@ const loadingClass = ref(false)
 const classCache = ref<Map<string, Class>>(new Map())
 const classCacheExpiry = ref<Map<string, number>>(new Map())
 const CACHE_EXPIRY_TIME = 5 * 60 * 1000 // 5分钟缓存过期时间
+
+// 添加 imageUrl 计算属性
+const imageUrl = computed(() => {
+  if (!essay.value?.imageUrl) return '';
+  return `${import.meta.env.VITE_API_BASE_URL}${essay.value.imageUrl}`;
+});
 
 const currentClassInfo = computed(() => {
   if (selectedStudentId.value) {
