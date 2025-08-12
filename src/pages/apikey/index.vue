@@ -25,11 +25,11 @@
                   {{ item.key.substring(0, 4) }}...{{ item.key.substring(item.key.length - 4) }}
                 </v-chip>
               </template>
-              <template v-slot:item.AIModels="{ item }">
-                <v-chip v-for="model in item.AIModels" :key="model.id" label size="x-small" class="ma-1">
+              <template v-slot:item.aiModels="{ item }">
+                <v-chip v-for="model in item.aiModels" :key="model.id" label size="x-small" class="ma-1">
                   {{ model.modelId }}
                 </v-chip>
-                <span v-if="!item.AIModels || item.AIModels.length === 0">-</span>
+                <span v-if="!item.aiModels || item.aiModels.length === 0">-</span>
               </template>
               <template v-slot:item.isEnabled="{ item }">
                 <v-switch :model-value="item.isEnabled" color="primary" hide-details
@@ -200,7 +200,7 @@ const currentTab = ref('apiKeys'); // 'apiKeys' 或 'modelUsage'
 const apiKeyHeaders = [
   { title: '服务类型', key: 'serviceType' },
   { title: 'Key', key: 'key', sortable: false },
-  { title: '关联模型', key: 'AIModels', sortable: false },
+  { title: '关联模型', key: 'aiModels', sortable: false }, // 修改:AIModels -> aiModels
   { title: '描述', key: 'description' },
   { title: '启用', key: 'isEnabled' },
   { title: '创建时间', key: 'createdAt' },
@@ -257,7 +257,7 @@ const fetchApiKeys = async () => {
     // 映射获取的数据以包含用于表单的 modelIds
     apiKeys.value = data.map(item => ({
       ...item,
-      modelIds: item.AIModels?.map(m => m.modelId) || []
+      modelIds: item.aiModels?.map(m => m.modelId) || [] // 修改:AIModels -> aiModels
     })) || []
   } catch (error) {
     console.error('获取 API 密钥列表失败:', error)
@@ -279,7 +279,7 @@ const editApiKey = (item: ApiKey) => {
   // 将项目映射到 editedItem 格式，提取 modelIds
   editedApiKey.value = {
     ...item,
-    modelIds: item.AIModels?.map(m => m.modelId) || []
+    modelIds: item.aiModels?.map(m => m.modelId) || []
   }
   apiKeyDialog.value = true
 }
@@ -315,6 +315,8 @@ const saveApiKey = async () => {
     }
     closeApiKeyDialog()
     await fetchApiKeys()
+    // 保存成功后刷新页面
+    window.location.reload()
   } catch (error: any) {
     console.error('保存 API 密钥失败:', error)
     const errorMessage = error.response?.data?.message || '操作失败，请重试';

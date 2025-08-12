@@ -86,7 +86,7 @@ export interface ApiKey {
   description?: string;
   isEnabled: boolean;
   createdAt: string;
-  AIModels?: AIModel[]; // 添加 AIModels 属性
+  aiModels?: AIModel[]; // 修改:AIModels -> aiModels
 }
 
 // 定义 AIModelUsageSetting 接口
