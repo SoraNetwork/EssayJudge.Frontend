@@ -9,7 +9,7 @@
 
     <v-navigation-drawer
       v-model="drawer"
-      app
+      :temporary="!mdAndUp"
     >
       <v-list-item
         :title="authStore.realName || '未登录'"
@@ -84,19 +84,24 @@ import { ref, computed, onMounted, watch } from 'vue' // 导入 watch
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
-import { useTheme } from 'vuetify'
+import { useTheme, useDisplay } from 'vuetify'
 import { usePreferredDark } from '@vueuse/core' // 导入 usePreferredDark
 import { getServerStatus, type ServerStatus } from '@/services/apiService';
 
+const { mdAndUp } = useDisplay()
 const appTitle = import.meta.env.VITE_APP_TITLE || '作文评测系统';
 const footerText = import.meta.env.VITE_FOOTER_TEXT || appTitle;
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
-const drawer = ref(false)
+const drawer = ref(mdAndUp.value)
 const theme = useTheme()
 const preferredDark = usePreferredDark() // 获取系统主题偏好
 const serverStatus = ref<ServerStatus | null>(null);
+
+watch(mdAndUp, (newVal) => {
+  drawer.value = newVal
+})
 
 const userInitial = computed(() => (authStore.realName ? authStore.realName.charAt(0).toUpperCase() : ''));
 

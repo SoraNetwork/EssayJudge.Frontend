@@ -1,10 +1,8 @@
-/**
- * src/styles/settings.scss
- *
- * Configures SASS variables and Vuetify overwrites
- */
+// Styles for Vuetify components
+@use 'vuetify/settings' with (
+  $color-pack: false
+);
 
-// https://vuetifyjs.com/features/sass-variables/`
-// @use 'vuetify/settings' with (
-//   $color-pack: false
-// );
+.responsive-table-container {
+  overflow-x: auto;
+}

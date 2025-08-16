@@ -13,7 +13,7 @@
       <v-card-title>
         学生列表 ({{ students.length }} 人)
       </v-card-title>
-      <v-card-text>
+      <v-card-text class="responsive-table-container">
         <v-data-table
           :headers="headers"
           :items="students"

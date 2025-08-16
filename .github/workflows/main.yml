@@ -19,7 +19,8 @@ jobs:
           echo "VITE_FOOTER_TEXT=${{ secrets.EJ_FOOT_TITLE }}" >> .env.local
           echo "VITE_APP_TITLE=${{ secrets.EJ_HEAD_TITLE }}" >> .env.local
           echo "VITE_API_BASE_URL=${{ secrets.EJ_API_BASE_URL }}" >> .env.local
-
+          echo "VITE_DINGTALK_APP_KEY=${{ secrets.EJ_DINGTALK_APP_KEY }}" >> .env.local
+          echo "VITE_DINGTALK_CORP_ID=${{ secrets.EJ_DINGTALK_CORP_ID }}" >> .env.local
       #- name: Replace API URL for Build
       #  run: |
       #    sed -i 's#http://localhost:5000#https://api.ej.xingsora.cn#g' ./src/services/api.ts

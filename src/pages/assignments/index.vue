@@ -17,7 +17,7 @@
 
     <!-- 测验列表 -->
     <v-card>
-      <v-card-text>
+      <v-card-text class="responsive-table-container">
         <v-data-table
           :headers="headers"
           :items="filteredAssignments"

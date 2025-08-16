@@ -68,7 +68,7 @@
             <v-icon left color="primary" class="mr-2">mdi-history</v-icon>
             最近作文提交
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="responsive-table-container">
             <v-data-table :headers="headers" :items="recentSubmissions" :loading="loading.recentSubmissions"
               loading-text="加载中..." no-data-text="暂无数据">
           <template v-slot:item.createdAt="{ item }">

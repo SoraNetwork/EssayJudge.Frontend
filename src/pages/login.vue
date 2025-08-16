@@ -1,53 +1,77 @@
 <template>
   <v-container class="fill-height" fluid>
     <v-row align="center" justify="center">
-      <v-col cols="12" sm="8" md="6" lg="4">
-        <v-card class="elevation-12">
-          <v-toolbar color="primary" dark>
-            <v-toolbar-title>登录</v-toolbar-title>
-          </v-toolbar>
-          <v-card-text>
-            <v-form @keyup.enter="login" ref="form">
+      <v-col cols="12" sm="8" md="5" lg="4">
+        <v-card variant="flat" class="pa-4 pa-sm-8" rounded="lg" style="border: 1px solid #e0e0e0;">
+          <div class="text-center mb-6">
+            <h1 class="text-h4 font-weight-bold text-grey-darken-3">{{ appTitle }}</h1>
+          </div>
+
+          <v-card-title class="text-h5 text-center font-weight-bold pa-0 mb-1">
+            登录您的账户
+          </v-card-title>
+
+          <v-card-subtitle v-if="isDingTalkEnv" class="text-center white-space-normal mb-4">
+            检测到钉钉环境，正在尝试自动登录...
+          </v-card-subtitle>
+
+          <v-card-text class="pa-0">
+            <v-form @submit.prevent="handlePasswordLogin" class="mt-6">
               <v-text-field
                 v-model="username"
-                label="用户名"
-                name="username"
-                prepend-icon="mdi-account"
-                type="text"
-                :rules="[v => !!v || '用户名不能为空']"
-                required
+                label="账号"
+                prepend-inner-icon="mdi-account-outline"
+                variant="outlined"
+                class="mb-4"
+                :disabled="loading"
+                density="comfortable"
               ></v-text-field>
 
               <v-text-field
                 v-model="password"
                 label="密码"
-                name="password"
-                prepend-icon="mdi-lock"
+                prepend-inner-icon="mdi-lock-outline"
                 type="password"
-                :rules="[v => !!v || '密码不能为空']"
-                required
+                variant="outlined"
+                class="mb-4"
+                :disabled="loading"
+                density="comfortable"
               ></v-text-field>
+
+              <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = null" density="compact">
+                {{ error }}
+              </v-alert>
+
+              <v-btn
+                :loading="loading"
+                type="submit"
+                color="primary"
+                block
+                size="large"
+                class="mb-4"
+              >
+                登录
+              </v-btn>
             </v-form>
-            <v-alert
-              v-if="error"
-              type="error"
-              variant="tonal"
-              class="mt-4"
+
+            <v-row align="center" class="my-2">
+              <v-divider />
+              <span class="px-4 text-caption text-grey">或</span>
+              <v-divider />
+            </v-row>
+
+            <v-btn
+              @click="redirectToDingTalkOAuth"
+              variant="outlined"
+              block
+              size="large"
+              :loading="loading"
+              color="grey-darken-2"
             >
-              <div v-if="typeof error === 'string'">{{ error }}</div>
-              <ul v-else>
-                <li v-for="(messages, field) in error" :key="field">
-                  {{ messages.join(', ') }}
-                </li>
-              </ul>
-            </v-alert>
+              <v-icon class="mr-2">mdi-dingtalk</v-icon>
+              使用钉钉 Oauth 登录
+            </v-btn>
           </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn to="/register" variant="text">注册账号</v-btn>
-            <v-btn color="primary" @click="login" :loading="loading">登录</v-btn>
-            
-          </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
@@ -55,60 +79,137 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import api from '@/services/api'
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import * as dd from 'dingtalk-jsapi';
 
-const router = useRouter()
-const authStore = useAuthStore()
+// --- App Title ---
+const appTitle = import.meta.env.VITE_APP_TITLE || '作文评测系统';
 
-const username = ref('')
-const password = ref('')
-const loading = ref(false)
-const error = ref<string | Record<string, string[]>>('')
-const form = ref<any>(null)
+// --- Reactive State ---
+const username = ref('');
+const password = ref('');
+const loading = ref(false);
+const error = ref<string | null>(null);
+const isDingTalkEnv = ref(false);
 
-async function login() {
-  // 表单验证
-  const { valid } = await form.value.validate()
-  if (!valid) return
+// --- Composables ---
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 
-  loading.value = true
-  error.value = ''
+// --- Functions ---
 
+/**
+ * Handles standard username/password login.
+ */
+async function handlePasswordLogin() {
+  if (!username.value || !password.value) {
+    error.value = '请输入账号和密码。';
+    return;
+  }
+  loading.value = true;
+  error.value = null;
   try {
-    // 使用FormData格式发送请求
-    const formData = new FormData()
-    formData.append('Username', username.value)
-    formData.append('Password', password.value)
-
-    const response = await api.post('/api/Auth/login', formData)
-
-    // 保存用户信息和令牌
-    authStore.setUserInfo({
-      token: response.data.token,
-      name: response.data.user.name,
-      phoneNumber: response.data.user.phoneNumber || ''
-    })
-    authStore.setUserName(response.data.user.username)
-    
-    // 登录成功，跳转到首页
-    router.push('/')
+    await authStore.login(username.value, password.value);
+    router.push('/');
   } catch (err: any) {
-    console.error('登录失败:', err)
-    if (err.response) {
-      if (err.response.data.errors) {
-        // 处理验证错误
-        error.value = err.response.data.errors
-      } else {
-        error.value = err.response.data.message || '登录失败，请检查用户名和密码'
-      }
-    } else {
-      error.value = '网络错误，请稍后重试'
-    }
+    error.value = err.message || '登录失败，请检查您的凭据。';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
+
+/**
+ * Redirects to the DingTalk OAuth2 authorization page.
+ */
+function redirectToDingTalkOAuth() {
+  loading.value = true;
+  error.value = null;
+
+  const appKey = import.meta.env.VITE_DINGTALK_APP_KEY;
+
+  if (!appKey) {
+    error.value = '钉钉 AppKey 未配置，请检查 .env 文件中的 VITE_DINGTALK_APP_KEY 设置。';
+    loading.value = false;
+    return;
+  }
+
+  const redirectUri = encodeURIComponent(window.location.origin + '/login');
+  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?redirect_uri=${redirectUri}&response_type=code&client_id=${appKey}&scope=openid&prompt=consent`;
+  window.location.href = oauthUrl;
+}
+
+/**
+ * Handles the SSO callback from DingTalk OAuth.
+ * @param {string} code - The authorization code from DingTalk.
+ */
+async function handleSsoCallback(code: string) {
+  loading.value = true;
+  error.value = null;
+  try {
+    await authStore.loginWithDingTalkSso(code);
+    router.push('/');
+  } catch (err: any) {
+    error.value = err.message || '钉钉 SSO 登录失败。';
+  } finally {
+    loading.value = false;
+  }
+}
+
+/**
+ * Attempts to automatically log in when inside the DingTalk client.
+ */
+async function handleDingTalkAutoLogin() {
+  isDingTalkEnv.value = true;
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const corpId = import.meta.env.VITE_DINGTALK_CORP_ID;
+    if (!corpId) {
+      throw new Error('钉钉 CorpId 未配置。');
+    }
+
+    dd.ready(async () => {
+      try {
+        const result = await dd.runtime.permission.requestAuthCode({ corpId });
+        await authStore.loginWithDingTalkCode(result.code);
+        router.push('/');
+      } catch (err: any) {
+        error.value = `钉钉免密登录失败: ${err.message || '未知错误'}`;
+        loading.value = false;
+      }
+    });
+
+    dd.error((err: any) => {
+      throw new Error(`钉钉 JSAPI 错误: ${JSON.stringify(err)}`);
+    });
+
+  } catch (err: any) {
+    error.value = err.message;
+    loading.value = false;
+  }
+}
+
+// --- Lifecycle Hook ---
+onMounted(() => {
+  const { code } = route.query;
+  if (typeof code === 'string' && code) {
+    router.replace({ query: {} });
+    handleSsoCallback(code);
+    return;
+  }
+
+  if (/DingTalk/.test(navigator.userAgent)) {
+    handleDingTalkAutoLogin();
+  }
+});
 </script>
+
+<style scoped>
+.fill-height {
+  min-height: 100vh;
+}
+</style>

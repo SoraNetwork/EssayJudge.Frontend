@@ -18,6 +18,7 @@
             <div class="d-flex justify-end mb-4">
               <v-btn color="primary" prepend-icon="mdi-plus" @click="openNewApiKeyDialog">新建密钥</v-btn>
             </div>
+            <div class="responsive-table-container">
             <v-data-table :headers="apiKeyHeaders" :items="apiKeys" :loading="apiKeysLoading" loading-text="加载中..."
               no-data-text="暂无数据">
               <template v-slot:item.key="{ item }">
@@ -48,6 +49,7 @@
                 </v-btn>
               </template>
             </v-data-table>
+            </div>
           </v-window-item>
 
           <!-- 模型使用设置选项卡 -->
@@ -55,6 +57,7 @@
             <div class="d-flex justify-end mb-4">
               <v-btn color="primary" prepend-icon="mdi-plus" @click="openNewSettingDialog">新建设置</v-btn>
             </div>
+            <div class="responsive-table-container">
             <v-data-table :headers="settingHeaders" :items="usageSettings" :loading="settingsLoading"
               loading-text="加载中..." no-data-text="暂无数据">
               <template v-slot:item.aiModel="{ item }">
@@ -77,6 +80,7 @@
                 </v-btn>
               </template>
             </v-data-table>
+            </div>
           </v-window-item>
         </v-window>
       </v-card-text>

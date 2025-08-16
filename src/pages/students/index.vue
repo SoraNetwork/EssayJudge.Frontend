@@ -44,7 +44,7 @@
 
     <!-- 原有的学生列表表格 -->
     <v-card>
-      <v-card-text>
+      <v-card-text class="responsive-table-container">
         <v-data-table
           :headers="headers"
           :items="filteredStudents"
