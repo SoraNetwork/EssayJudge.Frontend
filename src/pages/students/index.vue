@@ -42,10 +42,12 @@
       </v-card-text>
     </v-card>
 
-    <!-- 原有的学生列表表格 -->
+    <!-- 学生列表 -->
     <v-card>
       <v-card-text class="responsive-table-container">
+        <!-- 桌面端表格 -->
         <v-data-table
+          v-if="display.mdAndUp.value"
           :headers="headers"
           :items="filteredStudents"
           :loading="loading"
@@ -64,6 +66,33 @@
             </v-btn>
           </template>
         </v-data-table>
+
+        <!-- 移动端列表 -->
+        <v-list v-else>
+          <v-list-item
+            v-for="item in filteredStudents"
+            :key="item.id"
+            class="mb-2"
+          >
+            <v-list-item-content>
+              <v-list-item-title>{{ item.name }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ item.studentId }} - {{ item.className }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <template v-slot:append>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                color="error"
+                @click="confirmDelete(item)"
+              >
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
       </v-card-text>
     </v-card>
 
@@ -150,8 +179,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 // 从 apiService 导入 Student 类型
 import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
+
+const display = useDisplay()
 
 interface Class {
   id: string;

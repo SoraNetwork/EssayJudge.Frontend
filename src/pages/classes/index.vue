@@ -8,7 +8,9 @@
     <!-- 班级列表 -->
     <v-card>
       <v-card-text class="responsive-table-container">
+        <!-- 桌面端表格 -->
         <v-data-table
+          v-if="display.mdAndUp.value"
           :headers="headers"
           :items="classes"
           :loading="loading"
@@ -24,17 +26,6 @@
             </v-chip>
           </template>
           <template v-slot:item.actions="{ item }">
-            <!-- 移除编辑按钮 -->
-            <!--
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              @click="editClass(item)"
-            >
-              <v-icon>mdi-pencil</v-icon>
-            </v-btn>
-            -->
             <v-btn
               icon
               variant="text"
@@ -46,6 +37,34 @@
             </v-btn>
           </template>
         </v-data-table>
+
+        <!-- 移动端列表 -->
+        <v-list v-else>
+          <v-list-item
+            v-for="item in classes"
+            :key="item.id"
+            :to="`/classes/${item.id}`"
+            class="mb-2"
+          >
+            <v-list-item-content>
+              <v-list-item-title>{{ item.name }}</v-list-item-title>
+              <v-list-item-subtitle>
+                学生数量: {{ item.studentCount || 0 }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <template v-slot:append>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                color="error"
+                @click.prevent="confirmDelete(item)"
+              >
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
       </v-card-text>
     </v-card>
 
@@ -99,8 +118,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 // 移除 updateClass 导入
 import { getClasses, createClass, deleteClass as apiDeleteClass, getStudents } from '@/services/apiService';
+
+const display = useDisplay()
 
 // 定义班级项的类型
 interface ClassItem {

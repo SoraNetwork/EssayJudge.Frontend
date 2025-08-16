@@ -57,7 +57,9 @@
     <!-- 作文列表 -->
     <v-card>
       <v-card-text class="responsive-table-container">
+        <!-- 桌面端表格 -->
         <v-data-table
+          v-if="display.mdAndUp.value"
           :headers="headers"
           :items="filteredEssays"
           :loading="loading"
@@ -111,6 +113,33 @@
             </v-btn>
           </template>
         </v-data-table>
+
+        <!-- 移动端列表 -->
+        <v-list v-else>
+          <v-list-item
+            v-for="item in filteredEssays"
+            :key="item.id"
+            :to="`/essays/${item.id}`"
+            class="mb-2"
+          >
+            <v-list-item-content>
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ item.studentName }} - {{ formatDateUTC8(item.createdAt) }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <template v-slot:append>
+              <v-chip
+                :color="getScoreColor(item.finalScore)"
+                :text-color="item.finalScore ? 'white' : 'default'"
+                size="small"
+                variant="flat"
+              >
+                {{ getDisplayScore(item) }}
+              </v-chip>
+            </template>
+          </v-list-item>
+        </v-list>
       </v-card-text>
     </v-card>
 
@@ -137,8 +166,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import { searchSubmissions, getAssignments, submitSubmissionForEvaluation, deleteSubmission } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
+
+const display = useDisplay()
 
 // Define interface for Essay item
 interface Essay {

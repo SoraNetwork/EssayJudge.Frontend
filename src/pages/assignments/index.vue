@@ -18,7 +18,9 @@
     <!-- 测验列表 -->
     <v-card>
       <v-card-text class="responsive-table-container">
+        <!-- 桌面端表格 -->
         <v-data-table
+          v-if="display.mdAndUp.value"
           :headers="headers"
           :items="filteredAssignments"
           :loading="loading"
@@ -56,6 +58,42 @@
             </v-btn>
           </template>
         </v-data-table>
+
+        <!-- 移动端列表 -->
+        <v-list v-else>
+          <v-list-item
+            v-for="item in filteredAssignments"
+            :key="item.id"
+            :to="`/assignments/${item.id}`"
+            class="mb-2"
+          >
+            <v-list-item-content>
+              <v-list-item-title>{{ item.description }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ item.grade }} - {{ formatDateUTC8(item.createdAt) }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <template v-slot:append>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                @click.prevent="editAssignment(item)"
+              >
+                <v-icon>mdi-pencil</v-icon>
+              </v-btn>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                color="error"
+                @click.prevent="confirmDelete(item)"
+              >
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
       </v-card-text>
     </v-card>
 
@@ -131,8 +169,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useDisplay } from 'vuetify'
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
+
+const display = useDisplay()
 
 // 数据和状态
 const loading = ref(false)

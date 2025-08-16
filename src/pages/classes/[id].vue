@@ -14,7 +14,9 @@
         学生列表 ({{ students.length }} 人)
       </v-card-title>
       <v-card-text class="responsive-table-container">
+        <!-- 桌面端表格 -->
         <v-data-table
+          v-if="display.mdAndUp.value"
           :headers="headers"
           :items="students"
           :loading="loading"
@@ -34,6 +36,31 @@
             </v-btn>
           </template>
         </v-data-table>
+
+        <!-- 移动端列表 -->
+        <v-list v-else>
+          <v-list-item
+            v-for="item in students"
+            :key="item.id"
+            class="mb-2"
+          >
+            <v-list-item-content>
+              <v-list-item-title>{{ item.name }}</v-list-item-title>
+              <v-list-item-subtitle>{{ item.studentId }}</v-list-item-subtitle>
+            </v-list-item-content>
+            <template v-slot:append>
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                color="error"
+                @click="confirmDelete(item)"
+              >
+                <v-icon>mdi-delete</v-icon>
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
       </v-card-text>
     </v-card>
 
@@ -84,8 +111,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useDisplay } from 'vuetify';
 import { useRoute } from 'vue-router';
 import { getStudents, deleteStudent as apiDeleteStudent, getClasses, createStudent, type Student } from '@/services/apiService';
+
+const display = useDisplay();
 
 // 定义班级和学生类型
 interface ClassInfo {
