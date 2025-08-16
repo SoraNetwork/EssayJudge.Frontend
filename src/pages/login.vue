@@ -2,6 +2,10 @@
   <v-container class="fill-height" fluid>
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="5" lg="4">
+        <template>
+  <v-container class="fill-height" fluid>
+    <v-row align="center" justify="center">
+      <v-col cols="12" sm="8" md="5" lg="4">
         <v-card variant="flat" class="pa-4 pa-sm-8" rounded="lg" style="border: 1px solid #e0e0e0;">
           <div class="text-center mb-6">
             <h1 class="text-h4 font-weight-bold text-grey-darken-3">{{ appTitle }}</h1>
@@ -10,10 +14,6 @@
           <v-card-title class="text-h5 text-center font-weight-bold pa-0 mb-1">
             登录您的账户
           </v-card-title>
-
-          <v-card-subtitle v-if="isDingTalkEnv" class="text-center white-space-normal mb-4">
-            检测到钉钉环境，正在尝试自动登录...
-          </v-card-subtitle>
 
           <v-card-text class="pa-0">
             <v-form @submit.prevent="handlePasswordLogin" class="mt-6">
@@ -73,6 +73,106 @@
             </v-btn>
           </v-card-text>
         </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+// --- App Title ---
+const appTitle = import.meta.env.VITE_APP_TITLE || '作文评测系统';
+
+// --- Reactive State ---
+const username = ref('');
+const password = ref('');
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+// --- Composables ---
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+
+// --- Functions ---
+
+/**
+ * Handles standard username/password login.
+ */
+async function handlePasswordLogin() {
+  if (!username.value || !password.value) {
+    error.value = '请输入账号和密码。';
+    return;
+  }
+  loading.value = true;
+  error.value = null;
+  try {
+    await authStore.login(username.value, password.value);
+    router.push('/');
+  } catch (err: any) {
+    error.value = err.message || '登录失败，请检查您的凭据。';
+  } finally {
+    loading.value = false;
+  }
+}
+
+/**
+ * Redirects to the DingTalk OAuth2 authorization page.
+ */
+function redirectToDingTalkOAuth() {
+  loading.value = true;
+  error.value = null;
+
+  const appKey = import.meta.env.VITE_DINGTALK_APP_KEY;
+
+  if (!appKey) {
+    error.value = '钉钉 AppKey 未配置，请检查 .env 文件中的 VITE_DINGTALK_APP_KEY 设置。';
+    loading.value = false;
+    return;
+  }
+
+  const redirectUri = encodeURIComponent(window.location.origin + '/login');
+  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?redirect_uri=${redirectUri}&response_type=code&client_id=${appKey}&scope=openid&prompt=consent`;
+  window.location.href = oauthUrl;
+}
+
+/**
+ * Handles the SSO callback from DingTalk OAuth.
+ * @param {string} code - The authorization code from DingTalk.
+ */
+async function handleSsoCallback(code: string) {
+  loading.value = true;
+  error.value = null;
+  try {
+    await authStore.loginWithDingTalkSso(code);
+    router.push('/');
+  } catch (err: any) {
+    error.value = err.message || '钉钉 SSO 登录失败。';
+  } finally {
+    loading.value = false;
+  }
+}
+
+// --- Lifecycle Hook ---
+onMounted(() => {
+  const { code } = route.query;
+  if (typeof code === 'string' && code) {
+    router.replace({ query: {} });
+    handleSsoCallback(code);
+    return;
+  }
+});
+</script>
+
+<style scoped>
+.fill-height {
+  min-height: 100vh;
+}
+</style>
+
       </v-col>
     </v-row>
   </v-container>

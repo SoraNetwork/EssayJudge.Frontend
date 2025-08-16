@@ -19,36 +19,57 @@
               <v-btn color="primary" prepend-icon="mdi-plus" @click="openNewApiKeyDialog">新建密钥</v-btn>
             </div>
             <div class="responsive-table-container">
-            <v-data-table :headers="apiKeyHeaders" :items="apiKeys" :loading="apiKeysLoading" loading-text="加载中..."
-              no-data-text="暂无数据">
-              <template v-slot:item.key="{ item }">
-                <v-chip label size="small" class="font-weight-bold">
-                  {{ item.key.substring(0, 4) }}...{{ item.key.substring(item.key.length - 4) }}
-                </v-chip>
-              </template>
-              <template v-slot:item.aiModels="{ item }">
-                <v-chip v-for="model in item.aiModels" :key="model.id" label size="x-small" class="ma-1">
-                  {{ model.modelId }}
-                </v-chip>
-                <span v-if="!item.aiModels || item.aiModels.length === 0">-</span>
-              </template>
-              <template v-slot:item.isEnabled="{ item }">
-                <v-switch :model-value="item.isEnabled" color="primary" hide-details
-                  @change="toggleApiKeyEnabled(item)"></v-switch>
-              </template>
-              <template v-slot:item.createdAt="{ item }">
-                {{ formatDateUTC8(item.createdAt) }}
-              </template>
-              <template v-slot:item.actions="{ item }">
-                <v-btn icon variant="text" size="small" @click="editApiKey(item)">
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
-                <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteApiKey(item)">
-                  <v-icon>mdi-delete</v-icon>
-                  <v-tooltip activator="parent" location="top">删除密钥</v-tooltip>
-                </v-btn>
-              </template>
-            </v-data-table>
+              <!-- 桌面端 API 密钥表格 -->
+              <v-data-table v-if="display.mdAndUp.value" :headers="apiKeyHeaders" :items="apiKeys" :loading="apiKeysLoading" loading-text="加载中..."
+                no-data-text="暂无数据">
+                <template v-slot:item.key="{ item }">
+                  <v-chip label size="small" class="font-weight-bold">
+                    {{ item.key.substring(0, 4) }}...{{ item.key.substring(item.key.length - 4) }}
+                  </v-chip>
+                </template>
+                <template v-slot:item.aiModels="{ item }">
+                  <v-chip v-for="model in item.aiModels" :key="model.id" label size="x-small" class="ma-1">
+                    {{ model.modelId }}
+                  </v-chip>
+                  <span v-if="!item.aiModels || item.aiModels.length === 0">-</span>
+                </template>
+                <template v-slot:item.isEnabled="{ item }">
+                  <v-switch :model-value="item.isEnabled" color="primary" hide-details
+                    @change="toggleApiKeyEnabled(item)"></v-switch>
+                </template>
+                <template v-slot:item.createdAt="{ item }">
+                  {{ formatDateUTC8(item.createdAt) }}
+                </template>
+                <template v-slot:item.actions="{ item }">
+                  <v-btn icon variant="text" size="small" @click="editApiKey(item)">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                  <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteApiKey(item)">
+                    <v-icon>mdi-delete</v-icon>
+                    <v-tooltip activator="parent" location="top">删除密钥</v-tooltip>
+                  </v-btn>
+                </template>
+              </v-data-table>
+
+              <!-- 移动端 API 密钥列表 -->
+              <v-list v-else>
+                <v-list-item v-for="item in apiKeys" :key="item.id" class="mb-2">
+                  <v-list-item-content>
+                    <v-list-item-title>{{ item.description || '无描述' }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ item.serviceType }} - {{ formatDateUTC8(item.createdAt) }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <template v-slot:append>
+                    <v-btn icon variant="text" size="small" @click="editApiKey(item)">
+                      <v-icon>mdi-pencil</v-icon>
+                    </v-btn>
+                    <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteApiKey(item)">
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
             </div>
           </v-window-item>
 
@@ -58,28 +79,50 @@
               <v-btn color="primary" prepend-icon="mdi-plus" @click="openNewSettingDialog">新建设置</v-btn>
             </div>
             <div class="responsive-table-container">
-            <v-data-table :headers="settingHeaders" :items="usageSettings" :loading="settingsLoading"
-              loading-text="加载中..." no-data-text="暂无数据">
-              <template v-slot:item.aiModel="{ item }">
-                <span v-if="item.aiModel">{{ item.aiModel.modelId }} ({{ item.aiModel.serviceType }})</span>
-                <span v-else class="text-error">模型不存在</span>
-              </template>
-              <template v-slot:item.isEnabled="{ item }">
-                <v-switch :model-value="item.isEnabled" color="primary" hide-details
-                  @change="toggleSettingEnabled(item)"></v-switch>
-              </template>
-              <template v-slot:item.createdAt="{ item }">
-                {{ formatDateUTC8(item.createdAt) }}
-              </template>
-              <template v-slot:item.actions="{ item }">
-                <v-btn icon variant="text" size="small" @click="editSetting(item)">
-                  <v-icon>mdi-pencil</v-icon>
-                </v-btn>
-                <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteSetting(item)">
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
-              </template>
-            </v-data-table>
+              <!-- 桌面端模型使用设置表格 -->
+              <v-data-table v-if="display.mdAndUp.value" :headers="settingHeaders" :items="usageSettings" :loading="settingsLoading"
+                loading-text="加载中..." no-data-text="暂无数据">
+                <template v-slot:item.aiModel="{ item }">
+                  <span v-if="item.aiModel">{{ item.aiModel.modelId }} ({{ item.aiModel.serviceType }})</span>
+                  <span v-else class="text-error">模型不存在</span>
+                </template>
+                <template v-slot:item.isEnabled="{ item }">
+                  <v-switch :model-value="item.isEnabled" color="primary" hide-details
+                    @change="toggleSettingEnabled(item)"></v-switch>
+                </template>
+                <template v-slot:item.createdAt="{ item }">
+                  {{ formatDateUTC8(item.createdAt) }}
+                </template>
+                <template v-slot:item.actions="{ item }">
+                  <v-btn icon variant="text" size="small" @click="editSetting(item)">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                  <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteSetting(item)">
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                </template>
+              </v-data-table>
+
+              <!-- 移动端模型使用设置列表 -->
+              <v-list v-else>
+                <v-list-item v-for="item in usageSettings" :key="item.id" class="mb-2">
+                  <v-list-item-content>
+                    <v-list-item-title>{{ item.usageType }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                      <span v-if="item.aiModel">{{ item.aiModel.modelId }}</span>
+                      <span v-else class="text-error">模型不存在</span>
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                  <template v-slot:append>
+                    <v-btn icon variant="text" size="small" @click="editSetting(item)">
+                      <v-icon>mdi-pencil</v-icon>
+                    </v-btn>
+                    <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteSetting(item)">
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
             </div>
           </v-window-item>
         </v-window>
@@ -188,12 +231,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import {
   getApiKeys, createApiKey, updateApiKey, deleteApiKey as deleteApiKeyService, type ApiKey,
   getAIModelUsageSettings, createAIModelUsageSetting, updateAIModelUsageSetting, deleteAIModelUsageSetting, getAllAIModels, type AIModelUsageSetting, type AIModel,
   toggleApiKeyStatus
 } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
+
+const display = useDisplay()
 
 // --- 选项卡状态 ---
 const currentTab = ref('apiKeys'); // 'apiKeys' 或 'modelUsage'

@@ -69,17 +69,51 @@
             最近作文提交
           </v-card-title>
           <v-card-text class="responsive-table-container">
-            <v-data-table :headers="headers" :items="recentSubmissions" :loading="loading.recentSubmissions"
-              loading-text="加载中..." no-data-text="暂无数据">
-          <template v-slot:item.createdAt="{ item }">
-            {{ formatDateUTC8(item.createdAt) }}
-          </template>
+            <!-- 桌面端表格 -->
+            <v-data-table
+              v-if="display.mdAndUp.value"
+              :headers="headers"
+              :items="recentSubmissions"
+              :loading="loading.recentSubmissions"
+              loading-text="加载中..."
+              no-data-text="暂无数据"
+            >
+              <template v-slot:item.createdAt="{ item }">
+                {{ formatDateUTC8(item.createdAt) }}
+              </template>
               <template v-slot:item.actions="{ item }">
                 <v-btn icon variant="text" size="small" :to="`/essays/${item.id}`">
                   <v-icon>mdi-eye</v-icon>
                 </v-btn>
               </template>
             </v-data-table>
+
+            <!-- 移动端列表 -->
+            <v-list v-else>
+              <v-list-item
+                v-for="item in recentSubmissions"
+                :key="item.id"
+                :to="`/essays/${item.id}`"
+                class="mb-2"
+              >
+                <v-list-item-content>
+                  <v-list-item-title>{{ item.title }}</v-list-item-title>
+                  <v-list-item-subtitle>
+                    {{ item.studentName }} - {{ formatDateUTC8(item.createdAt) }}
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+                <template v-slot:append>
+                  <v-chip
+                    v-if="item.finalScore"
+                    color="primary"
+                    size="small"
+                    variant="flat"
+                  >
+                    {{ item.finalScore }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
           </v-card-text>
         </v-card>
       </v-col>
@@ -104,10 +138,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import { getAssignments, getStudents, searchSubmissions, type Submission } from '@/services/apiService'; // Import from apiService
 import { useRouter } from 'vue-router'
 import { formatDateUTC8 } from '@/utils/dateUtils';
+
+const display = useDisplay()
 
 
 // Loading states

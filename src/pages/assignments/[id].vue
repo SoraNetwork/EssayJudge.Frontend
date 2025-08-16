@@ -102,8 +102,15 @@
         </v-card-title>
 
         <v-card-text>
-          <v-data-table :headers="headers" :items="filteredSubmissions" :loading="loadingSubmissions"
-            loading-text="加载中..." no-data-text="暂无作文提交">
+          <!-- 桌面端表格 -->
+          <v-data-table
+            v-if="display.mdAndUp.value"
+            :headers="headers"
+            :items="filteredSubmissions"
+            :loading="loadingSubmissions"
+            loading-text="加载中..."
+            no-data-text="暂无作文提交"
+          >
             <template v-slot:item.status="{ item }">
               <v-chip :color="getStatusColor(item.status)" variant="outlined" size="small">
                 {{ getStatusText(item.status) }}
@@ -127,6 +134,31 @@
               </v-btn>
             </template>
           </v-data-table>
+
+          <!-- 移动端列表 -->
+          <v-list v-else>
+            <v-list-item
+              v-for="item in filteredSubmissions"
+              :key="item.id"
+              :to="`/essays/${item.id}`"
+              class="mb-2"
+            >
+              <v-list-item-content>
+                <v-list-item-title>{{ item.studentName }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ item.className }} - {{ formatDate(item.createdAt) }}
+                </v-list-item-subtitle>
+              </v-list-item-content>
+              <template v-slot:append>
+                <v-chip :color="getStatusColor(item.status)" variant="flat" size="small">
+                  {{ getStatusText(item.status) }}
+                </v-chip>
+                <span v-if="item.status === 'Evaluated'" :class="getScoreColor(item.score)" class="ml-2 font-weight-bold">
+                  {{ item.finalScore }}
+                </span>
+              </template>
+            </v-list-item>
+          </v-list>
         </v-card-text>
       </v-card>
 
@@ -163,8 +195,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
+
+const display = useDisplay()
 
 const route = useRoute()
 const router = useRouter()
