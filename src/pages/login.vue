@@ -72,6 +72,20 @@
       </v-col>
     </v-row>
   </v-container>
+
+  <!-- 添加全屏遮罩 -->
+  <v-overlay :model-value="showDingTalkOverlay" class="align-center justify-center" persistent>
+    <v-card class="pa-4 text-center" max-width="400">
+      <v-card-title class="d-flex align-center justify-center">
+        <v-icon color="primary" size="large" class="mr-2">mdi-dingtalk</v-icon>
+        <span>钉钉登录中</span>
+      </v-card-title>
+      <v-card-text>
+        <p class="mb-2">正在跳转到钉钉进行身份验证...</p>
+        <v-progress-linear indeterminate color="primary" rounded></v-progress-linear>
+      </v-card-text>
+    </v-card>
+  </v-overlay>
 </template>
 
 <script setup lang="ts">
@@ -89,6 +103,8 @@ const password = ref('');
 const loading = ref(false);
 const error = ref<string | null>(null);
 const isDingTalkEnv = ref(false);
+// 添加遮罩状态
+const showDingTalkOverlay = ref(false);
 
 // --- Composables ---
 const route = useRoute();
@@ -132,9 +148,15 @@ function redirectToDingTalkOAuth() {
     return;
   }
 
-  const redirectUri = encodeURIComponent(window.location.origin + '/login');
-  const oauthUrl = `https://login.dingtalk.com/oauth2/auth?redirect_uri=${redirectUri}&response_type=code&client_id=${appKey}&scope=openid&prompt=consent`;
-  window.location.href = oauthUrl;
+  // 显示遮罩
+  showDingTalkOverlay.value = true;
+  
+  // 延迟跳转，让用户看到提示
+  setTimeout(() => {
+    const redirectUri = encodeURIComponent(window.location.origin + '/login');
+    const oauthUrl = `https://login.dingtalk.com/oauth2/auth?redirect_uri=${redirectUri}&response_type=code&client_id=${appKey}&scope=openid&prompt=consent`;
+    window.location.href = oauthUrl;
+  }, 1000);
 }
 
 /**
@@ -151,6 +173,8 @@ async function handleSsoCallback(code: string) {
     error.value = err.message || '钉钉 SSO 登录失败。';
   } finally {
     loading.value = false;
+    // 隐藏遮罩
+    showDingTalkOverlay.value = false;
   }
 }
 
@@ -161,6 +185,9 @@ async function handleDingTalkAutoLogin() {
   isDingTalkEnv.value = true;
   loading.value = true;
   error.value = null;
+  
+  // 显示遮罩
+  showDingTalkOverlay.value = true;
 
   try {
     const corpId = import.meta.env.VITE_DINGTALK_CORP_ID;
@@ -176,6 +203,8 @@ async function handleDingTalkAutoLogin() {
       } catch (err: any) {
         error.value = `钉钉免密登录失败: ${err.message || '未知错误'}`;
         loading.value = false;
+        // 隐藏遮罩
+        showDingTalkOverlay.value = false;
       }
     });
 
@@ -186,6 +215,8 @@ async function handleDingTalkAutoLogin() {
   } catch (err: any) {
     error.value = err.message;
     loading.value = false;
+    // 隐藏遮罩
+    showDingTalkOverlay.value = false;
   }
 }
 
