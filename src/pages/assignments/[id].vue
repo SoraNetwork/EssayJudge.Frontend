@@ -1,17 +1,21 @@
 <template>
   <div>
+    <!-- 返回按钮 -->
     <v-btn class="mb-4" prepend-icon="mdi-arrow-left" variant="text" :to="'/assignments'">返回测验列表</v-btn>
 
+    <!-- 加载状态 -->
     <div v-if="loading" class="d-flex justify-center align-center" style="height: 400px;">
       <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
     </div>
 
+    <!-- 错误状态 -->
     <div v-else-if="error" class="text-center py-8">
       <v-icon color="error" size="64" class="mb-4">mdi-alert-circle</v-icon>
       <h2 class="text-h5 text-error">{{ error }}</h2>
       <v-btn class="mt-4" color="primary" :to="'/assignments'">返回测验列表</v-btn>
     </div>
 
+    <!-- 主要内容 -->
     <div v-else>
       <!-- 测验信息卡片 -->
       <v-card class="mb-6">
@@ -19,6 +23,7 @@
 
         <v-card-text>
           <v-row>
+            <!-- 作文题目 -->
             <v-col cols="12" md="8">
               <div class="text-subtitle-1 mb-2">作文题目</div>
               <v-sheet class="pa-4 rounded" color="grey-lighten-4">
@@ -27,6 +32,8 @@
                 </div>
               </v-sheet>
             </v-col>
+            
+            <!-- 评分标准 -->
             <v-col cols="12" md="8">
               <div class="text-subtitle-1 mb-2">评分标准</div>
               <v-sheet class="pa-4 rounded" color="grey-lighten-4">
@@ -35,8 +42,10 @@
               </v-sheet>
             </v-col>
 
+            <!-- 测验详细信息 -->
             <v-col cols="12" md="4">
               <v-list>
+                <!-- 年级信息 -->
                 <v-list-item>
                   <template v-slot:prepend>
                     <v-icon color="primary">mdi-account-star</v-icon>
@@ -45,6 +54,7 @@
                   <v-list-item-subtitle>{{ assignment.grade || '未设置' }}</v-list-item-subtitle>
                 </v-list-item>
 
+                <!-- 分数信息 -->
                 <v-list-item>
                   <template v-slot:prepend>
                     <v-icon color="primary">mdi-star-circle</v-icon>
@@ -54,6 +64,7 @@
                     }}</v-list-item-subtitle>
                 </v-list-item>
 
+                <!-- 创建时间 -->
                 <v-list-item>
                   <template v-slot:prepend>
                     <v-icon color="primary">mdi-calendar</v-icon>
@@ -62,6 +73,7 @@
                   <v-list-item-subtitle>{{ formatDate(assignment.createdAt) }}</v-list-item-subtitle>
                 </v-list-item>
 
+                <!-- 更新时间 -->
                 <v-list-item>
                   <template v-slot:prepend>
                     <v-icon color="primary">mdi-calendar-clock</v-icon>
@@ -73,6 +85,7 @@
 
               <v-divider class="my-4"></v-divider>
 
+              <!-- 提交数量统计 -->
               <v-card variant="outlined" class="mb-4">
                 <v-card-text class="text-center">
                   <div class="text-h4 font-weight-bold">{{ submissions.length }}</div>
@@ -97,6 +110,7 @@
       <v-card>
         <v-card-title class="d-flex justify-space-between align-center">
           <span>作文提交列表</span>
+          <!-- 搜索框 -->
           <v-text-field v-model="search" append-inner-icon="mdi-magnify" label="搜索学生" single-line hide-details
             density="compact" style="max-width: 300px"></v-text-field>
         </v-card-title>
@@ -111,12 +125,7 @@
             loading-text="加载中..."
             no-data-text="暂无作文提交"
           >
-            <template v-slot:item.status="{ item }">
-              <v-chip :color="getStatusColor(item.status)" variant="outlined" size="small">
-                {{ getStatusText(item.status) }}
-              </v-chip>
-            </template>
-
+            <!-- 分数列 -->
             <template v-slot:item.score="{ item }">
               <template v-if="item.status === 'Evaluated'">
                 <span :class="getScoreColor(item.score)">{{ item.score }}</span>
@@ -124,10 +133,12 @@
               <span v-else>-</span>
             </template>
 
+            <!-- 提交时间列 -->
             <template v-slot:item.submissionDate="{ item }">
               {{ formatDate(item.submissionDate) }}
             </template>
 
+            <!-- 操作列 -->
             <template v-slot:item.actions="{ item }">
               <v-btn icon variant="text" size="small" :to="`/essays/${item.id}`">
                 <v-icon>mdi-eye</v-icon>
@@ -144,18 +155,17 @@
               class="mb-2"
             >
               <v-list-item-content>
-                <v-list-item-title>{{ item.studentName }}</v-list-item-title>
+                <v-list-item-title>{{ item.studentName || '未知学生' }}</v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ item.className }} - {{ formatDate(item.createdAt) }}
+                  {{ item.className || '未知班级' }} - {{ formatDate(item.createdAt) }}
                 </v-list-item-subtitle>
               </v-list-item-content>
               <template v-slot:append>
-                <v-chip :color="getStatusColor(item.status)" variant="flat" size="small">
-                  {{ getStatusText(item.status) }}
-                </v-chip>
+                <!-- 分数显示 -->
                 <span v-if="item.status === 'Evaluated'" :class="getScoreColor(item.score)" class="ml-2 font-weight-bold">
-                  {{ item.finalScore }}
+                  {{ item.score || '未评分' }}
                 </span>
+                <span v-else>-</span>
               </template>
             </v-list-item>
           </v-list>
@@ -169,14 +179,19 @@
 
           <v-card-text>
             <v-form ref="form" @submit.prevent="saveAssignment">
+              <!-- 年级选择 -->
               <v-select v-model="editedItem.grade" :items="grades" item-title="grade" item-value="string" label="选择年级"
                 required></v-select>
+              <!-- 标题输入 -->
               <v-text-field v-model="editedItem.title" label="标题" :rules="[v => !!v || '标题不能为空']"
                 required></v-text-field>
+              <!-- 总分输入 -->
               <v-text-field v-model="editedItem.totalScore" label="总分" type="number"
                 :rules="[v => (v !== null && v !== undefined && v > 0) || '总分必须大于0']" required></v-text-field>
+              <!-- 基础分输入 -->
               <v-text-field v-model="editedItem.baseScore" label="基础分" type="number"
                 :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']" required></v-text-field>
+              <!-- 评分标准输入 -->
               <v-textarea v-model="editedItem.scoringCriteria" label="评分标准" :rules="[v => !!v || '评分标准不能为空']" required
                 rows="5"></v-textarea>
             </v-form>
@@ -184,7 +199,9 @@
 
           <v-card-actions>
             <v-spacer></v-spacer>
+            <!-- 取消按钮 -->
             <v-btn color="error" variant="text" @click="editDialog = false">取消</v-btn>
+            <!-- 保存按钮 -->
             <v-btn color="primary" @click="saveAssignment" :loading="saving">保存</v-btn>
           </v-card-actions>
         </v-card>
@@ -194,19 +211,22 @@
 </template>
 
 <script setup lang="ts">
+// 导入所需模块
 import { ref, computed, onMounted } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
 
+// 使用 Vuetify 的显示功能来检测屏幕大小
 const display = useDisplay()
 
+// 获取路由和路由器实例
 const route = useRoute()
 const router = useRouter()
-// Assert that route.params has an 'id' property of type string
+// 断言 route.params 具有字符串类型的 'id' 属性
 const assignmentId = computed(() => (route.params as { id: string }).id)
 
-// 状态变量
+// 状态变量定义
 const assignment = ref<any>({
   id: '',
   titleContext: '',
@@ -236,7 +256,7 @@ const editedItem = ref<any>({
   scoringCriteria: '',
 })
 
-// Define grades for the select input
+// 定义年级选项
 const grades = ref([
   { grade: '一年级', string: '一年级' },
   { grade: '二年级', string: '二年级' },
@@ -256,7 +276,6 @@ const grades = ref([
 const headers = [
   { title: '学生', key: 'studentName' },
   { title: '班级', key: 'className' },
-  { title: '状态', key: 'status' },
   { title: '分数', key: 'finalScore' },
   { title: '提交时间', key: 'createdAt' },
   { title: '操作', key: 'actions', sortable: false }
@@ -315,10 +334,10 @@ async function fetchSubmissions() {
   try {
     const submissionData = await searchSubmissions({ assignmentId: assignmentId.value });
 
-    // 获取每个提交的学生和班级信息 (This part might need backend support or separate API calls)
-    // Assuming searchSubmissions now includes studentName and className
+    // 获取每个提交的学生和班级信息 (这部分可能需要后端支持或单独的API调用)
+    // 假设 searchSubmissions 现在包含 studentName 和 className
     const enrichedSubmissions = await Promise.all(submissionData.map(async (submission: any) => {
-      // If backend doesn't return studentName/className, you might need:
+      // 如果后端不返回 studentName/className，您可能需要:
       // const studentResponse = await api.get(`/Student/${submission.studentId}`);
       // const student = studentResponse.data;
       // let className = '';
@@ -327,8 +346,8 @@ async function fetchSubmissions() {
       //   className = classResponse.data?.name || '';
       // }
       // return { ...submission, studentName: student?.name || '未知学生', className: className || '未分配班级' };
-      // For now, assuming searchSubmissions includes studentName and className
-      return submission; // Assuming searchSubmissions returns enriched data
+      // 现在假设 searchSubmissions 返回了增强的数据
+      return submission; // 假设 searchSubmissions 返回了增强的数据
     }));
 
     submissions.value = enrichedSubmissions
@@ -395,13 +414,13 @@ function getStatusColor(status: string) {
 
 // 获取分数颜色
 function getScoreColor(score: number) {
-  // Assuming score is out of assignment.value.totalScore
+  // 假设分数是基于 assignment.value.totalScore 计算的
   if (assignment.value.totalScore && score >= assignment.value.totalScore * 0.8) {
-    return 'text-success'; // High score
+    return 'text-success'; // 高分
   } else if (assignment.value.totalScore && score >= assignment.value.totalScore * 0.6) {
-    return 'text-warning'; // Medium score
+    return 'text-warning'; // 中等分数
   } else {
-    return 'text-error'; // Low score
+    return 'text-error'; // 低分
   }
 }
 

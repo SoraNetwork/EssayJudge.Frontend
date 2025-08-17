@@ -11,101 +11,59 @@
             <v-btn value="text">文字输入</v-btn>
           </v-btn-toggle>
 
-          <!-- 班级选择 -->
-          <v-select
-            v-model="selectedClass"
-            :items="classes"
-            item-title="name"
-            item-value="id"
-            label="选择班级"
-            :loading="loadingClasses"
-            :error-messages="classError"
-            class="mb-4"
-          />
+          <v-row class="mb-4">
+            <!-- 班级选择 -->
+            <v-col cols="12" sm="6" class="px-sm-2">
+              <v-select v-model="selectedClass" :items="classes" item-title="name" item-value="id" label="选择班级"
+                :loading="loadingClasses" :error-messages="classError" class="mb-4" />
+            </v-col>
+            <v-col cols="12" sm="6" class="px-sm-2">
+              <!-- 学生选择 -->
+              <v-select v-model="selectedStudent" :items="filteredStudents" item-title="name" item-value="studentId"
+                label="选择学生" :loading="loadingStudents" :error-messages="studentError" :disabled="!selectedClass"
+                persistent-hint hint="选择学生后将自动填充学号" class="mb-4" @update:model-value="onStudentSelected">
+                <template v-slot:selection="{ item }">
+                  <span>{{ item.raw.name }} ({{ item.raw.studentId }})</span>
+                </template>
+                <template v-slot:item="{ props, item }">
+                  <v-list-item v-bind="props">
+                    <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                    <v-list-item-subtitle>学号: {{ item.raw.studentId }}</v-list-item-subtitle>
+                  </v-list-item>
+                </template>
+              </v-select>
+            </v-col>
+            <!-- 学号显示 -->
+            <v-col cols="12" sm="6" class="px-sm-2">
+              <v-text-field v-model="studentId" label="学号" :error-messages="studentIdError" class="mb-4" 
+                @update:model-value="onStudentIdInput" :loading="validatingStudent"/>
+            </v-col>
+            <v-select v-model="selectedAssignment" :items="assignments" item-title="description" item-value="id"
+              label="选择作业" :loading="loadingAssignments" :error-messages="assignmentError" :disabled="!selectedStudent"
+              persistent-hint hint="选择要提交的作业" class="mb-4">
+              <template v-slot:selection="{ item }">
+                <span>{{ item.raw.description || '请选择作业' }}</span>
+              </template>
+              <template v-slot:item="{ props, item }">
+                <v-list-item v-bind="props">
+                  <v-list-item-title>{{ item.raw.description || '请选择作业' }}</v-list-item-title>
+                  <v-list-item-subtitle>创建时间: {{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
+                </v-list-item>
+              </template>
+            </v-select>
 
-          <!-- 学生选择 -->
-          <v-select
-            v-model="selectedStudent"
-            :items="filteredStudents"
-            item-title="name"
-            item-value="studentId"
-            label="选择学生"
-            :loading="loadingStudents"
-            :error-messages="studentError"
-            :disabled="!selectedClass"
-            persistent-hint
-            hint="选择学生后将自动填充学号"
-            class="mb-4"
-          >
-            <template v-slot:selection="{ item }">
-              <span>{{ item.raw.name }} ({{ item.raw.studentId }})</span>
-            </template>
-            <template v-slot:item="{ props, item }">
-              <v-list-item v-bind="props">
-                <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
-                <v-list-item-subtitle>学号: {{ item.raw.studentId }}</v-list-item-subtitle>
-              </v-list-item>
-            </template>
-          </v-select>
-
-          <!-- 学号显示 -->
-          <v-text-field
-            v-model="studentId"
-            label="学号"
-            readonly
-            :error-messages="studentIdError"
-            class="mb-4"
-          />
-
+          </v-row>
           <!-- 作业选择 -->
-          <v-select
-            v-model="selectedAssignment"
-            :items="assignments"
-            item-title="description"
-            item-value="id"
-            label="选择作业"
-            :loading="loadingAssignments"
-            :error-messages="assignmentError"
-            :disabled="!selectedStudent"
-            persistent-hint
-            hint="选择要提交的作业"
-            class="mb-4"
-          >
-            <template v-slot:selection="{ item }">
-              <span>{{ item.raw.description || '请选择作业' }}</span>
-            </template>
-            <template v-slot:item="{ props, item }">
-              <v-list-item v-bind="props">
-                <v-list-item-title>{{ item.raw.description || '请选择作业' }}</v-list-item-title>
-                <v-list-item-subtitle>创建时间: {{ formatDate(item.raw.createdAt) }}</v-list-item-subtitle>
-              </v-list-item>
-            </template>
-          </v-select>
 
           <!-- 分栏数 (仅图片模式) -->
-          <v-text-field
-            v-if="submitMode === 'image'"
-            v-model.number="columnCount"
-            type="number"
-            label="分栏数"
-            min="1"
-            max="4"
-            :rules="columnRules"
-            class="mb-4"
-          />
+          <v-text-field v-if="submitMode === 'image'" v-model.number="columnCount" type="number" label="分栏数" min="1"
+            max="4" :rules="columnRules" class="mb-4" />
 
           <!-- 图片上传模式 -->
           <div v-if="submitMode === 'image'">
             <!-- 图片上传 -->
-            <v-file-input
-              v-model="imageFile"
-              label="上传作文图片"
-              accept="image/*"
-              :error-messages="imageError"
-              show-size
-              @change="handleImageSelected"
-              class="mb-4"
-            />
+            <v-file-input v-model="imageFiles" label="上传作文图片" accept="image/*" :error-messages="imageError" show-size
+              multiple @change="handleImagesSelected" class="mb-4" />
 
             <!-- 图片预览 -->
             <v-card v-if="processedImageUrl" variant="outlined" class="mb-4">
@@ -114,44 +72,23 @@
                 <v-chip color="success" size="small" class="ml-2">已处理</v-chip>
               </v-card-title>
               <v-card-text>
-                <v-img
-                  :src="fullProcessedImageUrl"
-                  max-height="500"
-                  contain
-                  class="mx-auto cursor-pointer"
-                  @click="showImageDialog = true"
-                />
+                <v-img :src="fullProcessedImageUrl" max-height="500" contain class="mx-auto cursor-pointer"
+                  @click="showImageDialog = true" />
               </v-card-text>
             </v-card>
           </div>
 
           <!-- 文字输入模式 -->
           <div v-else>
-            <v-textarea
-              v-model="essayText"
-              label="输入作文内容"
-              :rules="textRules"
-              rows="10"
-              clearable
-              class="mb-4"
-            />
+            <v-textarea v-model="essayText" label="输入作文内容" :rules="textRules" rows="10" clearable class="mb-4" />
           </div>
 
           <!-- 提交按钮 -->
           <div class="d-flex justify-end">
-            <v-btn
-              color="secondary"
-              class="mr-4"
-              @click="navigateToQuery"
-            >
+            <v-btn color="secondary" class="mr-4" @click="navigateToQuery">
               查询作文
             </v-btn>
-            <v-btn
-              type="submit"
-              color="primary"
-              :loading="submitting"
-              :disabled="!isFormValid"
-            >
+            <v-btn type="submit" color="primary" :loading="submitting" :disabled="!isFormValid">
               提交作文
             </v-btn>
           </div>
@@ -165,10 +102,7 @@
         <v-card-title class="text-h5">作文提交成功</v-card-title>
         <v-card-text>
           <p>您的作文查询ID为:</p>
-          <div
-            class="copy-container text-h6 text-center my-2"
-            @click="copyToClipboard(submittedEssayShortId)"
-          >
+          <div class="copy-container text-h6 text-center my-2" @click="copyToClipboard(submittedEssayShortId)">
             <strong>{{ submittedEssayShortId }}</strong>
             <div class="copy-overlay">
               <span v-if="!isCopied">点击复制</span>
@@ -178,7 +112,7 @@
           <p class="text-caption">您可以使用此ID在查询页面跟踪作文状态。</p>
         </v-card-text>
         <v-card-actions>
-          <v-spacer/>
+          <v-spacer />
           <v-btn color="primary" variant="text" @click="goToQueryPage">前往查询</v-btn>
           <v-btn color="primary" @click="confirmAndReload">确定</v-btn>
         </v-card-actions>
@@ -307,7 +241,8 @@ const assignmentError = ref('')
 const columnCount = ref(1)
 
 // 图片相关
-const imageFile = ref<File | null>(null)
+// 修改: 将单个文件改为文件数组
+const imageFiles = ref<File[]>([])
 const processedImageUrl = ref('')
 const imageError = ref('')
 
@@ -454,15 +389,23 @@ async function validateStudentAndProceed() {
 }
 
 // 处理图片选择
-async function handleImageSelected() {
-  if (!imageFile.value) {
+// 修改: 更新处理函数以处理多个文件
+async function handleImagesSelected(event: Event) {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  
+  if (!files || files.length === 0) {
     imageError.value = '请选择图片'
     processedImageUrl.value = ''
     return
   }
 
+  // 更新文件数组
+  imageFiles.value = Array.from(files)
+
   try {
-    const response = await checkEssayImage(imageFile.value)
+    // 调用更新后的API处理多个文件
+    const response = await checkEssayImage(files)
 
     if (response?.success && response?.processedImageUrl) {
       processedImageUrl.value = response.processedImageUrl
@@ -561,7 +504,8 @@ function resetForm() {
   studentId.value = ''
   selectedAssignment.value = ''
   columnCount.value = 1
-  imageFile.value = null
+  // 修改: 重置文件数组
+  imageFiles.value = []
   processedImageUrl.value = ''
   essayText.value = ''
   submittedEssayShortId.value = ''
@@ -611,6 +555,39 @@ watch(selectedStudent, async (newStudentId) => {
   }
 })
 
+// 新增：当选择学生时自动填充学号
+function onStudentSelected(studentId: string) {
+  if (studentId) {
+    const student = filteredStudents.value.find(s => s.studentId === studentId)
+    if (student) {
+      selectedStudent.value = student.studentId
+      studentId = student.studentId
+    }
+  }
+}
+
+// 新增：当输入学号时自动选择对应的学生
+function onStudentIdInput(inputStudentId: string) {
+  if (inputStudentId) {
+    const student = filteredStudents.value.find(s => s.studentId === inputStudentId)
+    if (student) {
+      selectedStudent.value = student.studentId
+      studentId.value = student.studentId
+      studentIdError.value = ''
+    } else if (inputStudentId.length === 8) {
+      // 如果输入了8位学号但找不到对应学生，显示错误
+      studentIdError.value = '未找到该学号对应的学生'
+    } else if (inputStudentId.length > 8) {
+      studentIdError.value = '学号必须是8位'
+    } else {
+      studentIdError.value = ''
+    }
+  } else {
+    selectedStudent.value = ''
+    studentIdError.value = ''
+  }
+}
+
 // 监听分栏数变化，确保是整数
 watch(columnCount, (newValue) => {
   if (typeof newValue === 'string') {
@@ -622,7 +599,8 @@ watch(columnCount, (newValue) => {
 
 // 监听提交模式变化，重置相关字段
 watch(submitMode, () => {
-  imageFile.value = null
+  // 修改: 重置文件数组
+  imageFiles.value = []
   processedImageUrl.value = ''
   essayText.value = ''
   imageError.value = ''
