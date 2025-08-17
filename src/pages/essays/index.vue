@@ -161,6 +161,25 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 重新评测确认对话框 -->
+    <v-dialog v-model="reEvaluateDialog" persistent max-width="320">
+      <v-card>
+        <v-card-title class="text-h5">
+          确认重新评测
+        </v-card-title>
+        <v-card-text>您确定要重新评测这篇作文吗？这将覆盖之前的评测结果。</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey-darken-1" text @click="closeReEvaluateDialog">
+            取消
+          </v-btn>
+          <v-btn color="primary" text @click="confirmReEvaluate">
+            确认
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -204,13 +223,15 @@ const headers = [
 ]
 
 // 数据和状态
-const essays = ref<Essay[]>([]) // Type the ref with the Essay interface
-const assignments = ref<Assignment[]>([]) // Explicitly type assignments as Assignment[]
+const essays = ref<Essay[]>([])
+const assignments = ref<Assignment[]>([])
 const loading = ref(false)
 const evaluating = ref<string | number>('')
 const deleting = ref<string | number>('')
 const deleteDialog = ref(false)
 const essayToDelete = ref<Essay | null>(null)
+const reEvaluateDialog = ref(false) // 添加重新评测对话框状态
+const essayToReEvaluate = ref<Essay | null>(null) // 添加待重新评测的作文
 
 // 筛选条件
 const filters = ref({
@@ -282,14 +303,31 @@ async function fetchAssignments() {
 
 // 修改提交评测方法
 async function submitForEvaluation(item: Essay) {
-  evaluating.value = item.id
+  essayToReEvaluate.value = item;
+  reEvaluateDialog.value = true;
+}
+
+// 关闭重新评测确认对话框
+function closeReEvaluateDialog() {
+  reEvaluateDialog.value = false;
+  essayToReEvaluate.value = null;
+}
+
+// 确认重新评测
+async function confirmReEvaluate() {
+  if (!essayToReEvaluate.value) return;
+
+  evaluating.value = essayToReEvaluate.value.id;
+  reEvaluateDialog.value = false;
+  
   try {
-    await submitSubmissionForEvaluation(String(item.id));
-    await fetchEssays()
+    await submitSubmissionForEvaluation(String(essayToReEvaluate.value.id));
+    await fetchEssays();
   } catch (error) {
-    console.error('重新评测失败:', error)
+    console.error('重新评测失败:', error);
   } finally {
-    evaluating.value = ''
+    evaluating.value = '';
+    essayToReEvaluate.value = null;
   }
 }
 
