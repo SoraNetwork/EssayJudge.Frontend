@@ -1,6 +1,6 @@
 // Styles for Vuetify components
 @use 'vuetify/settings' with (
-  $color-pack: false
+  $color-pack: true
 );
 
 .responsive-table-container {
