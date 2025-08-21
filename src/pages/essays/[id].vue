@@ -43,7 +43,7 @@
                   <v-btn color="primary" block @click="imageDialog = true" v-if="essay.imageUrl">查看原文图片</v-btn>
                 </v-col>
                 <v-col cols="12">
-                  <v-btn color="secondary" block @click="openEditDialog">修改分数</v-btn>
+                  <v-btn color="secondary" block @click="openEditDialog">修改分数及学生</v-btn>
                 </v-col>
                 <v-col cols="12">
                   <v-btn color="info" block @click="exportToPDF" :loading="exportingPDF">
@@ -135,23 +135,17 @@
                   </template>
                 </v-text-field>
               </v-col>
-              
               <v-col cols="12">
                 <v-text-field
                   v-model="searchQuery"
                   label="搜索学生"
-                  placeholder="输入姓名、学号或班级进行搜索..."
+                  prepend-inner-icon="mdi-magnify"
                   outlined
                   dense
                   clearable
-                  :loading="loadingStudents"
-                  :disabled="loadingStudents"
-                >
-                  <template v-slot:append>
-                    <v-icon color="primary">mdi-magnify</v-icon>
-                  </template>
-                </v-text-field>
-
+                  hide-details
+                  class="mb-2"
+                ></v-text-field>
                 <v-select
                   v-model="selectedStudentId"
                   :items="filteredStudents"
