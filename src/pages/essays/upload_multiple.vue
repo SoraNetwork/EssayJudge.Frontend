@@ -158,7 +158,7 @@ const overallProgress = ref(0); // 整体批量进度（0-100）
 
 // 批量处理配置
 const maxFiles = 60; // 最大上传文件数目
-const batchSize = 5; // 一次上传文件数目
+const batchSize = 3; // 一次上传文件数目
 const batchDelay = 5000; // 批次之间的延迟（毫秒）
 
 let currentFileIndex = 0; // 跟踪下一个批次起始文件索引
