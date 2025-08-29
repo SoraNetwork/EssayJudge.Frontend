@@ -161,6 +161,26 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 重新评测确认对话框 -->
+    <v-dialog v-model="reEvaluateDialog" persistent max-width="320">
+      <v-card>
+        <v-card-title class="text-h5">
+          确认重新评测
+        </v-card-title>
+        <v-card-text>您确定要重新评测这篇作文吗？这将覆盖之前的评测结果。</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey-darken-1" text @click="closeReEvaluateDialog">
+            取消
+          </v-btn>
+          <v-btn color="primary" text @click="confirmReEvaluate">
+            确认
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <BackToTop />
   </div>
 </template>
