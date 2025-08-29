@@ -207,6 +207,7 @@
         </v-card>
       </v-dialog>
     </div>
+    <BackToTop />
   </div>
 </template>
 
