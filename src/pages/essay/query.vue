@@ -58,6 +58,7 @@
         <div v-html="renderedMarkdown"></div>
       </v-card-text>
     </v-card>
+    <BackToTop />
   </div>
 </template>
 

@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid>
+  <v-container>
     <div v-if="loading" class="d-flex justify-center align-center" style="height: 80vh;">
       <v-progress-circular indeterminate color="primary"></v-progress-circular>
     </div>
@@ -9,9 +9,29 @@
     <div v-else-if="essay">
       <!-- Top Section -->
       <v-row class="mb-4">
+        <v-col cols="12">
+          <v-btn class="mb-4" 
+            prepend-icon="mdi-arrow-left" 
+            variant="text" 
+            :to="'/essays'">
+            返回作文列表
+          </v-btn>
+        </v-col>
+        <!-- <v-col cols="12">
+          <v-btn 
+            color="white" 
+            class="mb-4" 
+            @click="$router.push('/essays')"
+          >
+            <v-icon left>mdi-arrow-left</v-icon>
+            返回作文列表
+          </v-btn>
+        </v-col> -->
         <v-col cols="12" md="4">
           <v-card>
-            <v-card-title class="text-h5">作文信息</v-card-title>
+            <v-card-title class="text-h5">
+              作文信息
+            </v-card-title>
             <v-card-text>
               <p><strong>测验题目:</strong> {{ essay.essayAssignment.description }}</p>
               <p><strong>学生:</strong> {{ essay.student?.name }}</p>
@@ -91,152 +111,7 @@
         </v-col>
       </v-row>
     </div>
-
-
-    <!-- Image Dialog -->
-    <v-dialog v-model="imageDialog" max-width="800px">
-      <v-card>
-        <v-img :src="imageUrl"></v-img>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" text @click="imageDialog = false">关闭</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Edit Dialog -->
-    <v-dialog v-model="editDialog" persistent max-width="600px">
-      <v-card>
-        <v-toolbar color="primary" dark flat>
-          <v-toolbar-title>作文评分与分配</v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-btn icon dark @click="editDialog = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-toolbar>
-
-        <v-card-text class="pt-4">
-          <v-container>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model.number="editableScore"
-                  label="复评分数"
-                  type="number"
-                  :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v > 0 || `分数必须大于0`]"
-                  :hint="`总分: ${essay.essayAssignment.totalScore}`"
-                  persistent-hint
-                  outlined
-                  dense
-                  clearable
-                >
-                  <template v-slot:append>
-                    <v-icon color="primary">mdi-pencil</v-icon>
-                  </template>
-                </v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="searchQuery"
-                  label="搜索学生"
-                  prepend-inner-icon="mdi-magnify"
-                  outlined
-                  dense
-                  clearable
-                  hide-details
-                  class="mb-2"
-                ></v-text-field>
-                <v-select
-                  v-model="selectedStudentId"
-                  :items="filteredStudents"
-                  item-title="name"
-                  item-value="id"
-                  label="选择学生"
-                  :loading="loadingStudents"
-                  :disabled="loadingStudents"
-                  :hint="currentClassInfo ? `班级: ${currentClassInfo.name}` : '未分配班级'"
-                  persistent-hint
-                  outlined
-                  dense
-                >
-                  <template v-slot:item="{ props, item }">
-                    <v-list-item v-bind="props">
-                      <template v-slot:prepend>
-                        <v-icon :color="item.raw.classId ? 'primary' : 'grey'">
-                          {{ item.raw.classId ? 'mdi-account-school' : 'mdi-account' }}
-                        </v-icon>
-                      </template>
-                      <v-list-item-title>
-                        {{ item.raw.name }}
-                        <span class="text-caption text--secondary ml-2">
-                          {{ item.raw.studentId }}
-                        </span>
-                      </v-list-item-title>
-                      <v-list-item-subtitle v-if="loadingClass && selectedStudentId === item.raw.id">
-                        <v-progress-linear indeterminate height="2"></v-progress-linear>
-                      </v-list-item-subtitle>
-                      <v-list-item-subtitle v-else>
-                        {{ getClassFromCache(item.raw.classId)?.name || '未分配班级' }}
-                      </v-list-item-subtitle>
-                    </v-list-item>
-                  </template>
-                </v-select>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
-          <v-btn
-            variant="text"
-            color="grey-darken-1"
-            @click="editDialog = false"
-          >
-            取消
-          </v-btn>
-          <v-btn
-            color="primary"
-            variant="elevated"
-            :loading="loading"
-            :disabled="editableScore === null"
-            @click="updateScore"
-          >
-            保存修改
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 用于PDF导出的隐藏内容 -->
-    <div ref="pdfContent" style="display: none;">
-      <div class="pdf-container">
-        <h1>{{ essay?.title }}</h1>
-        
-        <div class="info-section">
-          <p><strong>学生姓名：</strong>{{ essay?.student?.name }}</p>
-          <p><strong>班级：</strong>{{ classInfo?.name }}</p>
-          <p><strong>年级：</strong>{{ essay?.essayAssignment?.grade }}</p>
-          <p><strong>题目：</strong>{{ essay?.essayAssignment?.titleContext }}</p>
-          <p><strong>得分：</strong>{{ essay?.finalScore }}</p>
-        </div>
-
-        <div class="judge-section">
-          <div v-html="renderedMarkdown"></div>
-        </div>
-
-        <div class="ai-results">
-          <h2>AI评分详情</h2>
-          <div v-for="result in essay?.aiResults" :key="result.id" class="ai-result-item">
-            <h3>{{ result.modelName }}</h3>
-            <p>{{ result.feedback }}</p>
-            <p class="score">得分：{{ result.score }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <BackToTop />
   </v-container>
 </template>
 

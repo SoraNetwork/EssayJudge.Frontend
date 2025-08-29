@@ -173,6 +173,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <BackToTop />
   </div>
 
 </template>

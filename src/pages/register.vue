@@ -73,6 +73,7 @@
       </v-col>
     </v-row>
   </v-container>
+  <BackToTop />
 </template>
 
 <script setup lang="ts">
