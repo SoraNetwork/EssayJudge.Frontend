@@ -283,9 +283,11 @@ function getScoreColor(score: number | null | undefined) {
   if (score === null || score === undefined) {
     return 'grey-lighten-1';
   }
-  if (score >= 50) return 'success';
+  if (score >= 54) return 'yellow';
+  if (score >= 48) return 'green';
   if (score >= 42) return 'info';
-  if (score >= 38) return 'warning';
+  if (score >= 36) return 'orange';
+  if (score >= 30) return 'red';
   return 'error';
 }
 
