@@ -98,59 +98,14 @@
     </v-card>
 
     <!-- 新建/编辑测验对话框 -->
-    <v-dialog v-model="dialog" max-width="600px">
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">{{ isEditing ? '编辑测验' : '新建测验' }}</span>
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="form" @submit.prevent="saveAssignment">
-            <v-select
-              v-model="editedItem.grade"
-              :items="grades"
-              item-title="grade"
-              item-value="string"
-              label="选择年级"
-              required
-            ></v-select>
-              <v-text-field
-              v-model="editedItem.totalScore"
-              label="总分"
-              type="number"
-              :rules="[v => (v !== null && v !== undefined && v > 0) || '总分必须大于0']"
-              required
-            ></v-text-field>
-            <v-text-field
-              v-model="editedItem.baseScore"
-              label="基础分"
-              type="number"
-              :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']"
-              required
-            ></v-text-field>
-            <v-textarea
-              v-model="editedItem.titleContext"
-              label="标题"
-              rows="5"
-            ></v-textarea>
-            <v-textarea
-              v-model="editedItem.description"
-              label="描述"
-              rows="5"
-            ></v-textarea>
-            <v-textarea
-              v-model="editedItem.scoringCriteria"
-              label="评分标准"
-              rows="5"
-            ></v-textarea>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" variant="text" @click="dialog = false">取消</v-btn>
-          <v-btn color="primary" @click="saveAssignment" :loading="saving">保存</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <EditAssignments
+      v-model="dialog"
+      :edited-item="editedItem"
+      :is-editing="isEditing"
+      :saving="saving"
+      @update:editedItem="editedItem = $event"
+      @save="saveAssignment"
+    />
 
     <!-- 删除确认对话框 -->
     <v-dialog v-model="deleteDialog" max-width="400px">
@@ -169,10 +124,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useDisplay } from 'vuetify'
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
+import EditAssignments from '@/components/EditAssignments.vue';
 
 const display = useDisplay()
 
@@ -203,22 +159,6 @@ const saving = ref(false)
 const deleting = ref(false)
 const isEditing = ref(false)
 const form = ref<any>(null)
-
-// 年级下拉选项
-const grades = ref([
-  { grade: '一年级', string: '一年级' },
-  { grade: '二年级', string: '二年级' },
-  { grade: '三年级', string: '三年级' },
-  { grade: '四年级', string: '四年级' },
-  { grade: '五年级', string: '五年级' },
-  { grade: '六年级', string: '六年级' },
-  { grade: '初一', string: '初一' },
-  { grade: '初二', string: '初二' },
-  { grade: '初三', string: '初三' },
-  { grade: '高一', string: '高一' },
-  { grade: '高二', string: '高二' },
-  { grade: '高三', string: '高三' },
-]);
 
 // 编辑项的接口定义
 interface EditedAssignment {
@@ -301,26 +241,22 @@ const fetchAssignments = async () => {
 }
 
 // 保存测验
-const saveAssignment = async () => {
-  // 表单校验
-  const { valid } = await form.value.validate()
-  if (!valid) return
-
+const saveAssignment = async (item: EditedAssignment) => {
   saving.value = true
   try {
     if (isEditing.value) {
       // 编辑测验，发送包含所有必需字段的完整对象
-      await updateAssignment(editedItem.value as unknown as Assignment);
+      await updateAssignment(item as unknown as Assignment);
     } else {
       // 新建测验
       const dataToSend: Omit<Assignment, "createdAt" | "id" | "updatedAt"> = {
-        scoringCriteria: editedItem.value.scoringCriteria,
+        scoringCriteria: item.scoringCriteria,
         // 将表单模型中的null转换为undefined，适配API可选字段
-        grade: editedItem.value.grade || undefined,
-        totalScore: editedItem.value.totalScore || undefined,
-        baseScore: editedItem.value.baseScore || undefined,
-        titleContext: editedItem.value.titleContext || undefined,
-        description: editedItem.value.description || undefined, 
+        grade: item.grade || undefined,
+        totalScore: item.totalScore || undefined,
+        baseScore: item.baseScore || undefined,
+        titleContext: item.titleContext || undefined,
+        description: item.description || undefined, 
       };
       await createAssignment(dataToSend);
     }

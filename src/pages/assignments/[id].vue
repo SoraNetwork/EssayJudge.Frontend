@@ -32,7 +32,7 @@
                 </div>
               </v-sheet>
             </v-col>
-            
+
             <!-- 评分标准 -->
             <v-col cols="12" md="8">
               <div class="text-subtitle-1 mb-2">评分标准</div>
@@ -92,7 +92,6 @@
                   <div class="text-subtitle-2">作文提交数量</div>
                 </v-card-text>
               </v-card>
-              <!--
               <v-btn
                 block
                 color="primary"
@@ -100,7 +99,7 @@
                 @click="editDialog = true"
               >
                 编辑测验
-              </v-btn> -->
+              </v-btn>
             </v-col>
           </v-row>
         </v-card-text>
@@ -117,14 +116,8 @@
 
         <v-card-text>
           <!-- 桌面端表格 -->
-          <v-data-table
-            v-if="display.mdAndUp.value"
-            :headers="headers"
-            :items="filteredSubmissions"
-            :loading="loadingSubmissions"
-            loading-text="加载中..."
-            no-data-text="暂无作文提交"
-          >
+          <v-data-table v-if="display.mdAndUp.value" :headers="headers" :items="filteredSubmissions"
+            :loading="loadingSubmissions" loading-text="加载中..." no-data-text="暂无作文提交">
             <!-- 分数列 -->
             <template v-slot:item.score="{ item }">
               <template v-if="item.status === 'Evaluated'">
@@ -148,12 +141,7 @@
 
           <!-- 移动端列表 -->
           <v-list v-else>
-            <v-list-item
-              v-for="item in filteredSubmissions"
-              :key="item.id"
-              :to="`/essays/${item.id}`"
-              class="mb-2"
-            >
+            <v-list-item v-for="item in filteredSubmissions" :key="item.id" :to="`/essays/${item.id}`" class="mb-2">
               <v-list-item-content>
                 <v-list-item-title>{{ item.studentName || '未知学生' }}</v-list-item-title>
                 <v-list-item-subtitle>
@@ -162,7 +150,8 @@
               </v-list-item-content>
               <template v-slot:append>
                 <!-- 分数显示 -->
-                <span v-if="item.status === 'Evaluated'" :class="getScoreColor(item.score)" class="ml-2 font-weight-bold">
+                <span v-if="item.status === 'Evaluated'" :class="getScoreColor(item.score)"
+                  class="ml-2 font-weight-bold">
                   {{ item.score || '未评分' }}
                 </span>
                 <span v-else>-</span>
@@ -173,39 +162,14 @@
       </v-card>
 
       <!-- 编辑测验对话框 -->
-      <v-dialog v-model="editDialog" max-width="600px">
-        <v-card>
-          <v-card-title class="text-h5">编辑测验</v-card-title>
-
-          <v-card-text>
-            <v-form ref="form" @submit.prevent="saveAssignment">
-              <!-- 年级选择 -->
-              <v-select v-model="editedItem.grade" :items="grades" item-title="grade" item-value="string" label="选择年级"
-                required></v-select>
-              <!-- 标题输入 -->
-              <v-text-field v-model="editedItem.title" label="标题" :rules="[v => !!v || '标题不能为空']"
-                required></v-text-field>
-              <!-- 总分输入 -->
-              <v-text-field v-model="editedItem.totalScore" label="总分" type="number"
-                :rules="[v => (v !== null && v !== undefined && v > 0) || '总分必须大于0']" required></v-text-field>
-              <!-- 基础分输入 -->
-              <v-text-field v-model="editedItem.baseScore" label="基础分" type="number"
-                :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']" required></v-text-field>
-              <!-- 评分标准输入 -->
-              <v-textarea v-model="editedItem.scoringCriteria" label="评分标准" :rules="[v => !!v || '评分标准不能为空']" required
-                rows="5"></v-textarea>
-            </v-form>
-          </v-card-text>
-
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <!-- 取消按钮 -->
-            <v-btn color="error" variant="text" @click="editDialog = false">取消</v-btn>
-            <!-- 保存按钮 -->
-            <v-btn color="primary" @click="saveAssignment" :loading="saving">保存</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <EditAssignments
+        v-model="editDialog"
+        :edited-item="editedItem"
+        :is-editing="true"
+        :saving="saving"
+        @update:editedItem="editedItem = $event"
+        @save="saveAssignment"
+      />
     </div>
     <BackToTop />
   </div>
@@ -217,6 +181,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
+import EditAssignments from '@/components/EditAssignments.vue';
 
 // 使用 Vuetify 的显示功能来检测屏幕大小
 const display = useDisplay()
@@ -256,22 +221,6 @@ const editedItem = ref<any>({
   baseScore: null,
   scoringCriteria: '',
 })
-
-// 定义年级选项
-const grades = ref([
-  { grade: '一年级', string: '一年级' },
-  { grade: '二年级', string: '二年级' },
-  { grade: '三年级', string: '三年级' },
-  { grade: '四年级', string: '四年级' },
-  { grade: '五年级', string: '五年级' },
-  { grade: '六年级', string: '六年级' },
-  { grade: '初一', string: '初一' },
-  { grade: '初二', string: '初二' },
-  { grade: '初三', string: '初三' },
-  { grade: '高一', string: '高一' },
-  { grade: '高二', string: '高二' },
-  { grade: '高三', string: '高三' },
-]);
 
 // 表格列定义
 const headers = [
@@ -361,10 +310,6 @@ async function fetchSubmissions() {
 
 // 保存测验
 async function saveAssignment() {
-  // 表单验证
-  const { valid } = await form.value.validate()
-  if (!valid) return
-
   saving.value = true
   try {
     await updateAssignment(editedItem.value);
