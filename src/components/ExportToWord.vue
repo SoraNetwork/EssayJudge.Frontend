@@ -187,7 +187,14 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun({ text: "测验题目：", bold: true }),
-              new TextRun(essay.essayAssignment?.titleContext || "")
+              new TextRun(essay.assignmentTitle || "")
+            ]
+          }),
+          // 添加测验来源
+          new Paragraph({
+            children: [
+              new TextRun({ text: "测验来源：", bold: true }),
+              new TextRun(essay.essayAssignment?.description || "")
             ]
           }),
           // 添加得分信息
