@@ -19,8 +19,7 @@
           <v-text-field v-model="localEditedItem.baseScore" label="基础分" type="number"
             :rules="[v => (v !== null && v !== undefined && v > 0) || '基础分必须大于0']" required></v-text-field>
           <!-- 评分标准输入 -->
-          <v-textarea v-model="localEditedItem.scoringCriteria" label="评分标准" :rules="[v => !!v || '评分标准不能为空']" required
-            rows="10"></v-textarea>
+          <v-textarea v-model="localEditedItem.scoringCriteria" label="评分标准" rows="10"></v-textarea>
         </v-form>
       </v-card-text>
 
