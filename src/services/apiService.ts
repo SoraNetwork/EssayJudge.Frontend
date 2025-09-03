@@ -49,6 +49,7 @@ export interface student{
 }
 
 export interface Submission {
+  essayAssignment: any;
   id: string;
   title: string; // 假设提交有标题或从作业中获取
   studentId: string;

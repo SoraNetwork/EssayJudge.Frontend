@@ -190,6 +190,13 @@ const exportToWord = async () => {
               new TextRun(essay.essayAssignment?.titleContext || "")
             ]
           }),
+          // 添加测验来源
+          new Paragraph({
+            children: [
+              new TextRun({ text: "测验来源：", bold: true }),
+              new TextRun(essay.essayAssignment?.description || "")
+            ]
+          }),
           // 添加得分信息
           new Paragraph({
             children: [
