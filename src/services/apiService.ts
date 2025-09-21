@@ -171,13 +171,10 @@ export const getAssignmentsForStudent = async (studentId: string): Promise<Assig
   return response.data;
 };
 
-export const checkEssayImage = async (imageFiles: FileList | File[]): Promise<{ success: boolean; processedImageUrl: string; message?: string }> => {
-  const formData = new FormData();
-  for (let i = 0; i < imageFiles.length; i++) {
-    formData.append('files', imageFiles[i]);
-  }
-  const response = await api.post<{ success: boolean; processedImageUrl: string; message?: string }>('/essay/studentupload/checkimg/columns', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+export const checkEssayImage = async (imageFile: File): Promise<{ success: boolean; processedImageUrl: string; message?: string }> => {  const formData = new FormData();
+  formData.append('file', imageFile);
+  const response = await api.post<{ success: boolean; processedImageUrl: string; message?: string }>('/essay/studentupload/checkimg', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' },
     validateStatus: (status) => status < 500,
   });
   return response.data;

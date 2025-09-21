@@ -62,8 +62,14 @@
           <!-- 图片上传模式 -->
           <div v-if="submitMode === 'image'">
             <!-- 图片上传 -->
-            <v-file-input v-model="imageFiles" label="上传作文图片" accept="image/*" :error-messages="imageError" show-size
-              multiple @change="handleImagesSelected" class="mb-4" />
+            <v-file-input
+             v-model="imageFile" 
+             label="上传作文图片" 
+             accept="image/*" 
+             :error-messages="imageError" 
+             show-size
+             @change="handleImageSelected" 
+             class="mb-4" />
 
             <!-- 图片预览 -->
             <v-card v-if="processedImageUrl" variant="outlined" class="mb-4">
@@ -241,8 +247,7 @@ const assignmentError = ref('')
 const columnCount = ref(1)
 
 // 图片相关
-// 修改: 将单个文件改为文件数组
-const imageFiles = ref<File[]>([])
+const imageFile = ref<File | null>(null)
 const processedImageUrl = ref('')
 const imageError = ref('')
 
@@ -390,23 +395,15 @@ async function validateStudentAndProceed() {
 
 // 处理图片选择
 // 修改: 更新处理函数以处理多个文件
-async function handleImagesSelected(event: Event) {
-  const target = event.target as HTMLInputElement
-  const files = target.files
-  
-  if (!files || files.length === 0) {
+async function handleImageSelected() {
+  if (!imageFile.value) {
     imageError.value = '请选择图片'
     processedImageUrl.value = ''
     return
   }
 
-  // 更新文件数组
-  imageFiles.value = Array.from(files)
-
   try {
-    // 调用更新后的API处理多个文件
-    const response = await checkEssayImage(files)
-
+    const response = await checkEssayImage(imageFile.value)
     if (response?.success && response?.processedImageUrl) {
       processedImageUrl.value = response.processedImageUrl
       imageError.value = ''
@@ -505,7 +502,7 @@ function resetForm() {
   selectedAssignment.value = ''
   columnCount.value = 1
   // 修改: 重置文件数组
-  imageFiles.value = []
+  imageFile.value = null
   processedImageUrl.value = ''
   essayText.value = ''
   submittedEssayShortId.value = ''
@@ -600,7 +597,7 @@ watch(columnCount, (newValue) => {
 // 监听提交模式变化，重置相关字段
 watch(submitMode, () => {
   // 修改: 重置文件数组
-  imageFiles.value = []
+  imageFile.value = null
   processedImageUrl.value = ''
   essayText.value = ''
   imageError.value = ''
