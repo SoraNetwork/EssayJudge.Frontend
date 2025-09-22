@@ -51,7 +51,7 @@
             <v-card-actions class="pa-4">
               <v-row dense>
                 <v-col cols="12">
-                  <v-btn color="primary" block @click="imageDialog = true" v-if="essay.imageUrl">查看原文图片</v-btn>
+                  <v-btn color="primary" block @click="() => setVisible(true)" v-if="essay.imageUrl">查看原文图片</v-btn>
                 </v-col>
                 <v-col cols="12">
                   <v-btn color="secondary" block @click="openEditDialog">修改分数及学生</v-btn>
@@ -105,15 +105,13 @@
     </div>
 
     <!-- Image Dialog -->
-    <v-dialog v-model="imageDialog" max-width="800px">
-      <v-card>
-        <v-img :src="imageUrl"></v-img>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" text @click="imageDialog = false">关闭</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+
+    <a-image :src="imageUrl" 
+      :style="{ display: 'none' }"
+      :preview="{
+        visible,
+        onVisibleChange: setVisible,
+      }"></a-image>
 
     <!-- Edit Dialog -->
     <v-dialog v-model="editDialog" persistent max-width="600px">
@@ -421,6 +419,11 @@ const updateScore = async () => {
     console.error('Failed to update:', err);
     error.value = '更新失败';
   }
+};
+
+const visible = ref<boolean>(false);
+const setVisible = (val: boolean): void => {
+  visible.value = val;
 };
 
 // 监听选中学生的变化

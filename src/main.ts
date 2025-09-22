@@ -5,7 +5,8 @@
  */
 
 // Plugins
-import { registerPlugins } from '@/plugins'
+import { registerPlugins } from '@/plugins';
+import { Image } from 'ant-design-vue';
 
 import { provideFluentDesignSystem, fluentCard, fluentButton } from '@fluentui/web-components';
 provideFluentDesignSystem().register(fluentCard(), fluentButton());
@@ -22,4 +23,4 @@ const app = createApp(App)
 
 registerPlugins(app)
 
-app.mount('#app')
+app.use(Image).mount('#app')

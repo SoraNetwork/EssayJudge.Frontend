@@ -18,6 +18,7 @@
     "@mdi/font": "7.4.47",
     "@microsoft/fast-element": "^2.6.0",
     "@vueuse/core": "^13.4.0",
+    "ant-design-vue": "^4.2.6",
     "axios": "^1.10.0",
     "bytemd": "^1.22.0",
     "dingtalk-jsapi": "^3.1.3",
