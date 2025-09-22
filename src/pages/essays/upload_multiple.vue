@@ -213,7 +213,6 @@ async function uploadEssay() {
     currentFileIndex = 0;
     processPollingBatch();
   } catch (error) {
-    alert('批量上传失败');
     viewState.value = 'form';
   }
   isSubmitting.value = false;

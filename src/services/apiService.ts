@@ -372,7 +372,8 @@ export const uploadEssayBatchSubmission = async (assignmentId: string, imageFile
   const response = await api.post<{ submissionIds: string[] }>('/EssaySubmission/batch', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 180000
   });
   return response.data;
 };
