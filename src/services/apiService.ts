@@ -361,6 +361,22 @@ export const uploadEssaySubmission = async (assignmentId: string, imageFile: Fil
   return response.data;
 };
 
+// 批量上传作文图片，返回所有 submissionIds
+export const uploadEssayBatchSubmission = async (assignmentId: string, imageFiles: File[], columnCount: number): Promise<{ submissionIds: string[] }> => {
+  const formData = new FormData();
+  formData.append('essayAssignmentId', assignmentId);
+  formData.append('columnCount', columnCount.toString());
+  imageFiles.forEach(file => {
+    formData.append('imageFiles', file);
+  });
+  const response = await api.post<{ submissionIds: string[] }>('/EssaySubmission/batch', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
+};
+
 export const submitSubmissionForEvaluation = async (id: string): Promise<void> => {
   await api.patch(`/EssaySubmission/${id}/rejudge`);
 };

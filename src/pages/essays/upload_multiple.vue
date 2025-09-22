@@ -126,7 +126,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAssignments, uploadEssaySubmission, getSubmissionById, type Assignment } from '@/services/apiService';
+import { getAssignments, uploadEssayBatchSubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 
 const router = useRouter();
 
@@ -184,83 +184,59 @@ async function fetchAssignments() {
 
 async function uploadEssay() {
   if (!selectedAssignment.value || !selectedFiles.value || selectedFiles.value.length === 0) {
-    // 如果校验失败可提示
     return;
   }
-
-  // 冗余校验最大文件数（v-file-input 已限制，但作为兜底）
   if (selectedFiles.value.length > maxFiles) {
-     alert(`每次最多上传${maxFiles}篇作文`);
-     return;
+    alert(`每次最多上传${maxFiles}篇作文`);
+    return;
   }
-
-  // 重置状态并切换视图
   isSubmitting.value = true;
   viewState.value = 'processing';
   overallProgress.value = 0;
-  currentFileIndex = 0; // 重置文件索引
-  processingFiles.value = selectedFiles.value.map(file => ({ file: file, status: 'pending' }));
-
-  // 清除所有已有定时器
   clearAllTimers();
 
-  // 开始处理第一批
-  processNextBatch();
-
-  isSubmitting.value = false; // 提交动作完成
+  try {
+    if (!selectedFiles.value) {
+      throw new Error('未选择文件');
+    }
+    // 保存文件引用以确保类型安全
+    const files = selectedFiles.value;
+    // 一次性上传所有图片，获取所有 submissionIds
+    const response = await uploadEssayBatchSubmission(selectedAssignment.value, files, columnCount.value);
+    const ids = response.submissionIds || [];
+    // 用 submissionIds 初始化 processingFiles
+    processingFiles.value = ids.map((id, idx) => ({
+      file: files[idx],
+      status: 'polling',
+      submissionId: id
+    }));
+    currentFileIndex = 0;
+    processPollingBatch();
+  } catch (error) {
+    alert('批量上传失败');
+    viewState.value = 'form';
+  }
+  isSubmitting.value = false;
 }
 
-function processNextBatch() {
-    // 检查是否所有文件都已启动处理
-    if (currentFileIndex >= processingFiles.value.length) {
-        console.log('所有批次已启动');
-        return;
-    }
-
-    const endIndex = Math.min(currentFileIndex + batchSize, processingFiles.value.length);
-    console.log(`开始处理批次: 从索引 ${currentFileIndex} 到 ${endIndex - 1}`);
-
-    // 处理当前批次的文件
-    for (let i = currentFileIndex; i < endIndex; i++) {
-        uploadAndPollFile(processingFiles.value[i]);
-    }
-
-    // 更新下一个批次的起始索引
-    currentFileIndex = endIndex;
-
-    // 如果还有剩余文件，安排下一个批次
-    if (currentFileIndex < processingFiles.value.length) {
-        console.log(`安排下一批次在 ${batchDelay / 1000} 秒后开始`);
-        batchTimeoutId = setTimeout(processNextBatch, batchDelay) as any;
-    } else {
-        console.log('所有文件上传已安排');
-    }
+// 分批轮询批改结果（每批轮询间隔更长）
+function processPollingBatch() {
+  if (currentFileIndex >= processingFiles.value.length) {
+    console.log('所有批次轮询已启动');
+    return;
+  }
+  const endIndex = Math.min(currentFileIndex + batchSize, processingFiles.value.length);
+  console.log(`开始轮询批次: 从索引 ${currentFileIndex} 到 ${endIndex - 1}`);
+  for (let i = currentFileIndex; i < endIndex; i++) {
+    startPollingForFile(processingFiles.value[i]);
+  }
+  currentFileIndex = endIndex;
+  if (currentFileIndex < processingFiles.value.length) {
+    batchTimeoutId = setTimeout(processPollingBatch, batchDelay) as any;
+  } else {
+    console.log('所有文件轮询已安排');
+  }
 }
-
-async function uploadAndPollFile(item: typeof processingFiles.value[0]) {
-    item.status = 'uploading';
-    console.log(`上传文件: ${item.file.name}`);
-
-    try {
-      const response = await uploadEssaySubmission(
-        selectedAssignment.value!,
-        item.file,
-        columnCount.value
-      );
-      item.submissionId = response.submissionId;
-      item.status = 'polling';
-      console.log(`文件 ${item.file.name} 上传成功, submissionId: ${item.submissionId}. 开始轮询.`);
-      // 启动该文件的轮询
-      startPollingForFile(item);
-    } catch (error: any) {
-      console.error(`上传文件 ${item.file.name} 失败:`, error);
-      item.status = 'error';
-      item.error = error.response?.data?.message || '上传失败';
-      calculateOverallProgress(); // 上传失败时更新进度
-      checkOverallCompletion(); // 检查是否全部完成
-    }
-}
-
 
 function startPollingForFile(item: typeof processingFiles.value[0]) {
   if (!item.submissionId) {
