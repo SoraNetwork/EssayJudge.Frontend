@@ -382,9 +382,15 @@ export const submitSubmissionForEvaluation = async (id: string): Promise<void> =
   await api.patch(`/EssaySubmission/${id}/rejudge`);
 };
 
-export const updateSubmissionScore = async (id: string, score: number, studentId?: string): Promise<void> => {
+export const updateSubmissionScore = async (id: string, score ?: number, studentId?: string): Promise<void> => {
   const formData = new FormData();
-  formData.append('score', score.toString());
+  if(!(score || studentId)) {
+    throw new Error('score and studentId are required');
+  }
+  if(score) {
+    formData.append('score', score.toString());
+  }
+
   if (studentId) {
     formData.append('studentId', studentId);
   }

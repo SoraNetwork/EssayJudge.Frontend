@@ -132,12 +132,12 @@
                   v-model.number="editableScore"
                   label="复评分数"
                   type="number"
-                  :rules="[v => v !== null && v !== '' || '分数不能为空', v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v > 0 || `分数必须大于0`]"
+                  :rules="[v => v !== null && v !== '' , v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v >= 0 || `分数不小于0`]"
                   :hint="`总分: ${essay.essayAssignment.totalScore}`"
                   persistent-hint
                   outlined
                   dense
-                  clearable
+                  clearable 
                 >
                   <template v-slot:append>
                     <v-icon color="primary">mdi-pencil</v-icon>
@@ -210,7 +210,7 @@
             color="primary"
             variant="elevated"
             :loading="loading"
-            :disabled="editableScore === null"
+            :disabled="editableScore===null && !selectedStudentId || selectedStudentId === originalStudentId"
             @click="updateScore"
           >
             保存修改
@@ -402,7 +402,7 @@ const openEditDialog = () => {
 };
 
 const updateScore = async () => {
-  if (editableScore.value === null || essay.value === null) return;
+  if (essay.value === null) return;
   const id = (route.params as { id: string }).id;
   
   try {
@@ -410,7 +410,7 @@ const updateScore = async () => {
     const studentChanged = selectedStudentId.value !== originalStudentId.value;
     await updateSubmissionScore(
       id, 
-      editableScore.value, 
+      editableScore.value ? editableScore.value : undefined, 
       studentChanged ? selectedStudentId.value : undefined
     );
     editDialog.value = false;
@@ -430,8 +430,8 @@ const setVisible = (val: boolean): void => {
 watch(selectedStudentId, async (newStudentId) => {
   if (newStudentId) {
     const selectedStudent = students.value.find(s => s.id === newStudentId);
-    if (selectedStudent?.classId) {
-      await fetchClassInfo(selectedStudent.classId);
+    if (selectedStudent?.class) {
+      await fetchClassInfo(selectedStudent.class.id);
     } else {
       classInfo.value = null;
     }
