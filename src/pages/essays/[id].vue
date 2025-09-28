@@ -132,7 +132,7 @@
                   v-model.number="editableScore"
                   label="复评分数"
                   type="number"
-                  :rules="[v => v !== null && v !== '' , v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v >= 0 || `分数不小于0`]"
+                  :rules="[v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v > 0 || `分数必须大于0`]"
                   :hint="`总分: ${essay.essayAssignment.totalScore}`"
                   persistent-hint
                   outlined
