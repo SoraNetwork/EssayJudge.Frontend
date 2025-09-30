@@ -61,7 +61,7 @@
             type="number"
             required
           ></v-text-field>
-          <v-switch :value="enableV3" label="启用 V3 模型" class="mb-4"></v-switch>
+          <v-switch v-model="enableV3" label="启用 V3 OCR方式" class="mr-4" inset></v-switch>
           <v-btn type="submit" color="primary" :loading="isSubmitting">提交</v-btn>
         </v-form>
       </v-card-text>
