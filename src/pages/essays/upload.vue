@@ -34,7 +34,7 @@
             required
           ></v-text-field>
           <div class="d-flex justify-end">
-            <v-switch :value="enableV3" label="启用 V3 模型（更准确但更慢）" class="mr-4"></v-switch>
+            <v-switch v-model="enableV3" label="启用 V3 OCR方式" class="mr-4" inset></v-switch>
             <v-btn type="submit" color="primary" :loading="isSubmitting" class="mr-2">提交</v-btn>
             <v-btn color="secondary" to="/essays/upload_multiple" prepend-icon="mdi-upload-multiple">批量上传</v-btn>
           </div>
