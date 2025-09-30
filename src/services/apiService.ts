@@ -347,11 +347,12 @@ export const getSubmissionById = async (id: string): Promise<Submission> => {
   return response.data;
 };
 
-export const uploadEssaySubmission = async (assignmentId: string, imageFile: File, columnCount: number): Promise<{ submissionId: string }> => {
+export const uploadEssaySubmission = async (assignmentId: string, imageFile: File, columnCount: number, enableV3: boolean): Promise<{ submissionId: string }> => {
   const formData = new FormData();
   formData.append('essayAssignmentId', assignmentId);
   formData.append('imageFile', imageFile);
   formData.append('columnCount', columnCount.toString());
+  formData.append('enableV3', enableV3.toString()); // 添加 enableV3 字段
 
   const response = await api.post<{ submissionId: string }>('/EssaySubmission', formData, {
     headers: {
@@ -362,10 +363,11 @@ export const uploadEssaySubmission = async (assignmentId: string, imageFile: Fil
 };
 
 // 批量上传作文图片，返回所有 submissionIds
-export const uploadEssayBatchSubmission = async (assignmentId: string, imageFiles: File[], columnCount: number): Promise<{ submissionIds: string[] }> => {
+export const uploadEssayBatchSubmission = async (assignmentId: string, imageFiles: File[], columnCount: number,enableV3:boolean): Promise<{ submissionIds: string[] }> => {
   const formData = new FormData();
   formData.append('essayAssignmentId', assignmentId);
   formData.append('columnCount', columnCount.toString());
+  formData.append('enableV3', enableV3.toString());
   imageFiles.forEach(file => {
     formData.append('imageFiles', file);
   });
