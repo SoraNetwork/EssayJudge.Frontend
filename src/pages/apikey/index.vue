@@ -445,7 +445,7 @@ const isEditingSetting = ref(false)
 const settingForm = ref<any>(null)
 
 // 基于 JudgeService 的预定义使用类型
-const usageTypes = ['Judging', 'Reporting', 'OcrProcessing', 'Other'];
+const usageTypes = ['Judging', 'Reporting', 'OcrProcessing', 'OcrV3' ,'Other'];
 
 // 常用模型 ID 参考（显示在 API 密钥表单中）
 const commonModelReferences = [

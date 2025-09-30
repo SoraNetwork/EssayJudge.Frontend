@@ -34,6 +34,7 @@
             required
           ></v-text-field>
           <div class="d-flex justify-end">
+            <v-switch :value="enableV3" label="启用 V3 模型（更准确但更慢）" class="mr-4"></v-switch>
             <v-btn type="submit" color="primary" :loading="isSubmitting" class="mr-2">提交</v-btn>
             <v-btn color="secondary" to="/essays/upload_multiple" prepend-icon="mdi-upload-multiple">批量上传</v-btn>
           </div>
@@ -109,6 +110,7 @@ const columnCount = ref(3);
 const isSubmitting = ref(false);
 const isUploading = ref(false);
 const isPolling = ref(false);
+let enableV3 = ref(false);
 const pollingStatus = ref<any>({});
 const pollingProgress = ref(0); // 新增进度变量
 
@@ -136,7 +138,8 @@ async function uploadEssay() {
     const response = await uploadEssaySubmission(
       selectedAssignment.value,
       selectedFile.value,
-      columnCount.value
+      columnCount.value,
+      enableV3.value
     );
     const submissionId = response.submissionId;
     startPolling(submissionId);

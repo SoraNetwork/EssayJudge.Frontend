@@ -61,6 +61,7 @@
             type="number"
             required
           ></v-text-field>
+          <v-switch :value="enableV3" label="启用 V3 模型" class="mb-4"></v-switch>
           <v-btn type="submit" color="primary" :loading="isSubmitting">提交</v-btn>
         </v-form>
       </v-card-text>
@@ -172,6 +173,7 @@ let batchTimeoutId: number | null = null;
 // 完成对话框状态
 const completionDialog = ref(false);
 const completionMessage = ref('');
+let enableV3 = ref(false);
 
 async function fetchAssignments() {
   try {
@@ -202,7 +204,7 @@ async function uploadEssay() {
     // 保存文件引用以确保类型安全
     const files = selectedFiles.value;
     // 一次性上传所有图片，获取所有 submissionIds
-    const response = await uploadEssayBatchSubmission(selectedAssignment.value, files, columnCount.value);
+    const response = await uploadEssayBatchSubmission(selectedAssignment.value, files, columnCount.value, enableV3.value);
     const ids = response.submissionIds || [];
     // 用 submissionIds 初始化 processingFiles
     processingFiles.value = ids.map((id, idx) => ({
