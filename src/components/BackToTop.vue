@@ -3,14 +3,14 @@
     <v-btn
       v-show="showButton"
       fab
-      small
+      size="large"
+      icon="mdi-arrow-up"
       class="back-to-top"
       @click="scrollToTop"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       v-tooltip="hoverText"
     >
-      <v-icon size="24">mdi-arrow-up</v-icon>
     </v-btn>
   </v-fade-transition>
 </template>
@@ -72,9 +72,6 @@ onUnmounted(() => {
   bottom: 30px;
   right: 30px;
   z-index: 1000;
-  border-radius: 100%; /* 圆形按钮 */
-  width: 48px;
-  height: 60px;
   background-color: rgba(25, 118, 210, 0.6) !important; /* 半透明蓝色背景 */
   color: white !important;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
