@@ -217,6 +217,7 @@ const editedItem = ref<any>({
   id: '',
   grade: null,
   titleContext: '',
+  description: '',
   totalScore: null,
   baseScore: null,
   scoringCriteria: '',
@@ -260,6 +261,7 @@ async function fetchAssignmentDetails() {
     editedItem.value = {
       id: assignment.value.id,
       titleContext: assignment.value.titleContext,
+      description: assignment.value.description,
       grade: assignment.value.grade,
       totalScore: assignment.value.totalScore,
       baseScore: assignment.value.baseScore,

@@ -6,30 +6,14 @@
       
       <v-card-text>
         <v-form @submit.prevent="exportEssays">
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="selectedAssignmentId"
-                :items="assignments"
-                item-title="title"
-                item-value="id"
-                label="选择作文测验"
-                clearable
-                density="compact"
-              >
-                <template v-slot:item="{ props, item }">
-                  <v-list-item v-bind="props" :subtitle="item.raw.description" />
-                </template>
-              </v-select>
-            </v-col>
-            
+          <v-row>            
             <v-col cols="12" md="6">
               <v-select
                 v-model="selectedAssignmentIds"
                 :items="assignments"
-                item-title="title"
+                item-title="description"
                 item-value="id"
-                label="选择多个作文测验"
+                label="选择作文测验（支持多选）"
                 multiple
                 clearable
                 density="compact"
@@ -37,7 +21,7 @@
                 closable-chips
               >
                 <template v-slot:item="{ props, item }">
-                  <v-list-item v-bind="props" :subtitle="item.raw.description" />
+                  <v-list-item v-bind="props" :subtitle="formatDateUTC8(item.raw.createdAt)" />
                 </template>
               </v-select>
             </v-col>
@@ -94,6 +78,7 @@ import {
   getClasses, 
   exportEssaySubmissions
 } from '@/services/apiService';
+import { formatDateUTC8 } from '@/utils/dateUtils';
 import type { Assignment, Class, ExportFilterDto } from '@/services/apiService';
 
 const selectedAssignmentId = ref<string | null>(null);
