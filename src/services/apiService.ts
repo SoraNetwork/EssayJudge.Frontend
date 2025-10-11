@@ -101,6 +101,14 @@ export interface AIModelUsageSetting {
   updatedAt: string;
 }
 
+export interface ExportFilterDto {
+  essayAssignmentId?: string;
+  essayAssignmentIds?: string[];
+  classId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface ServerStatus {
   serverStatus: string;
   serverTimeUtc: string;
@@ -521,6 +529,40 @@ export const updateAIModelUsageSetting = async (id: string, settingData: Partial
 
 export const deleteAIModelUsageSetting = async (id: string): Promise<void> => {
   await api.delete(`/api/ApiKey/model-usage-settings/${id}`);
+};
+
+// --- Export API ---
+
+export const exportEssaySubmissions = async (filter?: ExportFilterDto): Promise<Blob> => {
+  const response = await api.post<Blob>('/export/essays', filter, {
+    responseType: 'blob',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.data;
+};
+
+export const exportEssaySubmissionsByGet = async (
+  essayAssignmentId?: string,
+  essayAssignmentIds?: string[],
+  classId?: string,
+  startDate?: string,
+  endDate?: string
+): Promise<Blob> => {
+  let url = '/export/essays?';
+  const params = new URLSearchParams();
+  
+  if (essayAssignmentId) params.append('essayAssignmentId', essayAssignmentId);
+  if (essayAssignmentIds) params.append('essayAssignmentIds', essayAssignmentIds.join(','));
+  if (classId) params.append('classId', classId);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  const response = await api.get<Blob>(url + params.toString(), {
+    responseType: 'blob'
+  });
+  return response.data;
 };
 
 // --- Server Status API ---

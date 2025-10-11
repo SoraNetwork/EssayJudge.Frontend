@@ -26,7 +26,15 @@
       <v-divider></v-divider>
 
       <v-list density="compact" nav>
-        <v-list-item v-for="item in menuItems" :key="item.title" :to="item.to" :prepend-icon="item.icon" :title="item.title" rounded="xl"></v-list-item>
+        <template v-for="item in menuItems" :key="item.title">
+          <v-list-group v-if="item.subItems" v-model="item.active">
+            <template v-slot:activator="{ props }">
+              <v-list-item v-bind="props" :prepend-icon="item.icon" :title="item.title" rounded="xl"></v-list-item>
+            </template>
+            <v-list-item v-for="subItem in item.subItems" :key="subItem.title" :to="subItem.to" :prepend-icon="subItem.icon" :title="subItem.title" rounded="xl" density="compact"></v-list-item>
+          </v-list-group>
+          <v-list-item v-else :to="item.to" :prepend-icon="item.icon" :title="item.title" rounded="xl"></v-list-item>
+        </template>
       </v-list>
     </v-navigation-drawer>
 
@@ -88,6 +96,15 @@ import { useTheme, useDisplay } from 'vuetify'
 import { usePreferredDark } from '@vueuse/core' // 导入 usePreferredDark
 import { getServerStatus, type ServerStatus } from '@/services/apiService';
 
+// 定义菜单项类型
+interface MenuItem {
+  title: string;
+  icon: string;
+  to: string;
+  subItems?: MenuItem[];
+  active?: boolean;
+}
+
 const { mdAndUp } = useDisplay()
 const appTitle = import.meta.env.VITE_APP_TITLE || '作文评测系统';
 const footerText = import.meta.env.VITE_FOOTER_TEXT || appTitle;
@@ -121,14 +138,23 @@ function toggleTheme() {
 }
 
 // 菜单项配置
-const menuItems = computed(() => {
-  const items = [
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
     { title: '首页', icon: 'mdi-view-dashboard', to: '/' },
   ]
 
   if (authStore.isAuthenticated) {
     items.push(
-      { title: '作文管理', icon: 'mdi-book-open-page-variant', to: '/essays' },
+      { 
+        title: '作文管理', 
+        icon: 'mdi-book-open-page-variant', 
+        to: '/essays',
+        subItems: [
+          { title: '作文列表', to: '/essays', icon: 'mdi-format-list-bulleted' },
+          { title: '导出报告', to: '/essay/export', icon: 'mdi-download' }
+        ],
+        active: false
+      },
       { title: '测验管理', icon: 'mdi-clipboard-text', to: '/assignments' },
       { title: '学生管理', icon: 'mdi-account-group', to: '/students' },
       { title: '班级管理', icon: 'mdi-google-classroom', to: '/classes' },
