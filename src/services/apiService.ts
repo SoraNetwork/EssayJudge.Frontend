@@ -399,6 +399,13 @@ export const updateSubmissionScore = async (id: string, score ?: number, student
   await api.put(`/EssaySubmission/${id}`, formData);
 };
 
+export const updateSubmissionTexts = async (id: string, parsedText: string, title: string): Promise<void> => {
+  const formData = new FormData();
+  formData.append('parsedText', parsedText);
+  formData.append('title', title);
+  await api.put(`/EssaySubmission/${id}`,formData);
+}
+
 export const deleteSubmission = async (id: string): Promise<void> => {
   await api.delete(`/EssaySubmission`, { params: { id } });
 };

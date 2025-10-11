@@ -10,10 +10,7 @@
       <!-- Top Section -->
       <v-row class="mb-4">
         <v-col cols="12">
-          <v-btn class="mb-4" 
-            prepend-icon="mdi-arrow-left" 
-            variant="text" 
-            :to="'/essays'">
+          <v-btn class="mb-4" prepend-icon="mdi-arrow-left" variant="text" :to="'/essays'">
             返回作文列表
           </v-btn>
         </v-col>
@@ -33,7 +30,8 @@
               <v-list-item>
                 <v-list-item-title class="text-subtitle-1">
                   <strong>系统评分:</strong>
-                  <v-chip :color="getScoreColor(essay.finalScore, essay.essayAssignment.totalScore)" dark small class="ml-2">
+                  <v-chip :color="getScoreColor(essay.finalScore, essay.essayAssignment.totalScore)" dark small
+                    class="ml-2">
                     {{ essay.finalScore }} / {{ essay.essayAssignment.totalScore }}
                   </v-chip>
                 </v-list-item-title>
@@ -54,14 +52,10 @@
                   <v-btn color="primary" block @click="() => setVisible(true)" v-if="essay.imageUrl">查看原文图片</v-btn>
                 </v-col>
                 <v-col cols="12">
-                  <v-btn color="secondary" block @click="openEditDialog">修改分数及学生</v-btn>
+                  <v-btn color="secondary" block @click="openEditScoreDialog">修改分数及学生</v-btn>
                 </v-col>
                 <v-col cols="12">
-                  <ExportToWord 
-                    :essay-id="essay.id"
-                    :class-info="classInfo" 
-                    block
-                  />
+                  <ExportToWord :essay-id="essay.id" :class-info="classInfo" block />
                 </v-col>
               </v-row>
             </v-card-actions>
@@ -69,7 +63,10 @@
         </v-col>
         <v-col cols="12" md="8">
           <v-card>
-            <v-card-title>原文内容</v-card-title>
+            <v-card-title class="d-flex justify-space-between align-center">
+              原文内容
+              <v-btn prepend-icon="mdi-pencil" variant="text" small @click="onOpenEditTextDialog">修改标题与内容</v-btn>
+            </v-card-title>
             <v-card-text style="white-space: pre-wrap; word-wrap: break-word;">{{ essay.parsedText }}</v-card-text>
           </v-card>
         </v-col>
@@ -95,7 +92,8 @@
                   <v-list-item-subtitle>{{ result.feedback }}</v-list-item-subtitle>
                 </v-list-item-content>
                 <v-list-item-action>
-                  <v-chip :color="getScoreColor(result.score, essay.essayAssignment.totalScore)" dark>{{ result.score ?? 'N/A' }}</v-chip>
+                  <v-chip :color="getScoreColor(result.score, essay.essayAssignment.totalScore)" dark>{{ result.score ??
+                    'N/A' }}</v-chip>
                 </v-list-item-action>
               </v-list-item>
             </v-list>
@@ -106,20 +104,18 @@
 
     <!-- Image Dialog -->
 
-    <a-image :src="imageUrl" 
-      :style="{ display: 'none' }"
-      :preview="{
+    <a-image :src="imageUrl" :style="{ display: 'none' }" :preview="{
         visible,
         onVisibleChange: setVisible,
       }"></a-image>
 
-    <!-- Edit Dialog -->
-    <v-dialog v-model="editDialog" persistent max-width="600px">
+    <!-- Edit Text Dialog -->
+    <v-dialog v-model="editTextDialog" persistent max-width="600px">
       <v-card>
         <v-toolbar color="primary" dark flat>
-          <v-toolbar-title>作文评分与分配</v-toolbar-title>
+          <v-toolbar-title>修改作文标题与内容</v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn icon dark @click="editDialog = false">
+          <v-btn icon dark @click="editTextDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-toolbar>
@@ -128,46 +124,63 @@
           <v-container>
             <v-row>
               <v-col cols="12">
-                <v-text-field
-                  v-model.number="editableScore"
-                  label="复评分数"
-                  type="number"
+                <v-text-field v-model="editableTitle" label="作文标题"
+                  :rules="[v => v.length != 0 || '标题不能为空']"
+                  required></v-text-field>
+              </v-col>
+              <v-col cols="12">
+                <v-textarea v-model="editableText" label="作文内容" auto-grow rows="10" outlined
+                :rules="[v => v.length != 0 || '内容不能为空']"
+                required></v-textarea>
+              </v-col>
+            </v-row>
+            
+          </v-container>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn variant="text" color="grey-darken-1" @click="editTextDialog = false">
+            取消
+          </v-btn>
+          <v-btn color="primary" variant="elevated" :loading="loading" :disabled="editableTitle === null || editableText === null" @click="updateTexts">
+            保存修改
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Edit Score Dialog -->
+    <v-dialog v-model="editScoreDialog" persistent max-width="600px">
+      <v-card>
+        <v-toolbar color="primary" dark flat>
+          <v-toolbar-title>作文评分与分配</v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn icon dark @click="editScoreDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-toolbar>
+
+        <v-card-text class="pt-4">
+          <v-container>
+            <v-row>
+              <v-col cols="12">
+                <v-text-field v-model.number="editableScore" label="复评分数" type="number"
                   :rules="[v => v <= essay.essayAssignment.totalScore || `分数不能超过总分 ${essay.essayAssignment.totalScore}`, v => v > 0 || `分数必须大于0`]"
-                  :hint="`总分: ${essay.essayAssignment.totalScore}`"
-                  persistent-hint
-                  outlined
-                  dense
-                  clearable 
-                >
+                  :hint="`总分: ${essay.essayAssignment.totalScore}`" persistent-hint outlined dense clearable>
                   <template v-slot:append>
                     <v-icon color="primary">mdi-pencil</v-icon>
                   </template>
                 </v-text-field>
               </v-col>
               <v-col cols="12">
-                <v-text-field
-                  v-model="searchQuery"
-                  label="搜索学生"
-                  prepend-inner-icon="mdi-magnify"
-                  outlined
-                  dense
-                  clearable
-                  hide-details
-                  class="mb-2"
-                ></v-text-field>
-                <v-select
-                  v-model="selectedStudentId"
-                  :items="filteredStudents"
-                  item-title="name"
-                  item-value="id"
-                  label="选择学生"
-                  :loading="loadingStudents"
-                  :disabled="loadingStudents"
-                  :hint="currentClassInfo ? `班级: ${currentClassInfo.name}` : '未分配班级'"
-                  persistent-hint
-                  outlined
-                  dense
-                >
+                <v-text-field v-model="searchQuery" label="搜索学生" prepend-inner-icon="mdi-magnify" outlined dense
+                  clearable hide-details class="mb-2"></v-text-field>
+                <v-select v-model="selectedStudentId" :items="filteredStudents" item-title="name" item-value="id"
+                  label="选择学生" :loading="loadingStudents" :disabled="loadingStudents"
+                  :hint="currentClassInfo ? `班级: ${currentClassInfo.name}` : '未分配班级'" persistent-hint outlined dense>
                   <template v-slot:item="{ props, item }">
                     <v-list-item v-bind="props">
                       <template v-slot:prepend>
@@ -199,20 +212,12 @@
 
         <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
-          <v-btn
-            variant="text"
-            color="grey-darken-1"
-            @click="editDialog = false"
-          >
+          <v-btn variant="text" color="grey-darken-1" @click="editScoreDialog = false">
             取消
           </v-btn>
-          <v-btn
-            color="primary"
-            variant="elevated"
-            :loading="loading"
-            :disabled="editableScore===null && !selectedStudentId || selectedStudentId === originalStudentId"
-            @click="updateScore"
-          >
+          <v-btn color="primary" variant="elevated" :loading="loading"
+            :disabled="editableScore===originalEssayScore && !selectedStudentId || selectedStudentId === originalStudentId"
+            @click="updateScore">
             保存修改
           </v-btn>
         </v-card-actions>
@@ -226,7 +231,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getSubmissionById, updateSubmissionScore, getStudents, getClassById } from '@/services/apiService'
+import { getSubmissionById, updateSubmissionScore, getStudents, getClassById, updateSubmissionTexts } from '@/services/apiService'
 import type { Student, Class } from '@/services/apiService'
 import MarkdownIt from 'markdown-it'
 import 'github-markdown-css/github-markdown.css'
@@ -249,11 +254,15 @@ const essay = ref<any>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const imageDialog = ref(false)
-const editDialog = ref(false)
+const editScoreDialog = ref(false)
+const editTextDialog = ref(false)
 const editableScore = ref<number | null>(null)
+const editableTitle = ref<string | null>(null)
+const editableText = ref<string | null>(null)
 const students = ref<Student[]>([])
 const selectedStudentId = ref<string | undefined>(undefined)
 const originalStudentId = ref<string | undefined>(undefined)
+const originalEssayScore = ref<number | null>(null)
 const searchQuery = ref('')
 const loadingStudents = ref(false)
 const classInfo = ref<Class | null>(null)
@@ -387,17 +396,18 @@ const getScoreColor = (score: number | null, totalScore: number) => {
   return 'red'
 }
 
-const openEditDialog = () => {
+const openEditScoreDialog = () => {
   if (essay.value) {
     editableScore.value = essay.value.score || essay.value.finalScore;
     selectedStudentId.value = essay.value.studentId;
     originalStudentId.value = essay.value.studentId;
+    originalEssayScore.value = essay.value.score;
     searchQuery.value = '';
     // 重新获取当前学生的班级信息
     if (essay.value.student?.classId) {
       fetchClassInfo(essay.value.student.classId);
     }
-    editDialog.value = true;
+    editScoreDialog.value = true;
   }
 };
 
@@ -413,7 +423,7 @@ const updateScore = async () => {
       editableScore.value ? editableScore.value : undefined, 
       studentChanged ? selectedStudentId.value : undefined
     );
-    editDialog.value = false;
+    editScoreDialog.value = false;
     await fetchEssay();
   } catch (err) {
     console.error('Failed to update:', err);
@@ -424,6 +434,31 @@ const updateScore = async () => {
 const visible = ref<boolean>(false);
 const setVisible = (val: boolean): void => {
   visible.value = val;
+};
+
+const onOpenEditTextDialog = () => {
+  if (essay.value) {
+    editableTitle.value = essay.value.title ?? '';
+    editableText.value = essay.value.parsedText ?? '';
+    editTextDialog.value = true;
+  }
+};
+
+const updateTexts = async () => {
+  if (essay.value === null) return;
+  const id = (route.params as { id: string }).id;
+  try {
+    await updateSubmissionTexts(
+      id,
+      editableText.value ?? '',
+      editableTitle.value ?? ''
+    );
+    editTextDialog.value = false;
+    await fetchEssay();
+  } catch (err) {
+    console.error('Failed to update:', err);
+    error.value = '更新失败';
+  }
 };
 
 // 监听选中学生的变化
