@@ -16,7 +16,7 @@
                 label="选择作文测验（支持多选）"
                 multiple
                 clearable
-                density="compact"
+                density="default"
                 chips
                 closable-chips
               >
@@ -34,25 +34,25 @@
                 item-value="id"
                 label="选择班级"
                 clearable
-                density="compact"
+                density="default"
               />
             </v-col>
             
-            <v-col cols="12" md="3">
+            <v-col cols="12" md="2">
               <v-text-field
                 v-model="startDate"
                 label="开始日期"
                 type="date"
-                density="compact"
+                density="default"
               />
             </v-col>
             
-            <v-col cols="12" md="3">
+            <v-col cols="12" md="2">
               <v-text-field
                 v-model="endDate"
                 label="结束日期"
                 type="date"
-                density="compact"
+                density="default"
               />
             </v-col>
           </v-row>
