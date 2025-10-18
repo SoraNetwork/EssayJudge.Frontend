@@ -89,7 +89,12 @@
               <v-list-item v-for="result in essay.aiResults" :key="result.id">
                 <v-list-item-content>
                   <v-list-item-title class="font-weight-medium">{{ result.modelName }}</v-list-item-title>
-                  <v-list-item-subtitle>{{ result.feedback }}</v-list-item-subtitle>
+                  <v-list-item-subtitle 
+                    class="feedback-subtitle"
+                    :title="result.feedback"
+                  >
+                    {{ result.feedback }}
+                  </v-list-item-subtitle>
                 </v-list-item-content>
                 <v-list-item-action>
                   <v-chip :color="getScoreColor(result.score, essay.essayAssignment.totalScore)" dark>{{ result.score ??
@@ -189,16 +194,12 @@
                         </v-icon>
                       </template>
                       <v-list-item-title>
-                        {{ item.raw.name }}
                         <span class="text-caption text--secondary ml-2">
-                          {{ item.raw.studentId }}
+                          ID：{{ item.raw.studentId }}
                         </span>
                       </v-list-item-title>
                       <v-list-item-subtitle v-if="loadingClass && selectedStudentId === item.raw.id">
                         <v-progress-linear indeterminate height="2"></v-progress-linear>
-                      </v-list-item-subtitle>
-                      <v-list-item-subtitle v-else>
-                        {{ getClassFromCache(item.raw.classId)?.name || '未分配班级' }}
                       </v-list-item-subtitle>
                     </v-list-item>
                   </template>
@@ -318,6 +319,7 @@ const setClassCache = (classId: string, classData: Class) => {
   classCache.value.set(classId, classData);
   classCacheExpiry.value.set(classId, Date.now() + CACHE_EXPIRY_TIME);
 };
+
 
 const fetchClassInfo = async (classId: string) => {
   if (!classId) return;

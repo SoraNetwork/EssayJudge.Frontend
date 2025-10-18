@@ -68,6 +68,7 @@
              accept="image/*" 
              :error-messages="imageError" 
              show-size
+             multiple
              @change="handleImageSelected" 
              class="mb-4" />
 
