@@ -6,7 +6,6 @@ import Layouts from 'vite-plugin-vue-layouts-next'
 import Vue from '@vitejs/plugin-vue'
 import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
-import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 // Utilities
@@ -30,6 +29,9 @@ export default defineConfig({
         {
           pinia: ['defineStore', 'storeToRefs'],
         },
+        {
+          'ant-design-vue': ['message', 'notification', 'modal'],
+        },
       ],
       dts: 'src/auto-imports.d.ts',
       eslintrc: {
@@ -40,16 +42,7 @@ export default defineConfig({
     Components({
       dts: 'src/components.d.ts',
     }),
-    Vue({
-      template: { transformAssetUrls },
-    }),
-    // https://github.com/vuetifyjs/vuetify-loader/tree/master/packages/vite-plugin#readme
-    Vuetify({
-      autoImport: true,
-      styles: {
-        configFile: 'src/styles/settings.scss',
-      },
-    }),
+    Vue(),
     Fonts({
       fontsource: {
         families: [
@@ -64,7 +57,6 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: [
-      'vuetify',
       'vue-router',
       'unplugin-vue-router/runtime',
       'unplugin-vue-router/data-loaders',
@@ -72,7 +64,7 @@ export default defineConfig({
     ],
   },
   define: {
-    'process.env': {}, 
+    'process.env': {},
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version),
     'import.meta.env.VITE_GIT_COMMIT': JSON.stringify(execSync('git rev-parse --short HEAD').toString().trim()),
   },

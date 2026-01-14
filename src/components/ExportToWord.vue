@@ -1,18 +1,22 @@
 <template>
-  <v-btn 
-    color="info" 
-    :loading="exporting" 
+  <a-button
+    type="primary"
+    size="large"
+    :loading="exporting"
     @click="exportToWord"
     v-bind="attrs"
   >
-    <v-icon left>mdi-file-word</v-icon>
+    <template #icon>
+      <FileWordOutlined />
+    </template>
     导出Word
     <slot></slot>
-  </v-btn>
+  </a-button>
 </template>
 
 <script setup lang="ts">
 import { ref, useAttrs } from 'vue'
+import { FileWordOutlined } from '@ant-design/icons-vue'
 import MarkdownIt from 'markdown-it'
 import { Document, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
@@ -80,7 +84,7 @@ const convertMarkdownToParagraphs = (markdownText: string): Array<Paragraph | Ta
       // 处理无序列表和有序列表
       case 'ul':
       case 'ol':
-        return Array.from(node.children).map(li => 
+        return Array.from(node.children).map(li =>
           new Paragraph({
             text: li.textContent || '',
             bullet: { level: 0 }
@@ -141,13 +145,13 @@ const convertMarkdownToParagraphs = (markdownText: string): Array<Paragraph | Ta
 const exportToWord = async () => {
   // 检查是否有作文ID
   if (!props.essayId) return
-  
+
   // 设置导出状态为true
   exporting.value = true
   try {
     // 获取作文详细信息
     const essay: Submission = await getSubmissionById(props.essayId)
-    
+
     // 创建Word文档对象
     const doc = new Document({
       sections: [{

@@ -1,151 +1,101 @@
 <template>
-  <div>
-    <v-row v-if="authStore.isAuthenticated">
-      <v-col cols="12">
-        <h1 class="text-h4 mb-4">欢迎使用作文评测系统</h1>
-      </v-col>
+  <div class="dashboard-container" v-if="authStore.isAuthenticated">
+    <h1 class="dashboard-title">欢迎使用作文评测系统</h1>
 
-      <!-- 统计卡片 -->
-      <v-col cols="12" md="4">
-        <div class="stat-card-hover" @click="goTo('/assignments')">
-          <v-card class="mb-4 stat-card" height="150">
-            <v-card-title class="text-h6">
-              <v-icon left color="primary" class="mr-2">mdi-book-open-page-variant</v-icon>
-              作文题目
-            </v-card-title>
-            <v-card-text class="d-flex align-center justify-center">
-              <div class="text-h3 text-primary" v-if="!loading.assignments">{{ stats.assignmentCount }}</div>
-              <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
-            </v-card-text>
-            <!-- 遮罩 -->
-            <div class="stat-card-mask">
-              查看全部
-            </div>
-          </v-card>
+    <!-- 统计卡片 -->
+    <a-row :gutter="[16, 16]">
+      <a-col :span="24" :md="8">
+        <div class="stat-card-wrapper" @click="goTo('/assignments')">
+          <a-card class="stat-card" hoverable>
+            <template #title>
+              <span><BookOutlined /> 作文题目</span>
+            </template>
+            <div class="stat-content" v-if="!loading.assignments">{{ stats.assignmentCount }}</div>
+            <a-spin v-else size="large" class="stat-content" />
+          </a-card>
         </div>
-      </v-col>
+      </a-col>
 
-      <v-col cols="12" md="4">
-        <div class="stat-card-hover" @click="goTo('/students')">
-          <v-card class="mb-4 stat-card" height="150">
-            <v-card-title class="text-h6">
-              <v-icon left color="primary" class="mr-2">mdi-account-group</v-icon>
-              学生人数
-            </v-card-title>
-            <v-card-text class="d-flex align-center justify-center">
-              <div class="text-h3 text-primary" v-if="!loading.students">{{ stats.studentCount }}</div>
-              <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
-            </v-card-text>
-            <div class="stat-card-mask">
-              查看全部
-            </div>
-          </v-card>
+      <a-col :span="24" :md="8">
+        <div class="stat-card-wrapper" @click="goTo('/students')">
+          <a-card class="stat-card" hoverable>
+            <template #title>
+              <span><TeamOutlined /> 学生人数</span>
+            </template>
+            <div class="stat-content" v-if="!loading.students">{{ stats.studentCount }}</div>
+            <a-spin v-else size="large" class="stat-content" />
+          </a-card>
         </div>
-      </v-col>
+      </a-col>
 
-      <v-col cols="12" md="4">
-        <div class="stat-card-hover" @click="goTo('/essays')">
-          <v-card class="mb-4 stat-card" height="150">
-            <v-card-title class="text-h6">
-              <v-icon left color="primary" class="mr-2">mdi-clipboard-text</v-icon>
-              作文提交
-            </v-card-title>
-            <v-card-text class="d-flex align-center justify-center">
-              <div class="text-h3 text-primary" v-if="!loading.submissions">{{ stats.submissionCount }}</div>
-              <v-progress-circular v-else indeterminate color="primary"></v-progress-circular>
-            </v-card-text>
-            <div class="stat-card-mask">
-              查看全部
-            </div>
-          </v-card>
+      <a-col :span="24" :md="8">
+        <div class="stat-card-wrapper" @click="goTo('/essays')">
+          <a-card class="stat-card" hoverable>
+            <template #title>
+              <span><FileTextOutlined /> 作文提交</span>
+            </template>
+            <div class="stat-content" v-if="!loading.submissions">{{ stats.submissionCount }}</div>
+            <a-spin v-else size="large" class="stat-content" />
+          </a-card>
         </div>
-      </v-col>
+      </a-col>
+    </a-row>
 
-      <!-- 最近作文提交 -->
-      <v-col cols="12">
-        <v-card>
-          <v-card-title class="text-h6">
-            <v-icon left color="primary" class="mr-2">mdi-history</v-icon>
-            最近作文提交
-          </v-card-title>
-          <v-card-text class="responsive-table-container">
-            <!-- 桌面端表格 -->
-            <v-data-table
-              v-if="display.mdAndUp.value"
-              :headers="headers"
-              :items="recentSubmissions"
-              :loading="loading.recentSubmissions"
-              loading-text="加载中..."
-              no-data-text="暂无数据"
-            >
-              <template v-slot:item.createdAt="{ item }">
-                {{ formatDateUTC8(item.createdAt) }}
-              </template>
-              <template v-slot:item.actions="{ item }">
-                <v-btn icon variant="text" size="small" :to="`/essays/${item.id}`">
-                  <v-icon>mdi-eye</v-icon>
-                </v-btn>
-              </template>
-            </v-data-table>
+    <!-- 最近作文提交 -->
+    <a-card class="mt-4" title="最近作文提交" :headStyle="{ color: '#1890ff' }">
+      <template #extra>
+        <a-button type="link" @click="goTo('/essays')">查看全部</a-button>
+      </template>
+      <a-table
+        :columns="columns"
+        :data-source="recentSubmissions"
+        :loading="loading.recentSubmissions"
+        :pagination="false"
+        rowKey="id"
+        :scroll="{ x: 768 }"
+      >
+        <template #bodyCell="{ column, text, record }">
+          <template v-if="column.dataIndex === 'createdAt'">
+            {{ formatDateUTC8(record.createdAt) }}
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <a-button type="link" @click="goTo(`/essays/${record.id}`)">查看</a-button>
+          </template>
+          <template v-else-if="column.dataIndex === 'finalScore' && record.finalScore">
+            <a-tag color="blue">{{ record.finalScore }}</a-tag>
+          </template>
+          <template v-else>
+            {{ text }}
+          </template>
+        </template>
+      </a-table>
+    </a-card>
+  </div>
 
-            <!-- 移动端列表 -->
-            <v-list v-else>
-              <v-list-item
-                v-for="item in recentSubmissions"
-                :key="item.id"
-                :to="`/essays/${item.id}`"
-                class="mb-2"
-              >
-                <v-list-item-content>
-                  <v-list-item-title>{{ item.title }}</v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ item.studentName }} - {{ formatDateUTC8(item.createdAt) }}
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-                <template v-slot:append>
-                  <v-chip
-                    v-if="item.finalScore"
-                    color="primary"
-                    size="small"
-                    variant="flat"
-                  >
-                    {{ item.finalScore }}
-                  </v-chip>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <!-- 未登录状态 -->
-    <v-row v-else>
-      <v-col cols="12" class="text-center">
-        <v-img src="https://static.wikia.nocookie.net/minecraft_zh_gamepedia/images/5/55/Enchanted_Book.gif" height="200" class="mx-auto mb-6" contain></v-img>
-        <h1 class="text-h3 mb-6">作文评测系统</h1>
-        <p class="text-body-1 mb-6">请登录以使用系统功能</p>
-        <v-btn color="primary" size="large" to="/login">
-          立即登录
-        </v-btn>
-        <v-btn variant="outlined" color="info" size="large" to="/essay/upload" prepend-icon="mdi-upload" class="ml-4">
-          学生作文上传
-        </v-btn>
-      </v-col>
-    </v-row>
+  <!-- 未登录状态 -->
+  <div class="welcome-container" v-else>
+    <div class="welcome-content">
+      <img src="https://static.wikia.nocookie.net/minecraft_zh_gamepedia/images/5/55/Enchanted_Book.gif" alt="Enchanted Book" class="welcome-image" />
+      <h1 class="welcome-title">作文评测系统</h1>
+      <p class="welcome-subtitle">请登录以使用系统功能</p>
+      <a-button type="primary" size="large" @click="goTo('/login')" class="welcome-btn">立即登录</a-button>
+      <a-button type="default" size="large" @click="goTo('/essay/upload')" class="welcome-btn ml-4">学生作文上传</a-button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useDisplay } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import { getAssignments, getStudents, searchSubmissions, type Submission } from '@/services/apiService'; // Import from apiService
 import { useRouter } from 'vue-router'
 import { formatDateUTC8 } from '@/utils/dateUtils';
 
-const display = useDisplay()
+// Ant Design 组件
+import { BookOutlined, TeamOutlined, FileTextOutlined } from '@ant-design/icons-vue';
 
+const authStore = useAuthStore()
+const router = useRouter()
 
 // Loading states
 const loading = ref({
@@ -155,26 +105,23 @@ const loading = ref({
   recentSubmissions: false
 })
 
-const authStore = useAuthStore()
-const router = useRouter()
-
 // 统计数据
 const stats = ref({
   assignmentCount: 0,
-  studentCount: 0, // Add studentCount
-  submissionCount: 0 // Add submissionCount
+  studentCount: 0,
+  submissionCount: 0
 })
 
 // 最近提交的作文
 const recentSubmissions = ref<Submission[]>([])
 
 // 表格列定义
-const headers = [
-  { title: '标题', key: 'title' },
-  { title: '学生', key: 'studentName' },
-  { title: '分数', key: 'finalScore' },
-  { title: '提交时间', key: 'createdAt' },
-  { title: '操作', key: 'actions', sortable: false }
+const columns = [
+  { title: '标题', dataIndex: 'title', key: 'title' },
+  { title: '学生', dataIndex: 'studentName', key: 'studentName' },
+  { title: '分数', dataIndex: 'finalScore', key: 'finalScore' },
+  { title: '提交时间', dataIndex: 'createdAt', key: 'createdAt' },
+  { title: '操作', key: 'actions', width: 100 }
 ]
 
 // 是否已登录
@@ -187,7 +134,6 @@ async function fetchStats() {
   // 获取作文题目数量
   loading.value.assignments = true
   try {
-    // Replace api.get with getAssignments
     const data = await getAssignments();
     stats.value.assignmentCount = data.length || 0
   } catch (error) {
@@ -199,8 +145,7 @@ async function fetchStats() {
   // 获取学生数量
   loading.value.students = true
   try {
-    // Replace api.get with getStudents
-    const data = await getStudents({}); // Pass empty filters
+    const data = await getStudents({});
     stats.value.studentCount = data.length || 0
   } catch (error) {
     console.error('获取学生数量失败:', error)
@@ -211,8 +156,7 @@ async function fetchStats() {
   // 获取作文提交数量
   loading.value.submissions = true
   try {
-    // Replace api.get with searchSubmissions
-    const data = await searchSubmissions({ top: 1000 }); // Pass top filter
+    const data = await searchSubmissions({ top: 1000 });
     stats.value.submissionCount = data.length || 0
   } catch (error) {
     console.error('获取作文提交数量失败:', error)
@@ -227,8 +171,7 @@ async function fetchRecentSubmissions() {
 
   loading.value.recentSubmissions = true
   try {
-    // Replace api.get with searchSubmissions
-    const data = await searchSubmissions({ top: 5 }); // Pass top filter
+    const data = await searchSubmissions({ top: 5 });
     recentSubmissions.value = data || []
   } catch (error) {
     console.error('获取最近作文提交失败:', error)
@@ -250,39 +193,81 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.stat-card-hover {
-  position: relative;
-  cursor: pointer;
+.dashboard-container {
+  padding: 24px;
 }
 
-.stat-card-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(25, 118, 210, 0.75);
-  color: #fff;
-  font-size: 1.3em;
+.dashboard-title {
+  font-size: 24px;
   font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  border-radius: 8px;
-  transition: opacity 0.2s;
-  z-index: 2;
+  margin-bottom: 24px;
+  color: #1f2d3d;
 }
 
-.stat-card-hover:hover .stat-card-mask {
-  opacity: 1;
-  pointer-events: auto;
+.stat-card-wrapper {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.stat-card-wrapper:hover {
+  transform: translateY(-5px);
 }
 
 .stat-card {
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.stat-content {
+  font-size: 32px;
+  font-weight: bold;
+  color: #1890ff;
+  margin-top: 8px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.welcome-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+.welcome-content {
+  text-align: center;
+}
+
+.welcome-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 24px;
+}
+
+.welcome-title {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #1f2d3d;
+}
+
+.welcome-subtitle {
+  font-size: 16px;
+  color: #606266;
+  margin-bottom: 24px;
+}
+
+.welcome-btn {
+  margin: 0 8px;
+}
+
+.ml-4 {
+  margin-left: 16px;
 }
 </style>

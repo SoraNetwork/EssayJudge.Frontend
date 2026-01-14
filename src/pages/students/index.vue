@@ -1,190 +1,143 @@
 <template>
-  <div>
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h1 class="text-h4">学生管理</h1>
+  <div class="students-container">
+    <div class="header-section mb-4" style="display: flex; justify-content: space-between; align-items: center;">
+      <a-typography-title :level="2" class="mb-0">学生管理</a-typography-title>
       <div>
-        <v-btn color="secondary" prepend-icon="mdi-upload" @click="importDialog = true" class="mr-2">导入学生</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="dialog = true">添加学生</v-btn>
+        <a-button type="default" @click="importDialog = true" class="mr-2">
+          <template #icon>
+            <UploadOutlined />
+          </template>
+          导入学生
+        </a-button>
+        <a-button type="primary" @click="dialog = true">
+          <template #icon>
+            <PlusOutlined />
+          </template>
+          添加学生
+        </a-button>
       </div>
     </div>
 
     <!-- 筛选条件 -->
-    <v-card class="mb-4">
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="filters.classId"
-              label="班级"
-              :items="classes"
-              item-title="name"
-              item-value="id"
-              clearable
-              @update:model-value="fetchStudents"
-            ></v-select>
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-text-field
-              v-model="filters.searchTerm"
-              label="按姓名搜索学生"
-              prepend-icon="mdi-magnify"
-              clearable
-              @input="handleLocalSearch"
-              placeholder="输入学生姓名搜索"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-btn color="primary" @click="fetchStudents" prepend-icon="mdi-refresh">
-              刷新
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
+    <a-card class="mb-4" :body-style="{ padding: '16px' }">
+      <a-row :gutter="[16, 16]">
+        <a-col :span="24" :md="8">
+          <a-select
+            v-model:value="filters.classId"
+            placeholder="选择班级"
+            :options="classOptions"
+            allow-clear
+            style="width: 100%;"
+            @change="fetchStudents"
+          />
+        </a-col>
+        <a-col :span="24" :md="8">
+          <a-input-search
+            v-model:value="filters.searchTerm"
+            placeholder="按姓名搜索学生"
+            @search="handleSearch"
+            allow-clear
+          >
+            <template #prefix>
+              <SearchOutlined />
+            </template>
+          </a-input-search>
+        </a-col>
+        <a-col :span="24" :md="8">
+          <a-button type="primary" @click="fetchStudents" :loading="loading">
+            <template #icon>
+              <ReloadOutlined />
+            </template>
+            刷新
+          </a-button>
+        </a-col>
+      </a-row>
+    </a-card>
 
     <!-- 学生列表 -->
-    <v-card>
-      <v-card-text class="responsive-table-container">
-        <!-- 桌面端表格 -->
-        <v-data-table
-          v-if="display.mdAndUp.value"
-          :headers="headers"
-          :items="filteredStudents"
-          :loading="loading"
-          loading-text="加载中..."
-          no-data-text="暂无数据"
-        >
-          <template v-slot:item.actions="{ item }">
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              color="error"
-              @click="confirmDelete(item)"
-            >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
+    <a-card :body-style="{ padding: '0' }">
+      <a-table
+        :columns="columns"
+        :data-source="filteredStudents"
+        :loading="loading"
+        rowKey="id"
+        background="var(--ant-color-bg-container)"
+        :pagination="{ showSizeChanger: true, showQuickJumper: true, showTotal: ((total: any) => `共 ${total} 条`) }"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'actions'">
+            <a-space>
+              <a-button size="small" type="primary" @click="editStudent(record)">编辑</a-button>
+              <a-button size="small" type="primary" danger @click="confirmDelete(record)">删除</a-button>
+            </a-space>
           </template>
-        </v-data-table>
-
-        <!-- 移动端列表 -->
-        <v-list v-else>
-          <v-list-item
-            v-for="item in filteredStudents"
-            :key="item.id"
-            class="mb-2"
-          >
-            <v-list-item-content>
-              <v-list-item-title>{{ item.name }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ item.studentId }} - {{ item.className }}
-              </v-list-item-subtitle>
-            </v-list-item-content>
-            <template v-slot:append>
-              <v-btn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                @click="confirmDelete(item)"
-              >
-                <v-icon>mdi-delete</v-icon>
-              </v-btn>
-            </template>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-    </v-card>
+        </template>
+      </a-table>
+    </a-card>
 
     <!-- 新建/编辑学生对话框 -->
-    <v-dialog v-model="dialog" max-width="600px">
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">{{ isEditing ? '编辑学生' : '添加学生' }}</span>
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="form" @submit.prevent="saveStudent">
-            <v-text-field
-              v-model="editedItem.name"
-              label="姓名"
-              :rules="[v => !!v || '姓名不能为空']"
-              required
-            ></v-text-field>
-            <v-text-field
-              v-model="editedItem.studentId"
-              label="学号"
-              :rules="[v => !!v || '学号不能为空']"
-              required
-            ></v-text-field>
-            <v-select
-              v-model="editedItem.classId"
-              label="班级"
-              :items="classes"
-              item-title="name"
-              item-value="id"
-              :rules="[v => !!v || '请选择班级']"
-              required
-            ></v-select>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" variant="text" @click="dialog = false">取消</v-btn>
-          <v-btn color="primary" @click="saveStudent" :loading="saving">保存</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="dialog"
+      :title="isEditing ? '编辑学生' : '添加学生'"
+      @ok="saveStudent"
+      :confirm-loading="saving"
+      :width="600"
+    >
+      <a-form :model="editedItem" layout="vertical" ref="formRef">
+        <a-form-item label="姓名" :rules="[{ required: true, message: '姓名不能为空' }]">
+          <a-input v-model:value="editedItem.name" placeholder="请输入学生姓名" />
+        </a-form-item>
+        <a-form-item label="学号" :rules="[{ required: true, message: '学号不能为空' }]">
+          <a-input v-model:value="editedItem.studentId" placeholder="请输入学号" />
+        </a-form-item>
+        <a-form-item label="班级" :rules="[{ required: true, message: '请选择班级' }]">
+          <a-select
+            v-model:value="editedItem.classId"
+            placeholder="请选择班级"
+            :options="classOptions"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">确认删除</v-card-title>
-        <v-card-text>确定要删除学生 <strong>{{ itemToDelete?.name }}</strong> 吗？此操作不可撤销。</v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="text" @click="deleteDialog = false">取消</v-btn>
-          <v-btn color="error" @click="deleteStudent" :loading="deleting">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="deleteDialog"
+      title="确认删除"
+      @ok="deleteStudent"
+      @cancel="deleteDialog = false"
+      :confirm-loading="deleting"
+    >
+      <p>确定要删除学生 <strong>{{ itemToDelete?.name }}</strong> 吗？此操作不可撤销。</p>
+    </a-modal>
 
     <!-- 导入学生对话框 -->
-    <v-dialog v-model="importDialog" max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">导入学生 (CSV 格式文本)</span>
-        </v-card-title>
-        <v-card-text>
-          <v-alert type="info" variant="tonal" class="mb-4">
-            请粘贴格式为 "姓名,学号,班级名称" 的文本，每行一条记录。
-          </v-alert>
-          <v-textarea
-            v-model="csvText"
-            label="粘贴学生列表 (CSV 格式)"
-            prepend-icon="mdi-clipboard-text"
-            :rules="[v => !!v || '请粘贴文本']"
-            rows="10"
-          ></v-textarea>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" variant="text" @click="importDialog = false; csvText = ''">取消</v-btn>
-          <v-btn color="primary" @click="uploadCsv" :loading="importing" :disabled="!csvText">上传并导入</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="importDialog"
+      title="导入学生 (CSV 格式文本)"
+      @ok="uploadCsv"
+      @cancel="handleImportCancel"
+      :confirm-loading="importing"
+      :width="600"
+    >
+      <a-alert message="请粘贴格式为 “姓名,学号,班级名称” 的文本，每行一条记录。" type="info" show-icon class="mb-4" />
+      <a-textarea
+        v-model:value="csvText"
+        placeholder="请粘贴学生列表 (CSV 格式)，每行格式：姓名,学号,班级名称"
+        :rows="10"
+      />
+    </a-modal>
     <BackToTop />
   </div>
-
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useDisplay } from 'vuetify'
 // 从 apiService 导入 Student 类型
 import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
 
-const display = useDisplay()
+// Ant Design 组件
+import { SearchOutlined, ReloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons-vue';
 
 interface Class {
   id: string;
@@ -192,27 +145,23 @@ interface Class {
 }
 
 // 定义表单数据的类型，基于导入的 Student 类型
-// 允许 classId 为 null 以适应 select 组件
-// 显式定义表单所需的属性
 interface EditedStudent {
   id: string;
   name: string;
   studentId: string;
   classId: string | null;
-  // 如果表单中需要 Student 的其他属性，例如 className，请在此添加
-  className?: string; // Keep className here as it's used in the form/table
+  className?: string;
 }
 
 // 表格列定义
-const headers = [
-  { title: '姓名', key: 'name' },
-  { title: '学号', key: 'studentId' },
-  { title: '班级', key: 'className' },
-  { title: '操作', key: 'actions', sortable: false }
-]
+const columns = [
+  { title: '姓名', dataIndex: 'name', key: 'name' },
+  { title: '学号', dataIndex: 'studentId', key: 'studentId' },
+  { title: '班级', dataIndex: 'className', key: 'className' },
+  { title: '操作', key: 'actions', width: 120 }
+];
 
 // 数据和状态
-// Update students ref type to include className for table display
 const students = ref<(Student & { className?: string })[]>([])
 const classes = ref<Class[]>([])
 const loading = ref(false)
@@ -221,17 +170,12 @@ const deleteDialog = ref(false)
 const saving = ref(false) // 保存 (添加/编辑) 状态
 const deleting = ref(false)
 const isEditing = ref(false)
-const form = ref<any>(null)
+const formRef = ref<any>(null)
 
 // 导入相关的新状态
 const importDialog = ref(false);
-// 将 csvFile 改为 csvText，类型改为 string
 const csvText = ref<string>(''); // 使用 string 存储粘贴的文本
 const importing = ref(false); // 导入加载状态
-
-// 添加新的状态
-// const searchResults = ref<(Student & { className?: string })[]>([]);
-// const searchLoading = ref(false);
 
 // 筛选条件
 const filters = ref({
@@ -240,12 +184,13 @@ const filters = ref({
 });
 
 // 当前编辑的项目
-const editedItem = ref<EditedStudent>({ // 使用 EditedStudent 类型
+const editedItem = ref<EditedStudent>({
   id: '',
   name: '',
   studentId: '',
-  classId: null, // 允许 null 作为初始状态和未选择状态
-})
+  classId: null,
+});
+
 // 要删除的项目
 const itemToDelete = ref<Student | null>(null)
 
@@ -289,13 +234,9 @@ function resetEditedItem() {
 // 编辑学生
 function editStudent(item: Student) {
   isEditing.value = true;
-  // Ensure all properties are copied, including id
-  // When editing, we need the classId for the select dropdown
   editedItem.value = {
     ...item,
     classId: item.classId || null, // Use classId for editing
-    // className is not needed for the form, but keep it if EditedStudent requires it
-    // className: item.class?.name || '无班级' // This is derived, not needed for editing data
   };
   dialog.value = true;
 }
@@ -308,10 +249,17 @@ function confirmDelete(item: Student) {
 
 // 保存学生 (新建或编辑)
 async function saveStudent() {
-  if (!form.value) return;
-  const { valid } = await form.value.validate();
-
-  if (!valid) {
+  // 前端验证
+  if (!editedItem.value.name) {
+    console.error('姓名不能为空');
+    return;
+  }
+  if (!editedItem.value.studentId) {
+    console.error('学号不能为空');
+    return;
+  }
+  if (!editedItem.value.classId) {
+    console.error('请选择班级');
     return;
   }
 
@@ -331,14 +279,7 @@ async function saveStudent() {
       // Only include classId if it's not null, as the API expects string | undefined, not null
       if (editedItem.value.classId !== null) {
         dataToUpdate.classId = editedItem.value.classId;
-      } else {
-        // If classId is explicitly set to null in the form, send undefined or null depending on API
-        // Assuming API expects undefined to mean "no change" and null to mean "remove class"
-        // Let's send undefined if null is selected in the form, meaning no class change
-        // If you need to explicitly remove a student from a class, the API needs to support sending null/empty classId
-        // For now, if null is selected, we just don't include classId in the update payload.
       }
-
 
       await updateStudent(editedItem.value.id, dataToUpdate);
     } else {
@@ -397,7 +338,6 @@ async function fetchClasses() {
 }
 
 // --- CSV 导入的新方法 ---
-
 async function uploadCsv() {
   // 检查是否有文本内容
   if (!csvText.value) {
@@ -421,7 +361,6 @@ async function uploadCsv() {
     // 可选：显示用户友好的错误消息
     return;
   }
-
 
   const lines = text.split('\n').filter(line => line.trim() !== ''); // 按行分割，移除空行
   // 存储准备导入的学生数据 (包含查找到的 classId)
@@ -501,23 +440,107 @@ async function uploadCsv() {
 
 // 添加计算属性用于过滤学生
 const filteredStudents = computed(() => {
-  if (!filters.value.searchTerm) {
-    return students.value;
+  let result = students.value;
+  if (filters.value.classId) {
+    result = result.filter(student => student.classId === filters.value.classId);
   }
-  const searchTerm = filters.value.searchTerm.toLowerCase().trim();
-  return students.value.filter(student => 
-    student.name.toLowerCase().includes(searchTerm)
-  );
+  if (filters.value.searchTerm) {
+    const searchTerm = filters.value.searchTerm.toLowerCase().trim();
+    result = result.filter(student => 
+      student.name.toLowerCase().includes(searchTerm)
+    );
+  }
+  return result;
 });
 
 // 本地搜索处理
-function handleLocalSearch(event: Event) {
-  const value = (event.target as HTMLInputElement).value;
-  filters.value.searchTerm = value;
-  // 不需要调用后端API，computed属性会自动处理过滤
+function handleSearch() {
+  // 无需额外操作，computed属性会自动处理过滤
 }
 
-// 移除原有的handleSearch函数
+// 取消导入处理
+function handleImportCancel() {
+  importDialog.value = false;
+  csvText.value = '';
+}
+
+// 计算班级选项，用于选择器
+const classOptions = computed(() => {
+  return classes.value.map(cls => ({
+    label: cls.name,
+    value: cls.id
+  }));
+});
 </script>
+
+<style scoped>
+.students-container {
+  padding: 24px;
 }
 
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mr-2 {
+  margin-right: 8px;
+}
+
+.mr-4 {
+  margin-right: 16px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.font-bold {
+  font-weight: bold;
+}
+
+/* 表格主题修复 */
+:deep(.ant-table) {
+  background: var(--ant-color-bg-container);
+}
+
+:deep(.ant-table-thead > tr > th) {
+  background: var(--ant-color-bg-layout);
+  color: var(--ant-color-text-heading);
+  border-bottom: 1px solid var(--ant-color-border);
+}
+
+:deep(.ant-table-tbody > tr > td) {
+  background: var(--ant-color-bg-container);
+  color: var(--ant-color-text);
+  border-bottom: 1px solid var(--ant-color-border);
+}
+
+:deep(.ant-table-tbody > tr.ant-table-row:hover > td) {
+  background: var(--ant-color-fill-secondary);
+}
+
+:deep(.ant-table-tbody > tr.ant-table-row-selected td) {
+  background: var(--ant-color-primary-bg);
+}
+
+:deep(.ant-pagination) {
+  background: var(--ant-color-bg-container);
+  padding-top: 8px;
+}
+
+:deep(.ant-pagination-options) {
+  color: var(--ant-color-text);
+}
+
+:deep(.ant-pagination-item) {
+  background: var(--ant-color-bg-container);
+  border: 1px solid var(--ant-color-border);
+  color: var(--ant-color-text);
+}
+
+:deep(.ant-pagination-item-active) {
+  background: var(--ant-color-primary);
+  border-color: var(--ant-color-primary);
+  color: var(--ant-color-white);
+}
+</style>

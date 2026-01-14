@@ -1,61 +1,39 @@
 <template>
-  <v-app>
+  <div id="app">
+    <a-spin :spinning="appStore.loading" :fullscreen="true" v-if="appStore.loading" />
     <router-view />
-
-    <v-overlay
-      v-model="appStore.loading"
-      class="align-center justify-center"
-      persistent
-      :scrim="scrimColor"
-    >
-    </v-overlay>
-
-    <v-snackbar
-      v-model="snackbar.show"
-      :timeout="snackbar.timeout"
-      :color="snackbar.color"
-      location="top"
-    >
-      {{ snackbar.text }}
-    </v-snackbar>
-  </v-app>
+    <div>
+      <component :is="contextHolder" />
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { useAppStore } from '@/stores/app'
-import { useTheme } from 'vuetify'
-import { computed, onMounted, reactive } from 'vue'
+import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import * as dd from 'dingtalk-jsapi'
+import { message } from 'ant-design-vue'
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const router = useRouter()
-const theme = useTheme()
 
-const scrimColor = computed(() => {
-  return theme.global.current.value.dark
-    ? 'rgba(255, 255, 255, 0.7)' // 深色模式用半透明白色
-    : 'rgba(0, 0, 0, 0.7)'      // 亮色模式用半透明黑色
-})
+// 设置全局message实例
+const [messageApi, contextHolder] = message.useMessage()
 
-const snackbar = reactive({
-  show: false,
-  text: '',
-  color: 'info',
-  timeout: 3000,
-})
-
-function showSnackbar(text: string, color: string = 'info', timeout: number = 3000) {
-  snackbar.text = text
-  snackbar.color = color
-  snackbar.timeout = timeout
-  snackbar.show = true
+const showMessage = (text: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration: number = 3) => {
+  switch (type) {
+    case 'success': messageApi.success(text, duration); break;
+    case 'error': messageApi.error(text, duration); break;
+    case 'warning': messageApi.warning(text, duration); break;
+    default: messageApi.info(text, duration); break;
+  }
 }
 
 async function handleDingTalkAutoLogin() {
-  showSnackbar('检测到钉钉环境，正在尝试自动登录...', 'info', 5000)
+  showMessage('检测到钉钉环境，正在尝试自动登录...', 'info', 5)
   appStore.setLoading(true)
 
   try {
@@ -68,11 +46,11 @@ async function handleDingTalkAutoLogin() {
       try {
         const result = await dd.runtime.permission.requestAuthCode({ corpId })
         await authStore.loginWithDingTalkCode(result.code)
-        showSnackbar('登录成功，正在跳转...', 'success')
+        showMessage('登录成功，正在跳转...', 'success')
         const targetRoute = router.currentRoute.value.query.redirect || '/'
         router.push(targetRoute as string)
       } catch (err: any) {
-        showSnackbar(`钉钉免密登录失败: ${err.message || '未知错误'}`, 'error', 5000)
+        showMessage(`钉钉免密登录失败: ${err.message || '未知错误'}`, 'error', 5)
       } finally {
         appStore.setLoading(false)
       }
@@ -83,7 +61,7 @@ async function handleDingTalkAutoLogin() {
     })
 
   } catch (err: any) {
-    showSnackbar(err.message, 'error', 5000)
+    showMessage(err.message, 'error', 5)
     appStore.setLoading(false)
   }
 }

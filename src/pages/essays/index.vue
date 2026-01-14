@@ -1,185 +1,153 @@
 <template>
   <div>
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h1 class="text-h4">作文管理</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h1 style="font-size: 24px; font-weight: 500; margin: 0;">作文管理</h1>
       <div>
-        <v-btn variant="outlined" color="info" to="/essay/upload" prepend-icon="mdi-upload" class="mr-2">
+        <a-button type="default" href="/essay/upload" style="margin-right: 8px;">
+          <template #icon><UploadOutlined /></template>
           作文上传（学生版）
-        </v-btn>
-        <v-btn color="primary" to="/essays/upload" prepend-icon="mdi-upload">
+        </a-button>
+        <a-button type="primary" href="/essays/upload">
+          <template #icon><UploadOutlined /></template>
           上传批改
-        </v-btn>
+        </a-button>
       </div>
     </div>
 
     <!-- 筛选条件 -->
-    <v-card class="mb-4">
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="filters.assignmentId"
-              label="测验题目"
-              :items="assignments"
-              item-value="id"
-              clearable
-              @update:model-value="fetchEssays"
-            >
-              <!-- 参照用户提供的示例，修改选择项和列表项的显示 -->
-              <template v-slot:selection="{ item }">
-                <span>{{ item.raw.description }}</span>
-              </template>
-              <template v-slot:item="{ props, item }">
-                <v-list-item v-bind="props" :title="item.raw.description">
-                  <v-list-item-subtitle>{{ formatDateUTC8(item.raw.createdAt) }}</v-list-item-subtitle>
-                </v-list-item>
-              </template>
-            </v-select>
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-text-field
-              v-model="filters.studentName"
-              label="搜索学生"
-              prepend-icon="mdi-magnify"
-              clearable
-              placeholder="输入学生姓名搜索"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-btn color="primary" @click="fetchEssays" prepend-icon="mdi-refresh">
-              刷新
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
+    <a-card style="margin-bottom: 16px;">
+      <a-row :gutter="16">
+        <a-col :span="8">
+          <a-select
+            v-model:value="filters.assignmentId"
+            placeholder="测验题目"
+            style="width: 100%"
+            :options="assignmentOptions"
+            allowClear
+            @change="fetchEssays"
+          />
+        </a-col>
+        <a-col :span="8">
+          <a-input
+            v-model:value="filters.studentName"
+            placeholder="输入学生姓名搜索"
+            allowClear
+          >
+            <template #prefix><SearchOutlined /></template>
+          </a-input>
+        </a-col>
+        <a-col :span="8">
+          <a-button type="primary" @click="fetchEssays">
+            <template #icon><ReloadOutlined /></template>
+            刷新
+          </a-button>
+        </a-col>
+      </a-row>
+    </a-card>
 
     <!-- 作文列表 -->
-    <v-card>
-      <v-card-text class="responsive-table-container">
-        <!-- 桌面端表格 -->
-        <v-data-table
-          v-if="display.mdAndUp.value"
-          :headers="headers"
-          :items="filteredEssays"
-          :loading="loading"
-          loading-text="加载中..."
-          no-data-text="暂无数据"
-        >
-          <template v-slot:item.createdAt="{ item }">
-            {{ formatDateUTC8(item.createdAt) }}
+    <a-card>
+      <!-- 桌面端表格 -->
+      <a-table
+        v-if="isDesktop"
+        :columns="columns"
+        :data-source="filteredEssays"
+        :loading="loading"
+        :pagination="false"
+        :scroll="{ x: true }"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'createdAt'">
+            {{ formatDateUTC8(record.createdAt) }}
           </template>
-          <template v-slot:item.finalScore="{ item }">
-            <v-chip
-              :color="getScoreColor(item.finalScore)"
-              :text-color="item.finalScore ? 'white' : 'default'"
-              size="small"
-              variant="flat"
-            >
-              {{ getDisplayScore(item) }}
-            </v-chip>
+          <template v-if="column.key === 'finalScore'">
+            <a-tag :color="getScoreColor(record.finalScore)">
+              {{ getDisplayScore(record) }}
+            </a-tag>
           </template>
-          <template v-slot:item.actions="{ item }">
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              :to="`/essays/${item.id}`"
-            >
-              <v-icon>mdi-eye</v-icon>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              color="primary"
-              @click="submitForEvaluation(item)"
-              :disabled="!item.isPrased"
-              :loading="evaluating === item.id"
-            >
-              <v-icon>mdi-refresh</v-icon>
-              <v-tooltip activator="parent" location="top">重新评测</v-tooltip>
-            </v-btn>
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              color="error"
-              @click="deleteEssay(item)"
-              :loading="deleting === item.id"
-            >
-              <v-icon>mdi-delete</v-icon>
-              <v-tooltip activator="parent" location="top">删除作文</v-tooltip>
-            </v-btn>
-          </template>
-        </v-data-table>
-
-        <!-- 移动端列表 -->
-        <v-list v-else>
-          <v-list-item
-            v-for="item in filteredEssays"
-            :key="item.id"
-            :to="`/essays/${item.id}`"
-            class="mb-2"
-          >
-            <v-list-item-content>
-              <v-list-item-title>{{ item.title }}</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ item.studentName }} - {{ formatDateUTC8(item.createdAt) }}
-              </v-list-item-subtitle>
-            </v-list-item-content>
-            <template v-slot:append>
-              <v-chip
-                :color="getScoreColor(item.finalScore)"
-                :text-color="item.finalScore ? 'white' : 'default'"
+          <template v-if="column.key === 'actions'">
+            <a-tooltip title="查看详情">
+              <a-button type="text" size="small" :href="`/essays/${record.id}`">
+                <EyeOutlined />
+              </a-button>
+            </a-tooltip>
+            <a-tooltip title="重新评测">
+              <a-button
+                type="text"
                 size="small"
-                variant="flat"
+                :disabled="!record.isPrased"
+                :loading="evaluating === record.id"
+                @click="submitForEvaluation(record)"
               >
+                <ReloadOutlined />
+              </a-button>
+            </a-tooltip>
+            <a-tooltip title="删除作文">
+              <a-button
+                type="text"
+                size="small"
+                danger
+                :loading="deleting === record.id"
+                @click="deleteEssay(record)"
+              >
+                <DeleteOutlined />
+              </a-button>
+            </a-tooltip>
+          </template>
+        </template>
+      </a-table>
+
+      <!-- 移动端列表 -->
+      <a-list v-else :data-source="filteredEssays" item-layout="horizontal">
+        <template #renderItem="{ item }">
+          <a-list-item>
+            <template #actions>
+              <a-tag :color="getScoreColor(item.finalScore)">
                 {{ getDisplayScore(item) }}
-              </v-chip>
+              </a-tag>
             </template>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-    </v-card>
+            <a-list-item-meta>
+              <template #title>
+                <a :href="`/essays/${item.id}`">{{ item.title }}</a>
+              </template>
+              <template #description>
+                {{ item.studentName }} - {{ formatDateUTC8(item.createdAt) }}
+              </template>
+            </a-list-item-meta>
+          </a-list-item>
+        </template>
+      </a-list>
+    </a-card>
 
     <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" persistent max-width="320">
-      <v-card>
-        <v-card-title class="text-h5">
-          确认删除
-        </v-card-title>
-        <v-card-text>您确定要删除这篇作文吗？此操作无法撤销。</v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey-darken-1" text @click="closeDeleteDialog">
-            取消
-          </v-btn>
-          <v-btn color="error" text @click="confirmDeleteEssay">
-            删除
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="deleteDialog"
+      title="确认删除"
+      :closable="false"
+      :maskClosable="false"
+      width="320px"
+    >
+      <p>您确定要删除这篇作文吗？此操作无法撤销。</p>
+      <template #footer>
+        <a-button @click="closeDeleteDialog">取消</a-button>
+        <a-button type="primary" danger @click="confirmDeleteEssay">删除</a-button>
+      </template>
+    </a-modal>
 
     <!-- 重新评测确认对话框 -->
-    <v-dialog v-model="reEvaluateDialog" persistent max-width="320">
-      <v-card>
-        <v-card-title class="text-h5">
-          确认重新评测
-        </v-card-title>
-        <v-card-text>您确定要重新评测这篇作文吗？这将覆盖之前的评测结果。</v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey-darken-1" text @click="closeReEvaluateDialog">
-            取消
-          </v-btn>
-          <v-btn color="primary" text @click="confirmReEvaluate">
-            确认
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="reEvaluateDialog"
+      title="确认重新评测"
+      :closable="false"
+      :maskClosable="false"
+      width="320px"
+    >
+      <p>您确定要重新评测这篇作文吗？这将覆盖之前的评测结果。</p>
+      <template #footer>
+        <a-button @click="closeReEvaluateDialog">取消</a-button>
+        <a-button type="primary" @click="confirmReEvaluate">确认</a-button>
+      </template>
+    </a-modal>
 
     <BackToTop />
   </div>
@@ -187,41 +155,37 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useDisplay } from 'vuetify'
+import { UploadOutlined, SearchOutlined, ReloadOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { searchSubmissions, getAssignments, submitSubmissionForEvaluation, deleteSubmission } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
 
-const display = useDisplay()
-
 // Define interface for Essay item
 interface Essay {
-  id: string | number; // Adjust type based on your API response
-  studentName?: string | null | undefined; // Allow studentName to be null or undefined and optional
-  title?: string; // Make assignmentTitle optional to match Submission type
-  finalScore?: number | null | undefined; // Make finalScore optional to match Submission type
-  score?: number | null | undefined; // 添加score字段
-  createdAt: string; // Adjust type if it's a Date object
-  status?: string; // Assuming status is returned by searchSubmissions
-  isPrased?: boolean; // Assuming isPrased is returned by searchSubmissions
-  // Add other properties used in the template or headers
+  id: string | number;
+  studentName?: string | null | undefined;
+  title?: string;
+  finalScore?: number | null | undefined;
+  score?: number | null | undefined;
+  createdAt: string;
+  status?: string;
+  isPrased?: boolean;
 }
 
 // Define interface for Assignment item
 interface Assignment {
   id: string | number;
   title: string;
-  createdAt: string; // Ensure createdAt is included for display
-  description?: string; // Ensure description is included for display
-  // Add other properties if needed
+  createdAt: string;
+  description?: string;
 }
 
-// 表头定义
-const headers = [
-  { title: '标题', key: 'title' },
-  { title: '学生', key: 'studentName' },
+// 表格列定义
+const columns = [
+  { title: '标题', dataIndex: 'title', key: 'title' },
+  { title: '学生', dataIndex: 'studentName', key: 'studentName' },
   { title: '分数', key: 'finalScore' },
   { title: '提交时间', key: 'createdAt' },
-  { title: '操作', key: 'actions', sortable: false }
+  { title: '操作', key: 'actions' }
 ]
 
 // 数据和状态
@@ -232,13 +196,26 @@ const evaluating = ref<string | number>('')
 const deleting = ref<string | number>('')
 const deleteDialog = ref(false)
 const essayToDelete = ref<Essay | null>(null)
-const reEvaluateDialog = ref(false) // 添加重新评测对话框状态
-const essayToReEvaluate = ref<Essay | null>(null) // 添加待重新评测的作文
+const reEvaluateDialog = ref(false)
+const essayToReEvaluate = ref<Essay | null>(null)
 
 // 筛选条件
 const filters = ref({
   assignmentId: undefined,
-  studentName: '', // 改为存储搜索关键字
+  studentName: '',
+})
+
+// 响应式检测
+const isDesktop = ref(window.innerWidth >= 768)
+
+// Assignment options for select
+const assignmentOptions = computed(() => {
+  return assignments.value.map(item => ({
+    value: item.id,
+    label: item.description || item.title,
+    description: item.description,
+    createdAt: item.createdAt
+  }))
 })
 
 // 添加计算属性用于过滤作文列表
@@ -252,13 +229,11 @@ const filteredEssays = computed(() => {
   );
 });
 
-// 获取显示分数的逻辑 - 新增函数
+// 获取显示分数的逻辑
 function getDisplayScore(item: Essay) {
-  // 如果score存在且不为0，则优先显示score
   if (item.score !== null && item.score !== undefined && item.score !== 0) {
     return item.score;
   }
-  // 否则显示finalScore或'未评分'
   return item.finalScore ?? '未评分';
 }
 
@@ -278,27 +253,23 @@ async function fetchEssays() {
   }
 }
 
-// 根据分数获取颜色 - 优化版本
+// 根据分数获取颜色
 function getScoreColor(score: number | null | undefined) {
   if (score === null || score === undefined) {
-    return 'grey-lighten-1';
+    return 'default';
   }
-  if (score >= 54) return 'yellow';
+  if (score >= 54) return 'gold';
   if (score >= 48) return 'green';
-  if (score >= 42) return 'info';
+  if (score >= 42) return 'cyan';
   if (score >= 36) return 'orange';
   if (score >= 30) return 'red';
-  return 'error';
+  return 'red';
 }
 
 // 获取所有测验
 async function fetchAssignments() {
   try {
     const data = await getAssignments();
-    // Ensure the data structure matches the Assignment interface,
-    // particularly including 'createdAt' and 'description' if the API provides them.
-    // If the API returns 'titleContext' instead of 'description', you might need to map it here.
-    // Assuming the API returns 'description' and 'createdAt' as per the template slots.
     assignments.value = data as unknown as Assignment[] || []
   } catch (error) {
     console.error('获取测验列表失败:', error)
@@ -354,7 +325,6 @@ async function confirmDeleteEssay() {
   deleting.value = essayToDelete.value.id;
   try {
     await deleteSubmission(String(essayToDelete.value.id));
-    // 刷新作文列表
     await fetchEssays();
   } catch (error) {
     console.error('删除作文失败:', error);
@@ -362,6 +332,13 @@ async function confirmDeleteEssay() {
     deleting.value = '';
     closeDeleteDialog();
   }
+}
+
+// 监听窗口大小变化
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    isDesktop.value = window.innerWidth >= 768
+  })
 }
 
 // Fetch initial data on mount

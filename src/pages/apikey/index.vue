@@ -1,238 +1,284 @@
 <template>
   <div>
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h1 class="text-h4">AI 服务管理</h1>
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-semibold">AI 服务管理</h1>
       <!-- 按钮将位于选项卡内 -->
     </div>
 
-    <v-card>
-      <v-tabs v-model="currentTab" color="primary">
-        <v-tab value="apiKeys">API 密钥管理</v-tab>
-        <v-tab value="modelUsage">AI 模型使用设置</v-tab>
-      </v-tabs>
+    <a-card>
+      <a-tabs v-model:activeKey="currentTab">
+        <a-tab-pane key="apiKeys" tab="API 密钥管理"></a-tab-pane>
+        <a-tab-pane key="modelUsage" tab="AI 模型使用设置"></a-tab-pane>
+      </a-tabs>
 
-      <v-card-text>
-        <v-window v-model="currentTab">
-          <!-- API 密钥选项卡 -->
-          <v-window-item value="apiKeys">
-            <div class="d-flex justify-end mb-4">
-              <v-btn color="primary" prepend-icon="mdi-plus" @click="openNewApiKeyDialog">新建密钥</v-btn>
-            </div>
-            <div class="responsive-table-container">
-              <!-- 桌面端 API 密钥表格 -->
-              <v-data-table v-if="display.mdAndUp.value" :headers="apiKeyHeaders" :items="apiKeys" :loading="apiKeysLoading" loading-text="加载中..."
-                no-data-text="暂无数据">
-                <template v-slot:item.key="{ item }">
-                  <v-chip label size="small" class="font-weight-bold">
-                    {{ item.key.substring(0, 4) }}...{{ item.key.substring(item.key.length - 4) }}
-                  </v-chip>
+      <div>
+        <!-- API 密钥选项卡 -->
+        <div v-show="currentTab === 'apiKeys'">
+          <div class="flex justify-end mb-4">
+            <a-button type="primary" @click="openNewApiKeyDialog" style="margin-bottom: 8px;">
+              <template #icon><PlusOutlined /></template>
+              新建密钥
+            </a-button>
+          </div>
+          <div class="responsive-table-container">
+            <!-- 桌面端 API 密钥表格 -->
+            <a-table
+              v-if="display.mdAndUp.value"
+              :columns="apiKeyColumns"
+              :data-source="apiKeys"
+              :loading="apiKeysLoading"
+              :pagination="false"
+              row-key="id"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'key'">
+                  <a-tag>{{ record.key.substring(0, 4) }}...{{ record.key.substring(record.key.length - 4) }}</a-tag>
                 </template>
-                <template v-slot:item.aiModels="{ item }">
-                  <v-chip v-for="model in item.aiModels" :key="model.id" label size="x-small" class="ma-1">
+                <template v-if="column.key === 'aiModels'">
+                  <a-tag v-for="model in record.aiModels" :key="model.id" class="mr-1 mb-1">
                     {{ model.modelId }}
-                  </v-chip>
-                  <span v-if="!item.aiModels || item.aiModels.length === 0">-</span>
+                  </a-tag>
+                  <span v-if="!record.aiModels || record.aiModels.length === 0">-</span>
                 </template>
-                <template v-slot:item.isEnabled="{ item }">
-                  <v-switch :model-value="item.isEnabled" color="primary" hide-details
-                    @change="toggleApiKeyEnabled(item)"></v-switch>
+                <template v-if="column.key === 'isEnabled'">
+                  <a-switch :checked="record.isEnabled" @change="toggleApiKeyEnabled(record)" />
                 </template>
-                <template v-slot:item.createdAt="{ item }">
-                  {{ formatDateUTC8(item.createdAt) }}
+                <template v-if="column.key === 'createdAt'">
+                  {{ formatDateUTC8(record.createdAt) }}
                 </template>
-                <template v-slot:item.actions="{ item }">
-                  <v-btn icon variant="text" size="small" @click="editApiKey(item)">
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
-                  <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteApiKey(item)">
-                    <v-icon>mdi-delete</v-icon>
-                    <v-tooltip activator="parent" location="top">删除密钥</v-tooltip>
-                  </v-btn>
+                <template v-if="column.key === 'actions'">
+                  <a-tooltip title="编辑">
+                    <a-button type="text" size="small" @click="editApiKey(record)">
+                      <template #icon><EditOutlined /></template>
+                    </a-button>
+                  </a-tooltip>
+                  <a-tooltip title="删除密钥">
+                    <a-button type="text" size="small" danger @click="confirmDeleteApiKey(record)">
+                      <template #icon><DeleteOutlined /></template>
+                    </a-button>
+                  </a-tooltip>
                 </template>
-              </v-data-table>
+              </template>
+            </a-table>
 
-              <!-- 移动端 API 密钥列表 -->
-              <v-list v-else>
-                <v-list-item v-for="item in apiKeys" :key="item.id" class="mb-2">
-                  <v-list-item-content>
-                    <v-list-item-title>{{ item.description || '无描述' }}</v-list-item-title>
-                    <v-list-item-subtitle>
+            <!-- 移动端 API 密钥列表 -->
+            <a-list v-else :data-source="apiKeys" item-layout="horizontal">
+              <template #renderItem="{ item }">
+                <a-list-item class="mb-2">
+                  <a-list-item-meta>
+                    <template #title>{{ item.description || '无描述' }}</template>
+                    <template #description>
                       {{ item.serviceType }} - {{ formatDateUTC8(item.createdAt) }}
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                  <template v-slot:append>
-                    <v-btn icon variant="text" size="small" @click="editApiKey(item)">
-                      <v-icon>mdi-pencil</v-icon>
-                    </v-btn>
-                    <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteApiKey(item)">
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
+                    </template>
+                  </a-list-item-meta>
+                  <template #actions>
+                    <a-button type="text" size="small" @click="editApiKey(item)">
+                      <template #icon><EditOutlined /></template>
+                    </a-button>
+                    <a-button type="text" size="small" danger @click="confirmDeleteApiKey(item)">
+                      <template #icon><DeleteOutlined /></template>
+                    </a-button>
                   </template>
-                </v-list-item>
-              </v-list>
-            </div>
-          </v-window-item>
+                </a-list-item>
+              </template>
+            </a-list>
+          </div>
+        </div>
 
-          <!-- 模型使用设置选项卡 -->
-          <v-window-item value="modelUsage">
-            <div class="d-flex justify-end mb-4">
-              <v-btn color="primary" prepend-icon="mdi-plus" @click="openNewSettingDialog">新建设置</v-btn>
-            </div>
-            <div class="responsive-table-container">
-              <!-- 桌面端模型使用设置表格 -->
-              <v-data-table v-if="display.mdAndUp.value" :headers="settingHeaders" :items="usageSettings" :loading="settingsLoading"
-                loading-text="加载中..." no-data-text="暂无数据">
-                <template v-slot:item.aiModel="{ item }">
-                  <span v-if="item.aiModel">{{ item.aiModel.modelId }} ({{ item.aiModel.serviceType }})</span>
-                  <span v-else class="text-error">模型不存在</span>
+        <!-- 模型使用设置选项卡 -->
+        <div v-show="currentTab === 'modelUsage'">
+          <div class="flex justify-end mb-4">
+            <a-button type="primary" @click="openNewSettingDialog" style="margin-bottom: 8px;">
+              <template #icon><PlusOutlined /></template>
+              新建设置
+            </a-button>
+          </div>
+          <div class="responsive-table-container">
+            <!-- 桌面端模型使用设置表格 -->
+            <a-table
+              v-if="display.mdAndUp.value"
+              :columns="settingColumns"
+              :data-source="usageSettings"
+              :loading="settingsLoading"
+              :pagination="false"
+              row-key="id"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'aiModel'">
+                  <span v-if="record.aiModel">{{ record.aiModel.modelId }} ({{ record.aiModel.serviceType }})</span>
+                  <span v-else class="text-red-500">模型不存在</span>
                 </template>
-                <template v-slot:item.isEnabled="{ item }">
-                  <v-switch :model-value="item.isEnabled" color="primary" hide-details
-                    @change="toggleSettingEnabled(item)"></v-switch>
+                <template v-if="column.key === 'isEnabled'">
+                  <a-switch :checked="record.isEnabled" @change="toggleSettingEnabled(record)" />
                 </template>
-                <template v-slot:item.createdAt="{ item }">
-                  {{ formatDateUTC8(item.createdAt) }}
+                <template v-if="column.key === 'createdAt'">
+                  {{ formatDateUTC8(record.createdAt) }}
                 </template>
-                <template v-slot:item.actions="{ item }">
-                  <v-btn icon variant="text" size="small" @click="editSetting(item)">
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
-                  <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteSetting(item)">
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
+                <template v-if="column.key === 'actions'">
+                  <a-button type="text" size="small" @click="editSetting(record)">
+                    <template #icon><EditOutlined /></template>
+                  </a-button>
+                  <a-button type="text" size="small" danger @click="confirmDeleteSetting(record)">
+                    <template #icon><DeleteOutlined /></template>
+                  </a-button>
                 </template>
-              </v-data-table>
+              </template>
+            </a-table>
 
-              <!-- 移动端模型使用设置列表 -->
-              <v-list v-else>
-                <v-list-item v-for="item in usageSettings" :key="item.id" class="mb-2">
-                  <v-list-item-content>
-                    <v-list-item-title>{{ item.usageType }}</v-list-item-title>
-                    <v-list-item-subtitle>
+            <!-- 移动端模型使用设置列表 -->
+            <a-list v-else :data-source="usageSettings" item-layout="horizontal">
+              <template #renderItem="{ item }">
+                <a-list-item class="mb-2">
+                  <a-list-item-meta>
+                    <template #title>{{ item.usageType }}</template>
+                    <template #description>
                       <span v-if="item.aiModel">{{ item.aiModel.modelId }}</span>
-                      <span v-else class="text-error">模型不存在</span>
-                    </v-list-item-subtitle>
-                  </v-list-item-content>
-                  <template v-slot:append>
-                    <v-btn icon variant="text" size="small" @click="editSetting(item)">
-                      <v-icon>mdi-pencil</v-icon>
-                    </v-btn>
-                    <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteSetting(item)">
-                      <v-icon>mdi-delete</v-icon>
-                    </v-btn>
+                      <span v-else class="text-red-500">模型不存在</span>
+                    </template>
+                  </a-list-item-meta>
+                  <template #actions>
+                    <a-button type="text" size="small" @click="editSetting(item)">
+                      <template #icon><EditOutlined /></template>
+                    </a-button>
+                    <a-button type="text" size="small" danger @click="confirmDeleteSetting(item)">
+                      <template #icon><DeleteOutlined /></template>
+                    </a-button>
                   </template>
-                </v-list-item>
-              </v-list>
-            </div>
-          </v-window-item>
-        </v-window>
-      </v-card-text>
-    </v-card>
+                </a-list-item>
+              </template>
+            </a-list>
+          </div>
+        </div>
+      </div>
+    </a-card>
 
     <!-- 新建/编辑 API 密钥对话框 -->
-    <v-dialog v-model="apiKeyDialog" max-width="600px" persistent>
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">{{ isEditingApiKey ? '编辑密钥' : '新建密钥' }}</span>
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="apiKeyForm" @submit.prevent="saveApiKey">
-            <v-select v-model="editedApiKey.serviceType" :items="serviceTypes" label="服务类型"
-              :rules="[v => !!v || '请选择服务类型']" required></v-select>
-            <v-text-field v-model="editedApiKey.key" label="API Key" :rules="[v => !!v || 'API Key 不能为空']"
-              required></v-text-field>
-            <v-text-field v-model="editedApiKey.secret" label="Secret (可选)" type="password"></v-text-field>
-            <v-text-field v-model="editedApiKey.endpoint" label="Endpoint (可选)"></v-text-field>
-            <v-textarea v-model="editedApiKey.description" label="描述 (可选)" rows="3"></v-textarea>
+    <a-modal
+      v-model:open="apiKeyDialog"
+      :title="isEditingApiKey ? '编辑密钥' : '新建密钥'"
+      :confirm-loading="savingApiKey"
+      @ok="saveApiKey"
+      @cancel="closeApiKeyDialog"
+      width="600px"
+    >
+      <a-form ref="apiKeyForm" :model="editedApiKey" layout="vertical">
+        <a-form-item
+          label="服务类型"
+          name="serviceType"
+          :rules="[{ required: true, message: '请选择服务类型' }]"
+        >
+          <a-select v-model:value="editedApiKey.serviceType" :options="serviceTypeOptions" />
+        </a-form-item>
+        <a-form-item
+          label="API Key"
+          name="key"
+          :rules="[{ required: true, message: 'API Key 不能为空' }]"
+        >
+          <a-input v-model:value="editedApiKey.key" />
+        </a-form-item>
+        <a-form-item label="Secret (可选)" name="secret">
+          <a-input-password v-model:value="editedApiKey.secret" />
+        </a-form-item>
+        <a-form-item label="Endpoint (可选)" name="endpoint">
+          <a-input v-model:value="editedApiKey.endpoint" />
+        </a-form-item>
+        <a-form-item label="描述 (可选)" name="description">
+          <a-textarea v-model:value="editedApiKey.description" :rows="3" />
+        </a-form-item>
 
-            <!-- AI 模型多选 -->
-            <v-combobox v-model="editedApiKey.modelIds" label="关联 AI 模型 (输入模型ID，按回车添加)" multiple chips clearable
-              hint="输入模型ID，例如 gpt-4o, qwen-max" persistent-hint></v-combobox>
+        <!-- AI 模型多选 -->
+        <a-form-item label="关联 AI 模型 (输入模型ID，按回车添加)" name="modelIds">
+          <a-select
+            v-model:value="editedApiKey.modelIds"
+            mode="tags"
+            :options="modelIdOptions"
+            placeholder="输入模型ID，例如 gpt-4o, qwen-max"
+          />
+        </a-form-item>
 
-            <!-- 常用模型 ID 参考 -->
-            <div class="mt-2 text-caption">
-              常用模型ID参考:
-              <v-chip v-for="(model, index) in commonModelReferences" :key="index" label size="x-small" class="ma-1"
-                variant="outlined" @click="addModelId(model.id)">
-                {{ model.id }} ({{ model.provider }})
-              </v-chip>
-            </div>
+        <!-- 常用模型 ID 参考 -->
+        <div class="mt-2 text-sm text-gray-500">
+          常用模型ID参考:
+          <a-tag
+            v-for="(model, index) in commonModelReferences"
+            :key="index"
+            class="mr-1 mb-1 cursor-pointer"
+            @click="addModelId(model.id)"
+          >
+            {{ model.id }} ({{ model.provider }})
+          </a-tag>
+        </div>
 
-
-            <v-switch v-model="editedApiKey.isEnabled" label="启用" color="primary"></v-switch>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" variant="text" @click="closeApiKeyDialog">取消</v-btn>
-          <v-btn color="primary" @click="saveApiKey" :loading="savingApiKey">保存</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+        <a-form-item label="启用" name="isEnabled">
+          <a-switch v-model:checked="editedApiKey.isEnabled" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 删除 API 密钥确认对话框 -->
-    <v-dialog v-model="apiKeyDeleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">确认删除密钥</v-card-title>
-        <v-card-text>确定要删除这个 API 密钥吗？此操作不可撤销。</v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="text" @click="apiKeyDeleteDialog = false">取消</v-btn>
-          <v-btn color="error" @click="deleteApiKey" :loading="deletingApiKey">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="apiKeyDeleteDialog"
+      title="确认删除密钥"
+      :confirm-loading="deletingApiKey"
+      @ok="deleteApiKey"
+      @cancel="apiKeyDeleteDialog = false"
+    >
+      <p>确定要删除这个 API 密钥吗？此操作不可撤销。</p>
+    </a-modal>
 
     <!-- 新建/编辑模型使用设置对话框 -->
-    <v-dialog v-model="settingDialog" max-width="600px" persistent>
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">{{ isEditingSetting ? '编辑设置' : '新建设置' }}</span>
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="settingForm" @submit.prevent="saveSetting">
-            <v-select v-model="editedSetting.usageType" :items="usageTypes" label="使用场景类型 (Usage Type)"
-              :rules="[v => !!v || '使用场景类型不能为空']" required></v-select>
-            <v-select v-model="editedSetting.aiModelId" :items="availableModels" item-title="modelId" item-value="id"
-              label="选择 AI 模型" :rules="[v => !!v || '请选择 AI 模型']" required>
-              <template v-slot:item="{ props, item }">
-                <v-list-item v-bind="props" :title="`${item.raw.modelId} (${item.raw.serviceType})`"></v-list-item>
-              </template>
-              <template v-slot:selection="{ item }">
-                {{ item.raw.modelId }} ({{ item.raw.serviceType }})
-              </template>
-            </v-select>
-            <v-switch v-model="editedSetting.isEnabled" label="启用" color="primary"></v-switch>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" variant="text" @click="closeSettingDialog">取消</v-btn>
-          <v-btn color="primary" @click="saveSetting" :loading="savingSetting">保存</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="settingDialog"
+      :title="isEditingSetting ? '编辑设置' : '新建设置'"
+      :confirm-loading="savingSetting"
+      @ok="saveSetting"
+      @cancel="closeSettingDialog"
+      width="600px"
+    >
+      <a-form ref="settingForm" :model="editedSetting" layout="vertical">
+        <a-form-item
+          label="使用场景类型 (Usage Type)"
+          name="usageType"
+          :rules="[{ required: true, message: '使用场景类型不能为空' }]"
+        >
+          <a-select v-model:value="editedSetting.usageType" :options="usageTypeOptions" />
+        </a-form-item>
+        <a-form-item
+          label="选择 AI 模型"
+          name="aiModelId"
+          :rules="[{ required: true, message: '请选择 AI 模型' }]"
+        >
+          <a-select
+            v-model:value="editedSetting.aiModelId"
+            :options="availableModelOptions"
+            show-search
+            :filter-option="filterOption"
+          />
+        </a-form-item>
+        <a-form-item label="启用" name="isEnabled">
+          <a-switch v-model:checked="editedSetting.isEnabled" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 删除模型使用设置确认对话框 -->
-    <v-dialog v-model="settingDeleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">确认删除设置</v-card-title>
-        <v-card-text>确定要删除这个 AI 模型使用设置吗？此操作不可撤销。</v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="text" @click="settingDeleteDialog = false">取消</v-btn>
-          <v-btn color="error" @click="deleteSetting" :loading="deletingSetting">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="settingDeleteDialog"
+      title="确认删除设置"
+      :confirm-loading="deletingSetting"
+      @ok="deleteSetting"
+      @cancel="settingDeleteDialog = false"
+    >
+      <p>确定要删除这个 AI 模型使用设置吗？此操作不可撤销。</p>
+    </a-modal>
 
     <BackToTop />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useDisplay } from 'vuetify'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import {
   getApiKeys, createApiKey, updateApiKey, deleteApiKey as deleteApiKeyService, type ApiKey,
   getAIModelUsageSettings, createAIModelUsageSetting, updateAIModelUsageSetting, deleteAIModelUsageSetting, getAllAIModels, type AIModelUsageSetting, type AIModel,
@@ -240,7 +286,24 @@ import {
 } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
 
-const display = useDisplay()
+// Responsive display detection (Vuetify-independent)
+const windowWidth = ref(window.innerWidth)
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
+
+const display = computed(() => ({
+  mdAndUp: { value: windowWidth.value >= 768 }
+}))
 
 // --- 选项卡状态 ---
 const currentTab = ref('apiKeys'); // 'apiKeys' 或 'modelUsage'
@@ -248,14 +311,14 @@ const currentTab = ref('apiKeys'); // 'apiKeys' 或 'modelUsage'
 // --- API 密钥管理 ---
 
 // API 密钥的表格列定义
-const apiKeyHeaders = [
-  { title: '服务类型', key: 'serviceType' },
-  { title: 'Key', key: 'key', sortable: false },
-  { title: '关联模型', key: 'aiModels', sortable: false }, // 修改:AIModels -> aiModels
-  { title: '描述', key: 'description' },
+const apiKeyColumns = [
+  { title: '服务类型', dataIndex: 'serviceType', key: 'serviceType' },
+  { title: 'Key', key: 'key' },
+  { title: '关联模型', key: 'aiModels' },
+  { title: '描述', dataIndex: 'description', key: 'description' },
   { title: '启用', key: 'isEnabled' },
   { title: '创建时间', key: 'createdAt' },
-  { title: '操作', key: 'actions', sortable: false }
+  { title: '操作', key: 'actions' }
 ]
 
 // API 密钥的数据和状态
@@ -269,6 +332,7 @@ const isEditingApiKey = ref(false)
 const apiKeyForm = ref<any>(null)
 
 const serviceTypes = ['OpenAI', 'Aliyun', 'DeepL', 'Other']
+const serviceTypeOptions = serviceTypes.map(type => ({ label: type, value: type }))
 
 // 为 API 密钥表单定义包含 modelIds 的默认项
 const defaultApiKeyItem: Omit<ApiKey, 'createdAt' | 'AIModels'> & { modelIds: string[] } = {
@@ -288,14 +352,20 @@ const editedApiKey = ref({ ...defaultApiKeyItem })
 // 待删除的 API 密钥项
 const apiKeyToDelete = ref<ApiKey | null>(null)
 
+// 模型ID选项（用于combobox）
+const modelIdOptions = computed(() => {
+  return commonModelReferences.map(model => ({
+    label: model.id,
+    value: model.id
+  }))
+})
+
 // 从参考标签添加模型 ID 的函数（带通知）
 const addModelId = (modelId: string) => {
   if (!editedApiKey.value.modelIds.includes(modelId)) {
     editedApiKey.value.modelIds.push(modelId);
-    // 可以在这里添加提示信息
     console.log(`已添加模型: ${modelId}`);
   } else {
-    // 可以在这里添加提示信息
     console.log(`模型 ${modelId} 已存在`);
   }
 }
@@ -308,7 +378,7 @@ const fetchApiKeys = async () => {
     // 映射获取的数据以包含用于表单的 modelIds
     apiKeys.value = data.map(item => ({
       ...item,
-      modelIds: item.aiModels?.map(m => m.modelId) || [] // 修改:AIModels -> aiModels
+      modelIds: item.aiModels?.map(m => m.modelId) || []
     })) || []
   } catch (error) {
     console.error('获取 API 密钥列表失败:', error)
@@ -342,8 +412,11 @@ const closeApiKeyDialog = () => {
 
 // 保存 API 密钥（增强错误处理）
 const saveApiKey = async () => {
-  const { valid } = await apiKeyForm.value.validate()
-  if (!valid) return
+  try {
+    await apiKeyForm.value.validate();
+  } catch (error) {
+    return;
+  }
 
   savingApiKey.value = true
   try {
@@ -425,12 +498,12 @@ const toggleApiKeyEnabled = async (item: ApiKey) => {
 // --- AI 模型使用设置管理 ---
 
 // 使用设置的表格列定义
-const settingHeaders = [
-  { title: '使用场景类型', key: 'usageType' },
+const settingColumns = [
+  { title: '使用场景类型', dataIndex: 'usageType', key: 'usageType' },
   { title: 'AI 模型', key: 'aiModel' },
   { title: '启用', key: 'isEnabled' },
   { title: '创建时间', key: 'createdAt' },
-  { title: '操作', key: 'actions', sortable: false }
+  { title: '操作', key: 'actions' }
 ]
 
 // 使用设置的数据和状态
@@ -445,7 +518,21 @@ const isEditingSetting = ref(false)
 const settingForm = ref<any>(null)
 
 // 基于 JudgeService 的预定义使用类型
-const usageTypes = ['Judging', 'Reporting', 'OcrProcessing', 'OcrV3' ,'Other'];
+const usageTypes = ['Judging', 'Reporting', 'OcrProcessing', 'OcrV3', 'Other'];
+const usageTypeOptions = usageTypes.map(type => ({ label: type, value: type }))
+
+// 可用模型选项
+const availableModelOptions = computed(() => {
+  return availableModels.value.map(model => ({
+    label: `${model.modelId} (${model.serviceType})`,
+    value: model.id
+  }))
+})
+
+// 搜索过滤函数
+const filterOption = (input: string, option: any) => {
+  return option.label.toLowerCase().includes(input.toLowerCase())
+}
 
 // 常用模型 ID 参考（显示在 API 密钥表单中）
 const commonModelReferences = [
@@ -453,23 +540,14 @@ const commonModelReferences = [
   { id: "deepseek-r1-distill-llama-70b", provider: "阿里云" },
   { id: "deepseek-r1-0528", provider: "阿里云" },
   { id: "qwen-plus-latest", provider: "阿里云" },
-  { id: "qwen-max-latest", provider: "阿里云" }, // 根据常用模型更正了拼写错误
+  { id: "qwen-max-latest", provider: "阿里云" },
   // VolcEngine (火山引擎) 模型
   { id: "doubao-seed-1-6-250615", provider: "火山引擎" },
   { id: "deepseek-r1-250528", provider: "火山引擎" },
   { id: "doubao-seed-1-6-flash-250615", provider: "火山引擎" },
   { id: "doubao-seed-1-6-thinking-250615", provider: "火山引擎" },
   { id: "deepseek-v3-250324", provider: "火山引擎" },
-  // OpenAI 模型 
-  //{ id: "gpt-4o", provider: "OpenAI" },
-  //{ id: "gpt-3.5-turbo", provider: "OpenAI" },
-  // Anthropic 模型
-  //{ id: "claude-3-opus-20240229", provider: "Anthropic" },
-  //{ id: "claude-3-sonnet-20240229", provider: "Anthropic" },
-  //{ id: "claude-3-haiku-20240307", provider: "Anthropic" },
-  // 根据需要添加其他常用模型 
 ];
-
 
 // 定义表单所需数据的结构（编辑时包含 id）
 type EditedSettingItem = Partial<AIModelUsageSetting>;
@@ -531,8 +609,11 @@ const closeSettingDialog = () => {
 
 // Save setting
 const saveSetting = async () => {
-  const { valid } = await settingForm.value.validate()
-  if (!valid) return
+  try {
+    await settingForm.value.validate();
+  } catch (error) {
+    return;
+  }
 
   savingSetting.value = true
   try {
@@ -596,7 +677,6 @@ const toggleSettingEnabled = async (item: AIModelUsageSetting) => {
     // Ensure all required fields for the backend model are sent
     await updateAIModelUsageSetting(item.id, {
       usageType: item.usageType, // Include existing usageType
-      //aiModelId: item.id, // Include existing aiModelId
       isEnabled: item.isEnabled // Include the new isEnabled status
     });
     // No need to refetch the whole list if only toggling status

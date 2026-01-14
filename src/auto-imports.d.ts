@@ -23,7 +23,10 @@ declare global {
   const isReadonly: typeof import('vue')['isReadonly']
   const isRef: typeof import('vue')['isRef']
   const markRaw: typeof import('vue')['markRaw']
+  const message: typeof import('ant-design-vue')['message']
+  const modal: typeof import('ant-design-vue')['modal']
   const nextTick: typeof import('vue')['nextTick']
+  const notification: typeof import('ant-design-vue')['notification']
   const onActivated: typeof import('vue')['onActivated']
   const onBeforeMount: typeof import('vue')['onBeforeMount']
   const onBeforeRouteLeave: typeof import('vue-router')['onBeforeRouteLeave']
@@ -98,7 +101,10 @@ declare module 'vue' {
     readonly isReadonly: UnwrapRef<typeof import('vue')['isReadonly']>
     readonly isRef: UnwrapRef<typeof import('vue')['isRef']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
+    readonly message: UnwrapRef<typeof import('ant-design-vue')['message']>
+    readonly modal: UnwrapRef<typeof import('ant-design-vue')['modal']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
+    readonly notification: UnwrapRef<typeof import('ant-design-vue')['notification']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
     readonly onBeforeRouteLeave: UnwrapRef<typeof import('vue-router')['onBeforeRouteLeave']>

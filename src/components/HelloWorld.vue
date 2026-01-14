@@ -1,90 +1,153 @@
 <template>
-  <v-container class="fill-height" max-width="900">
-    <div>
-      <v-img
-        class="mb-4"
-        height="150"
-        src="@/assets/logo.png"
-      />
-
-      <div class="mb-8 text-center">
-        <div class="text-body-2 font-weight-light mb-n1">Welcome to</div>
-        <h1 class="text-h2 font-weight-bold">Vuetify</h1>
-      </div>
-
-      <v-row>
-        <v-col cols="12">
-          <v-card
-            class="py-4"
-            color="surface-variant"
-            image="https://cdn.vuetifyjs.com/docs/images/one/create/feature.png"
-            prepend-icon="mdi-rocket-launch-outline"
-            rounded="lg"
-            variant="tonal"
-          >
-            <template #image>
-              <v-img position="top right" />
-            </template>
-
-            <template #title>
-              <h2 class="text-h5 font-weight-bold">
-                Get started
-              </h2>
-            </template>
-
-            <template #subtitle>
-              <div class="text-subtitle-1">
-                Change this page by updating <v-kbd>{{ `<HelloWorld />` }}</v-kbd> in <v-kbd>components/HelloWorld.vue</v-kbd>.
-              </div>
-            </template>
-          </v-card>
-        </v-col>
-
-        <v-col v-for="link in links" :key="link.href" cols="6">
-          <v-card
-            append-icon="mdi-open-in-new"
-            class="py-4"
-            color="surface-variant"
-            :href="link.href"
-            :prepend-icon="link.icon"
-            rel="noopener noreferrer"
-            rounded="lg"
-            :subtitle="link.subtitle"
-            target="_blank"
-            :title="link.title"
-            variant="tonal"
-          />
-        </v-col>
-      </v-row>
+  <div class="hello-container">
+    <div class="logo-section">
+      <img src="@/assets/logo.svg" alt="Logo" class="logo" />
     </div>
-  </v-container>
+
+    <div class="welcome-section">
+      <div class="subtitle">Welcome to</div>
+      <h1 class="title">SoraEssayJudge</h1>
+    </div>
+
+    <a-row :gutter="[16, 16]">
+      <a-col :span="24">
+        <a-card class="feature-card">
+          <template #title>
+            <h2 class="card-title">Get started</h2>
+          </template>
+          <p class="card-subtitle">
+            Change this page by updating <code>&lt;HelloWorld /&gt;</code> in <code>components/HelloWorld.vue</code>.
+          </p>
+        </a-card>
+      </a-col>
+
+      <a-col v-for="link in links" :key="link.href" :xs="12" :sm="12" :md="6">
+        <a-card class="link-card" hoverable>
+          <template #title>
+            <div class="link-title">
+              <component :is="link.icon" class="link-icon" />
+              {{ link.title }}
+            </div>
+          </template>
+          <p class="link-subtitle">{{ link.subtitle }}</p>
+          <template #actions>
+            <a :href="link.href" target="_blank" rel="noopener noreferrer">
+              <ExportOutlined />
+            </a>
+          </template>
+        </a-card>
+      </a-col>
+    </a-row>
+  </div>
 </template>
 
 <script setup lang="ts">
-  const links = [
-    {
-      href: 'https://vuetifyjs.com/',
-      icon: 'mdi-text-box-outline',
-      subtitle: 'Learn about all things Vuetify in our documentation.',
-      title: 'Documentation',
-    },
-    {
-      href: 'https://vuetifyjs.com/introduction/why-vuetify/#feature-guides',
-      icon: 'mdi-star-circle-outline',
-      subtitle: 'Explore available framework Features.',
-      title: 'Features',
-    },
-    {
-      href: 'https://vuetifyjs.com/components/all',
-      icon: 'mdi-widgets-outline',
-      subtitle: 'Discover components in the API Explorer.',
-      title: 'Components',
-    },
-    {
-      href: 'https://discord.vuetifyjs.com',
-      icon: 'mdi-account-group-outline',
-      subtitle: 'Connect with Vuetify developers.',
-      title: 'Community',
-    },
-  ]
+import {
+  FileTextOutlined,
+  StarOutlined,
+  AppstoreOutlined,
+  TeamOutlined,
+  ExportOutlined
+} from '@ant-design/icons-vue'
+
+const links = [
+  {
+    href: 'https://ant.design/',
+    icon: FileTextOutlined,
+    subtitle: 'Learn about all things Ant Design in our documentation.',
+    title: 'Documentation',
+  },
+  {
+    href: 'https://ant.design/components/overview/',
+    icon: StarOutlined,
+    subtitle: 'Explore available framework Features.',
+    title: 'Features',
+  },
+  {
+    href: 'https://ant.design/components/',
+    icon: AppstoreOutlined,
+    subtitle: 'Discover components in the Component library.',
+    title: 'Components',
+  },
+  {
+    href: 'https://github.com/vuejs/core',
+    icon: TeamOutlined,
+    subtitle: 'Connect with Vue developers.',
+    title: 'Community',
+  },
+]
 </script>
+
+<style scoped>
+.hello-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.logo {
+  height: 150px;
+  width: auto;
+}
+
+.welcome-section {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--ant-color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: bold;
+  margin: 0;
+  color: var(--ant-color-text-base);
+}
+
+.feature-card {
+  border-radius: 12px;
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.card-subtitle {
+  margin: 8px 0 0 0;
+  color: var(--ant-color-text-secondary);
+}
+
+.link-card {
+  border-radius: 12px;
+  height: 100%;
+}
+
+.link-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.link-icon {
+  font-size: 20px;
+  color: var(--ant-color-primary);
+}
+
+.link-subtitle {
+  margin: 8px 0 0 0;
+  color: var(--ant-color-text-secondary);
+  font-size: 14px;
+}
+</style>

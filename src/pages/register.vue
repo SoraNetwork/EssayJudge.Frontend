@@ -1,85 +1,93 @@
 <template>
-  <v-container class="fill-height" fluid>
-    <v-row align="center" justify="center">
-      <v-col cols="12" sm="8" md="6" lg="4">
-        <v-card class="elevation-12">
-          <v-toolbar color="primary" dark>
-            <v-toolbar-title>注册账号</v-toolbar-title>
-          </v-toolbar>
-          <v-card-text>
-            <v-form @submit.prevent="register" ref="form">
-              <v-text-field
-                v-model="username"
-                label="用户名"
-                name="username"
-                prepend-icon="mdi-account"
-                type="text"
-                :rules="[v => !!v || '用户名不能为空']"
-                required
-              ></v-text-field>
+  <div class="register-container">
+    <div class="register-card-wrapper">
+      <a-card class="register-card" :bordered="false" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <a-typography-title :level="2" class="register-title text-center">注册账号</a-typography-title>
 
-              <v-text-field
-                v-model="password"
-                label="密码"
-                name="password"
-                prepend-icon="mdi-lock"
-                type="password"
-                :rules="[v => !!v || '密码不能为空', v => v.length >= 6 || '密码至少6个字符']"
-                required
-              ></v-text-field>
-
-              <v-text-field
-                v-model="name"
-                label="真实姓名"
-                name="name"
-                prepend-icon="mdi-account-badge"
-                type="text"
-                :rules="[v => !!v || '真实姓名不能为空']"
-                required
-              ></v-text-field>
-
-              <v-text-field
-                v-model="phoneNumber"
-                label="手机号"
-                name="phoneNumber"
-                prepend-icon="mdi-phone"
-                type="tel"
-                :rules="[v => !v || /^1\d{10}$/.test(v) || '请输入有效的手机号']"
-              ></v-text-field>
-            </v-form>
-            <v-alert
-              v-if="error"
-              type="error"
-              variant="tonal"
-              class="mt-4"
+        <a-form @submit.prevent="register" layout="vertical" ref="formRef">
+          <a-form-item label="用户名" :colon="false" :rules="[{ required: true, message: '用户名不能为空' }]">
+            <a-input
+              v-model:value="username"
+              size="large"
+              placeholder="请输入用户名"
             >
-              {{ error }}
-            </v-alert>
-            <v-alert
-              v-if="success"
-              type="success"
-              variant="tonal"
-              class="mt-4"
+              <template #prefix>
+                <UserOutlined />
+              </template>
+            </a-input>
+          </a-form-item>
+
+          <a-form-item label="密码" :colon="false" :rules="[{ required: true, message: '密码不能为空' }, { min: 6, message: '密码至少6个字符' }]">
+            <a-input-password
+              v-model:value="password"
+              size="large"
+              placeholder="请输入密码"
             >
-              {{ success }}
-            </v-alert>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn to="/login" variant="text">返回登录</v-btn>
-            <v-btn color="primary" @click="register" :loading="loading">注册</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
-  <BackToTop />
+              <template #prefix>
+                <LockOutlined />
+              </template>
+            </a-input-password>
+          </a-form-item>
+
+          <a-form-item label="真实姓名" :colon="false" :rules="[{ required: true, message: '真实姓名不能为空' }]">
+            <a-input
+              v-model:value="name"
+              size="large"
+              placeholder="请输入真实姓名"
+            >
+              <template #prefix>
+                <UsergroupAddOutlined />
+              </template>
+            </a-input>
+          </a-form-item>
+
+          <a-form-item label="手机号" :colon="false">
+            <a-input
+              v-model:value="phoneNumber"
+              size="large"
+              placeholder="请输入手机号"
+            >
+              <template #prefix>
+                <PhoneOutlined />
+              </template>
+            </a-input>
+          </a-form-item>
+        </a-form>
+
+        <a-alert
+          v-if="error"
+          :message="error"
+          type="error"
+          show-icon
+          class="mt-4"
+        />
+
+        <a-alert
+          v-if="success"
+          :message="success"
+          type="success"
+          show-icon
+          class="mt-4"
+        />
+
+        <div class="register-actions mt-4 text-center">
+          <a-button type="default" @click="goToLogin" class="mr-4">返回登录</a-button>
+          <a-button type="primary" @click="register" :loading="loading" size="large">注册</a-button>
+        </div>
+      </a-card>
+    </div>
+    <BackToTop />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
+import { message } from 'ant-design-vue';
+
+// Ant Design 组件
+import { UserOutlined, LockOutlined, UsergroupAddOutlined, PhoneOutlined } from '@ant-design/icons-vue';
 
 const router = useRouter()
 
@@ -90,12 +98,34 @@ const phoneNumber = ref('')
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
-const form = ref<any>(null)
+const formRef = ref<any>(null)
 
 async function register() {
-  // 表单验证
-  const { valid } = await form.value.validate()
-  if (!valid) return
+  // 前端验证
+  if (!username.value) {
+    error.value = '用户名不能为空';
+    return;
+  }
+
+  if (!password.value) {
+    error.value = '密码不能为空';
+    return;
+  }
+
+  if (password.value.length < 6) {
+    error.value = '密码至少6个字符';
+    return;
+  }
+
+  if (!name.value) {
+    error.value = '真实姓名不能为空';
+    return;
+  }
+
+  if (phoneNumber.value && !/^1\d{10}$/.test(phoneNumber.value)) {
+    error.value = '请输入有效的手机号';
+    return;
+  }
 
   loading.value = true
   error.value = ''
@@ -134,4 +164,52 @@ async function register() {
     loading.value = false
   }
 }
+
+function goToLogin() {
+  router.push('/login')
+}
 </script>
+
+<style scoped>
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 16px;
+}
+
+.register-card-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+.register-card {
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.register-title {
+  margin-bottom: 24px !important;
+  color: #303133;
+}
+
+.mt-4 {
+  margin-top: 16px !important;
+}
+
+.mr-4 {
+  margin-right: 16px !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.register-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>

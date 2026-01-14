@@ -1,122 +1,127 @@
 <template>
   <div>
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h1 class="text-h4">班级详情: {{ classInfo?.name }}</h1>
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-semibold">班级详情: {{ classInfo?.name }}</h1>
       <div>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openAddStudentDialog">添加学生</v-btn>
-        <v-btn to="/classes" prepend-icon="mdi-arrow-left" class="ml-2">返回班级列表</v-btn>
+        <a-button type="primary" @click="openAddStudentDialog">
+          <template #icon><PlusOutlined /></template>
+          添加学生
+        </a-button>
+        <a-button class="ml-2" :href="'/classes'">
+          <template #icon><ArrowLeftOutlined /></template>
+          返回班级列表
+        </a-button>
       </div>
     </div>
 
     <!-- 学生列表 -->
-    <v-card>
-      <v-card-title>
-        学生列表 ({{ students.length }} 人)
-      </v-card-title>
-      <v-card-text class="responsive-table-container">
+    <a-card>
+      <template #title>学生列表 ({{ students.length }} 人)</template>
+      <div class="responsive-table-container">
         <!-- 桌面端表格 -->
-        <v-data-table
+        <a-table
           v-if="display.mdAndUp.value"
-          :headers="headers"
-          :items="students"
+          :columns="columns"
+          :data-source="students"
           :loading="loading"
-          loading-text="加载中..."
-          no-data-text="该班级下暂无学生"
+          :pagination="false"
+          row-key="id"
         >
-          <template v-slot:item.actions="{ item }">
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              color="error"
-              @click="confirmDelete(item)"
-            >
-              <v-icon>mdi-delete</v-icon>
-              <v-tooltip activator="parent" location="top">删除学生</v-tooltip>
-            </v-btn>
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'actions'">
+              <a-tooltip title="删除学生">
+                <a-button type="text" size="small" danger @click="confirmDelete(record)">
+                  <template #icon><DeleteOutlined /></template>
+                </a-button>
+              </a-tooltip>
+            </template>
           </template>
-        </v-data-table>
+        </a-table>
 
         <!-- 移动端列表 -->
-        <v-list v-else>
-          <v-list-item
-            v-for="item in students"
-            :key="item.id"
-            class="mb-2"
-          >
-            <v-list-item-content>
-              <v-list-item-title>{{ item.name }}</v-list-item-title>
-              <v-list-item-subtitle>{{ item.studentId }}</v-list-item-subtitle>
-            </v-list-item-content>
-            <template v-slot:append>
-              <v-btn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                @click="confirmDelete(item)"
-              >
-                <v-icon>mdi-delete</v-icon>
-              </v-btn>
-            </template>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-    </v-card>
+        <a-list v-else :data-source="students" item-layout="horizontal">
+          <template #renderItem="{ item }">
+            <a-list-item class="mb-2">
+              <a-list-item-meta>
+                <template #title>{{ item.name }}</template>
+                <template #description>{{ item.studentId }}</template>
+              </a-list-item-meta>
+              <template #actions>
+                <a-button type="text" size="small" danger @click="confirmDelete(item)">
+                  <template #icon><DeleteOutlined /></template>
+                </a-button>
+              </template>
+            </a-list-item>
+          </template>
+        </a-list>
+      </div>
+    </a-card>
 
     <!-- 添加学生对话框 -->
-    <v-dialog v-model="dialog" max-width="500px">
-      <v-card>
-        <v-card-title>
-          <span class="text-h5">添加学生</span>
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="form" v-model="valid" lazy-validation>
-            <v-text-field
-              v-model="newStudent.name"
-              label="姓名*"
-              required
-              :rules="nameRules"
-            ></v-text-field>
-            <v-text-field
-              v-model="newStudent.studentId"
-              label="学号*"
-              required
-              :rules="studentIdRules"
-            ></v-text-field>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="text" @click="closeDialog">取消</v-btn>
-          <v-btn color="primary" @click="addStudent" :loading="adding" :disabled="!valid">添加</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="dialog"
+      title="添加学生"
+      :confirm-loading="adding"
+      @ok="addStudent"
+      @cancel="closeDialog"
+      width="500px"
+    >
+      <a-form ref="form" :model="newStudent" layout="vertical">
+        <a-form-item
+          label="姓名*"
+          name="name"
+          :rules="nameRules"
+        >
+          <a-input v-model:value="newStudent.name" />
+        </a-form-item>
+        <a-form-item
+          label="学号*"
+          name="studentId"
+          :rules="studentIdRules"
+        >
+          <a-input v-model:value="newStudent.studentId" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">确认删除</v-card-title>
-        <v-card-text>确定要删除学生 <strong>{{ studentToDelete?.name }}</strong> 吗？此操作不可撤销。</v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="text" @click="deleteDialog = false">取消</v-btn>
-          <v-btn color="error" @click="deleteStudent" :loading="deleting">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="deleteDialog"
+      title="确认删除"
+      :confirm-loading="deleting"
+      @ok="deleteStudent"
+      @cancel="deleteDialog = false"
+    >
+      <p>确定要删除学生 <strong>{{ studentToDelete?.name }}</strong> 吗？此操作不可撤销。</p>
+    </a-modal>
     <BackToTop />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useDisplay } from 'vuetify';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { PlusOutlined, ArrowLeftOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { getStudents, deleteStudent as apiDeleteStudent, getClasses, createStudent, type Student } from '@/services/apiService';
 
-const display = useDisplay();
+// Responsive display detection (Vuetify-independent)
+const windowWidth = ref(window.innerWidth)
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
+
+const display = computed(() => ({
+  mdAndUp: { value: windowWidth.value >= 768 }
+}))
 
 // 定义班级和学生类型
 interface ClassInfo {
@@ -125,10 +130,10 @@ interface ClassInfo {
 }
 
 // 表格列定义
-const headers = [
-  { title: '姓名', key: 'name' },
-  { title: '学号', key: 'studentId' },
-  { title: '操作', key: 'actions', sortable: false }
+const columns = [
+  { title: '姓名', dataIndex: 'name', key: 'name' },
+  { title: '学号', dataIndex: 'studentId', key: 'studentId' },
+  { title: '操作', key: 'actions' }
 ];
 
 // Vue Router
@@ -137,7 +142,6 @@ const classId = (route.params as { id: string }).id;
 
 // 数据和状态
 const dialog = ref(false); // 添加/编辑对话框
-const valid = ref(false);
 const adding = ref(false);
 const classInfo = ref<ClassInfo | null>(null);
 const students = ref<Student[]>([]);
@@ -152,15 +156,18 @@ const newStudent = ref({
   studentId: ''
 });
 
+// 表单 ref
+const form = ref();
+
 // 表单验证规则
 const nameRules = [
-  (v: string) => !!v || '姓名是必填项',
-  (v: string) => v.length <= 50 || '姓名不能超过50个字符'
+  { required: true, message: '姓名是必填项' },
+  { max: 50, message: '姓名不能超过50个字符' }
 ];
 
 const studentIdRules = [
-  (v: string) => !!v || '学号是必填项',
-  (v: string) => v.length <= 20 || '学号不能超过20个字符'
+  { required: true, message: '学号是必填项' },
+  { max: 20, message: '学号不能超过20个字符' }
 ];
 
 // 获取班级详情
@@ -204,13 +211,16 @@ function closeDialog() {
     name: '',
     studentId: ''
   };
-  valid.value = false;
 }
 
 // 添加学生
 async function addStudent() {
-  if (!valid.value) return;
-  
+  try {
+    await form.value.validate();
+  } catch (error) {
+    return;
+  }
+
   adding.value = true;
   try {
     await createStudent({

@@ -1,129 +1,158 @@
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title>作文评分报告导出</v-card-title>
-      <v-card-subtitle>导出作文评分结果为 Excel 文件</v-card-subtitle>
-      
-      <v-card-text>
-        <v-form @submit.prevent="exportEssays">
-          <v-row>            
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="selectedAssignmentIds"
-                :items="assignments"
-                item-title="description"
-                item-value="id"
-                label="选择作文测验（支持多选）"
-                multiple
-                clearable
-                density="default"
-                chips
-                closable-chips
-              >
-                <template v-slot:item="{ props, item }">
-                  <v-list-item v-bind="props" :subtitle="formatDateUTC8(item.raw.createdAt)" />
-                </template>
-              </v-select>
-            </v-col>
-            
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="selectedClassId"
-                :items="classes"
-                item-title="name"
-                item-value="id"
-                label="选择班级"
-                clearable
-                density="default"
+  <div class="export-container">
+    <a-card>
+      <template #title>
+        <span>作文评分报告导出</span>
+      </template>
+      <template #extra>
+        <span class="text-secondary">导出作文评分结果为 Excel 文件</span>
+      </template>
+
+      <a-form @finish="exportEssays" layout="vertical">
+        <a-row :gutter="[16, 16]">
+          <a-col :xs="24" :md="12">
+            <a-form-item label="选择作文测验（支持多选）">
+              <a-select
+                v-model:value="selectedAssignmentIds"
+                mode="multiple"
+                placeholder="请选择作文测验"
+                :options="assignmentOptions"
+                :loading="loadingAssignments"
+                allow-clear
               />
-            </v-col>
-            
-            <v-col cols="12" md="2">
-              <v-text-field
-                v-model="startDate"
-                label="开始日期"
-                type="date"
-                density="default"
+            </a-form-item>
+          </a-col>
+
+          <a-col :xs="24" :md="12">
+            <a-form-item label="选择班级">
+              <a-select
+                v-model:value="selectedClassId"
+                placeholder="请选择班级"
+                :options="classOptions"
+                :loading="loadingClasses"
+                allow-clear
               />
-            </v-col>
-            
-            <v-col cols="12" md="2">
-              <v-text-field
-                v-model="endDate"
-                label="结束日期"
-                type="date"
-                density="default"
+            </a-form-item>
+          </a-col>
+
+          <a-col :xs="24" :md="12">
+            <a-form-item label="开始日期">
+              <a-date-picker
+                v-model:value="startDate"
+                placeholder="请选择开始日期"
+                style="width: 100%"
               />
-            </v-col>
-          </v-row>
-          
-          <v-row>
-            <v-col cols="12">
-              <v-btn type="submit" color="primary" :loading="loading" :disabled="!canExport">
-                <v-icon start>mdi-download</v-icon>
-                导出 Excel
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-form>
-      </v-card-text>
-    </v-card>
-  </v-container>
+            </a-form-item>
+          </a-col>
+
+          <a-col :xs="24" :md="12">
+            <a-form-item label="结束日期">
+              <a-date-picker
+                v-model:value="endDate"
+                placeholder="请选择结束日期"
+                style="width: 100%"
+              />
+            </a-form-item>
+          </a-col>
+        </a-row>
+
+        <a-form-item>
+          <a-button
+            type="primary"
+            html-type="submit"
+            :loading="loading"
+            :disabled="!canExport"
+          >
+            <template #icon>
+              <DownloadOutlined />
+            </template>
+            导出 Excel
+          </a-button>
+        </a-form-item>
+      </a-form>
+    </a-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { 
-  getAssignments, 
-  getClasses, 
+import { DownloadOutlined } from '@ant-design/icons-vue';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import {
+  getAssignments,
+  getClasses,
   exportEssaySubmissions
 } from '@/services/apiService';
 import { formatDateUTC8 } from '@/utils/dateUtils';
 import type { Assignment, Class, ExportFilterDto } from '@/services/apiService';
 
-const selectedAssignmentId = ref<string | null>(null);
 const selectedAssignmentIds = ref<string[]>([]);
 const selectedClassId = ref<string | null>(null);
-const startDate = ref<string>('');
-const endDate = ref<string>('');
+const startDate = ref<Dayjs | null>(null);
+const endDate = ref<Dayjs | null>(null);
 const loading = ref(false);
+const loadingAssignments = ref(false);
+const loadingClasses = ref(false);
 
 const assignments = ref<Assignment[]>([]);
 const classes = ref<Class[]>([]);
 
+const assignmentOptions = computed(() => {
+  return assignments.value.map(item => ({
+    label: item.description || item.titleContext || item.id,
+    value: item.id,
+    createdAt: item.createdAt
+  }));
+});
+
+const classOptions = computed(() => {
+  return classes.value.map(item => ({
+    label: item.name,
+    value: item.id
+  }));
+});
+
 const canExport = computed(() => {
-  return selectedAssignmentId.value || 
-         selectedAssignmentIds.value.length > 0 || 
-         selectedClassId.value || 
-         startDate.value || 
+  return selectedAssignmentIds.value.length > 0 ||
+         selectedClassId.value ||
+         startDate.value ||
          endDate.value;
 });
 
 onMounted(async () => {
   try {
-    assignments.value = await getAssignments();
-    classes.value = await getClasses();
+    loadingAssignments.value = true;
+    loadingClasses.value = true;
+    const [assignmentsData, classesData] = await Promise.all([
+      getAssignments(),
+      getClasses()
+    ]);
+    assignments.value = assignmentsData || [];
+    classes.value = classesData || [];
   } catch (error) {
     console.error('获取数据失败:', error);
+  } finally {
+    loadingAssignments.value = false;
+    loadingClasses.value = false;
   }
 });
 
 const exportEssays = async () => {
   if (!canExport.value) return;
-  
+
   loading.value = true;
-  
+
   try {
     const filter: ExportFilterDto = {
-      essayAssignmentId: selectedAssignmentId.value || undefined,
       essayAssignmentIds: selectedAssignmentIds.value.length > 0 ? selectedAssignmentIds.value : undefined,
       classId: selectedClassId.value || undefined,
-      startDate: startDate.value || undefined,
-      endDate: endDate.value || undefined
+      startDate: startDate.value ? startDate.value.format('YYYY-MM-DD') : undefined,
+      endDate: endDate.value ? endDate.value.format('YYYY-MM-DD') : undefined
     };
-    
+
     const blob = await exportEssaySubmissions(filter);
-    
+
     // 创建下载链接
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -140,3 +169,16 @@ const exportEssays = async () => {
   }
 };
 </script>
+
+<style scoped>
+.export-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.text-secondary {
+  color: var(--ant-color-text-secondary);
+  font-size: 14px;
+}
+</style>

@@ -1,128 +1,128 @@
 <template>
   <div>
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h1 class="text-h4">班级管理</h1>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="dialog = true">添加班级</v-btn>
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-semibold">班级管理</h1>
+      <a-button type="primary" @click="dialog = true" style="margin-bottom: 8px;">
+        <template #icon><PlusOutlined /></template>
+        添加班级
+      </a-button>
     </div>
 
     <!-- 班级列表 -->
-    <v-card>
-      <v-card-text class="responsive-table-container">
+    <a-card>
+      <div class="responsive-table-container">
         <!-- 桌面端表格 -->
-        <v-data-table
+        <a-table
           v-if="display.mdAndUp.value"
-          :headers="headers"
-          :items="classes"
+          :columns="columns"
+          :data-source="classes"
           :loading="loading"
-          loading-text="加载中..."
-          no-data-text="暂无数据"
+          :pagination="false"
+          row-key="id"
         >
-          <template v-slot:item.name="{ item }">
-            <v-btn :to="`/classes/${item.id}`" variant="text" color="primary">{{ item.name }}</v-btn>
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'name'">
+              <a-button type="link" :href="`/classes/${record.id}`">{{ record.name }}</a-button>
+            </template>
+            <template v-if="column.key === 'studentCount'">
+              <a-tag>{{ record.studentCount || 0 }}</a-tag>
+            </template>
+            <template v-if="column.key === 'actions'">
+              <a-button type="text" size="small" danger @click="confirmDelete(record)">
+                <template #icon><DeleteOutlined /></template>
+              </a-button>
+            </template>
           </template>
-          <template v-slot:item.studentCount="{ item }">
-            <v-chip color="primary" variant="outlined">
-              {{ item.studentCount || 0 }}
-            </v-chip>
-          </template>
-          <template v-slot:item.actions="{ item }">
-            <v-btn
-              icon
-              variant="text"
-              size="small"
-              color="error"
-              @click="confirmDelete(item)"
-            >
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-          </template>
-        </v-data-table>
+        </a-table>
 
         <!-- 移动端列表 -->
-        <v-list v-else>
-          <v-list-item
-            v-for="item in classes"
-            :key="item.id"
-            :to="`/classes/${item.id}`"
-            class="mb-2"
-          >
-            <v-list-item-content>
-              <v-list-item-title>{{ item.name }}</v-list-item-title>
-              <v-list-item-subtitle>
-                学生数量: {{ item.studentCount || 0 }}
-              </v-list-item-subtitle>
-            </v-list-item-content>
-            <template v-slot:append>
-              <v-btn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                @click.prevent="confirmDelete(item)"
-              >
-                <v-icon>mdi-delete</v-icon>
-              </v-btn>
-            </template>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
-    </v-card>
+        <a-list v-else :data-source="classes" item-layout="horizontal">
+          <template #renderItem="{ item }">
+            <a-list-item class="mb-2" :href="`/classes/${item.id}`">
+              <a-list-item-meta>
+                <template #title>{{ item.name }}</template>
+                <template #description>学生数量: {{ item.studentCount || 0 }}</template>
+              </a-list-item-meta>
+              <template #actions>
+                <a-button type="text" size="small" danger @click.prevent="confirmDelete(item)">
+                  <template #icon><DeleteOutlined /></template>
+                </a-button>
+              </template>
+            </a-list-item>
+          </template>
+        </a-list>
+      </div>
+    </a-card>
 
     <!-- 新建班级对话框 -->
-    <v-dialog v-model="dialog" max-width="600px">
-      <v-card>
-        <v-card-title>
-          <!-- 标题固定为“添加班级” -->
-          <span class="text-h5">添加班级</span>
-        </v-card-title>
-        <v-card-text>
-          <v-form ref="form" @submit.prevent="saveClass">
-            <v-text-field
-              v-model="editedItem.name"
-              label="班级名称"
-              :rules="[v => !!v || '班级名称不能为空']"
-              required
-              @keyup.enter.prevent="saveClass"
-            ></v-text-field>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="error" variant="text" @click="dialog = false">取消</v-btn>
-          <v-btn color="primary" @click="saveClass" :loading="saving">保存</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="dialog"
+      title="添加班级"
+      :confirm-loading="saving"
+      @ok="saveClass"
+      @cancel="dialog = false"
+      width="600px"
+    >
+      <a-form ref="form" :model="editedItem" layout="vertical">
+        <a-form-item
+          label="班级名称"
+          name="name"
+          :rules="[{ required: true, message: '班级名称不能为空' }]"
+        >
+          <a-input
+            v-model:value="editedItem.name"
+            @keyup.enter="saveClass"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 删除确认对话框 -->
-    <v-dialog v-model="deleteDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-h5">确认删除</v-card-title>
-        <v-card-text>
-          确定要删除班级 <strong>{{ itemToDelete?.name }}</strong> 吗？此操作不可撤销。
-          <div class="mt-2" v-if="itemToDelete && itemToDelete.studentCount > 0">
-            <v-alert type="warning" variant="tonal" density="compact">
-              注意：该班级下有 {{ itemToDelete?.studentCount }} 名学生，删除班级将导致这些学生失去班级关联。
-            </v-alert>
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="text" @click="deleteDialog = false">取消</v-btn>
-          <v-btn color="error" @click="deleteClass" :loading="deleting">删除</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="deleteDialog"
+      title="确认删除"
+      :confirm-loading="deleting"
+      @ok="deleteClass"
+      @cancel="deleteDialog = false"
+    >
+      <p>
+        确定要删除班级 <strong>{{ itemToDelete?.name }}</strong> 吗？此操作不可撤销。
+      </p>
+      <div class="mt-2" v-if="itemToDelete && itemToDelete.studentCount > 0">
+        <a-alert
+          message="注意"
+          :description="`该班级下有 ${itemToDelete.studentCount} 名学生，删除班级将导致这些学生失去班级关联。`"
+          type="warning"
+          show-icon
+        />
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useDisplay } from 'vuetify'
-// 移除 updateClass 导入
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { getClasses, createClass, deleteClass as apiDeleteClass, getStudents } from '@/services/apiService';
 
-const display = useDisplay()
+// Responsive display detection (Vuetify-independent)
+const windowWidth = ref(window.innerWidth)
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
+
+const display = computed(() => ({
+  mdAndUp: { value: windowWidth.value >= 768 }
+}))
 
 // 定义班级项的类型
 interface ClassItem {
@@ -132,10 +132,10 @@ interface ClassItem {
 }
 
 // 表格列定义
-const headers = [
-  { title: '班级名称', key: 'name' },
-  { title: '学生数量', key: 'studentCount' },
-  { title: '操作', key: 'actions', sortable: false }
+const columns = [
+  { title: '班级名称', dataIndex: 'name', key: 'name' },
+  { title: '学生数量', dataIndex: 'studentCount', key: 'studentCount' },
+  { title: '操作', key: 'actions' }
 ]
 
 // 数据和状态
@@ -145,12 +145,9 @@ const dialog = ref(false)
 const deleteDialog = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
-// 移除 isEditing 状态
-// const isEditing = ref(false)
 const form = ref<any>(null)
 
 // 当前编辑的项目 (只用于新建)
-// 简化类型，移除id
 const editedItem = ref<{ name: string }>({
   name: '',
 })
@@ -191,33 +188,19 @@ async function fetchClasses() {
   }
 }
 
-// 移除 editClass 函数
-// function editClass(item: ClassItem) { // Type the item parameter
-//   isEditing.value = true
-//   editedItem.value = { ...item }
-//   dialog.value = true
-// }
-
 // 保存班级 (只处理新建)
 async function saveClass() {
-  // 表单验证
-  const { valid } = await form.value.validate()
-  if (!valid) return
+  try {
+    await form.value.validate();
+  } catch (error) {
+    return;
+  }
 
   saving.value = true
   try {
     const dataToSave = { name: editedItem.value.name! }; // 总是只发送 name
 
-    // 移除更新逻辑，只保留新建
-    // if (isEditing.value) {
-    //   if (!editedItem.value.id) {
-    //     console.error('Cannot update class without an ID');
-    //     return; // Or handle error appropriately
-    //   }
-    //   await updateClass(editedItem.value.id, dataToSave);
-    // } else {
-      await createClass(dataToSave);
-    // }
+    await createClass(dataToSave);
 
     // 关闭对话框并刷新列表
     dialog.value = false
@@ -257,9 +240,6 @@ async function deleteClass() {
 
 // 重置表单
 function resetForm() {
-  // 移除 isEditing 状态重置
-  // isEditing.value = false
-  // 简化 editedItem 重置
   editedItem.value = {
     name: '',
   }

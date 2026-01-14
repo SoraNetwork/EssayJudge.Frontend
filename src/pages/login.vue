@@ -1,91 +1,97 @@
 <template>
-  <v-container class="fill-height" fluid>
-    <v-row align="center" justify="center">
-      <v-col cols="12" sm="8" md="5" lg="4">
-        <v-card variant="flat" class="pa-4 pa-sm-8" rounded="lg" style="border: 1px solid #e0e0e0;">
-          <div class="text-center mb-6">
-            <h1 class="text-h4 font-weight-bold text-grey-darken-3">{{ appTitle }}</h1>
-          </div>
+  <div class="login-container">
+    <div class="login-card-wrapper">
+      <a-card class="login-card" :bordered="false" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;">
+        <div class="login-header mb-6 text-center">
+          <h1 class="login-title">{{ appTitle }}</h1>
+        </div>
 
-          <v-card-title class="text-h5 text-center font-weight-bold pa-0 mb-1">
-            登录您的账户
-          </v-card-title>
+        <a-typography-title :level="3" class="login-subtitle text-center">
+          登录您的账户
+        </a-typography-title>
 
-          <v-card-text class="pa-0">
-            <v-form @submit.prevent="handlePasswordLogin" class="mt-6">
-              <v-text-field
-                v-model="username"
-                label="账号"
-                prepend-inner-icon="mdi-account-outline"
-                variant="outlined"
-                class="mb-4"
-                :disabled="loading"
-                density="comfortable"
-              ></v-text-field>
-
-              <v-text-field
-                v-model="password"
-                label="密码"
-                prepend-inner-icon="mdi-lock-outline"
-                type="password"
-                variant="outlined"
-                class="mb-4"
-                :disabled="loading"
-                density="comfortable"
-              ></v-text-field>
-
-              <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = null" density="compact">
-                {{ error }}
-              </v-alert>
-
-              <v-btn
-                :loading="loading"
-                type="submit"
-                color="primary"
-                block
-                size="large"
-                class="mb-4"
-              >
-                登录
-              </v-btn>
-            </v-form>
-
-            <v-row align="center" class="my-2">
-              <v-divider />
-              <span class="px-4 text-caption text-grey">或</span>
-              <v-divider />
-            </v-row>
-
-            <v-btn
-              @click="redirectToDingTalkOAuth"
-              variant="outlined"
-              block
+        <a-form @submit.prevent="handlePasswordLogin" class="mt-6" layout="vertical">
+          <a-form-item label="账号" :colon="false">
+            <a-input
+              v-model:value="username"
               size="large"
-              :loading="loading"
-              color="grey-darken-2"
+              placeholder="请输入账号"
+              :disabled="loading"
             >
-              <v-icon class="mr-2">mdi-dingtalk</v-icon>
-              使用钉钉 Oauth 登录
-            </v-btn>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+              <template #prefix>
+                <UserOutlined />
+              </template>
+            </a-input>
+          </a-form-item>
 
-  <!-- 添加全屏遮罩 -->
-  <v-overlay :model-value="showDingTalkOverlay" class="align-center justify-center" persistent>
-    <v-card class="pa-4 text-center" max-width="400">
-      <v-card-title class="d-flex align-center justify-center">
-        <v-icon color="primary" size="large" class="mr-2">mdi-dingtalk</v-icon>
-        <span>钉钉登录中</span>
-      </v-card-title>
-      <v-card-text>
-        <p class="mb-2">正在跳转到钉钉进行身份验证...</p>
-        <v-progress-linear indeterminate color="primary" rounded></v-progress-linear>
-      </v-card-text>
-    </v-card>
-  </v-overlay>
+          <a-form-item label="密码" :colon="false">
+            <a-input-password
+              v-model:value="password"
+              size="large"
+              placeholder="请输入密码"
+              :disabled="loading"
+            >
+              <template #prefix>
+                <LockOutlined />
+              </template>
+            </a-input-password>
+          </a-form-item>
+
+          <a-alert
+            v-if="error"
+            :message="error"
+            type="error"
+            show-icon
+            closable
+            @close="error = null"
+            class="mb-4"
+          />
+
+          <a-button
+            :loading="loading"
+            type="primary"
+            size="large"
+            block
+            html-type="submit"
+            class="mb-4"
+          >
+            登录
+          </a-button>
+        </a-form>
+
+        <div class="divider-wrapper my-4 text-center">
+          <a-divider class="divider" orientation="center" dashed>或</a-divider>
+        </div>
+
+        <a-button
+          @click="redirectToDingTalkOAuth"
+          size="large"
+          block
+          :loading="loading"
+          class="dingtalk-btn"
+        >
+          <DingtalkOutlined class="mr-2" />
+          使用钉钉 Oauth 登录
+        </a-button>
+      </a-card>
+    </div>
+
+    <!-- 全屏遮罩 -->
+    <a-modal
+      v-model:open="showDingTalkOverlay"
+      :footer="null"
+      :closable="false"
+      :maskClosable="false"
+      centered
+    >
+      <div class="modal-content text-center">
+        <DingtalkOutlined class="modal-icon" :style="{ fontSize: '24px', color: '#1890ff' }" />
+        <a-typography-title :level="5" class="mt-2">钉钉登录中</a-typography-title>
+        <p class="mt-2">正在跳转到钉钉进行身份验证...</p>
+        <a-spin />
+      </div>
+    </a-modal>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -93,6 +99,9 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import * as dd from 'dingtalk-jsapi';
+
+// Ant Design 组件
+import { UserOutlined, LockOutlined, DingtalkOutlined } from '@ant-design/icons-vue';
 
 // --- App Title ---
 const appTitle = import.meta.env.VITE_APP_TITLE || '作文评测系统';
@@ -236,7 +245,78 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.fill-height {
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 16px;
+}
+
+.login-card-wrapper {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.login-header {
+  margin-bottom: 24px;
+}
+
+.login-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.login-subtitle {
+  margin-bottom: 24px !important;
+  color: #303133;
+}
+
+.mt-6 {
+  margin-top: 24px;
+}
+
+.mb-4 {
+  margin-bottom: 16px !important;
+}
+
+.my-4 {
+  margin: 16px 0 !important;
+}
+
+.mt-2 {
+  margin-top: 8px !important;
+}
+
+.divider-wrapper .divider {
+  margin: 16px 0;
+}
+
+.dingtalk-btn {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.modal-content {
+  text-align: center;
+}
+
+.modal-icon {
+  margin-right: 8px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mr-2 {
+  margin-right: 8px;
 }
 </style>

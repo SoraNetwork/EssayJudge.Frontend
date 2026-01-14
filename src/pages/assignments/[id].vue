@@ -177,14 +177,29 @@
 
 <script setup lang="ts">
 // 导入所需模块
-import { ref, computed, onMounted } from 'vue'
-import { useDisplay } from 'vuetify'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
 import EditAssignments from '@/components/EditAssignments.vue';
 
-// 使用 Vuetify 的显示功能来检测屏幕大小
-const display = useDisplay()
+// Responsive display detection (Vuetify-independent)
+const windowWidth = ref(window.innerWidth)
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
+
+const display = computed(() => ({
+  mdAndUp: { value: windowWidth.value >= 768 }
+}))
 
 // 获取路由和路由器实例
 const route = useRoute()

@@ -1,78 +1,73 @@
 <template>
-  <v-container>
-    <div v-if="loading" class="d-flex justify-center align-center" style="height: 80vh;">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
+  <div style="padding: 24px;">
+    <div v-if="loading" style="display: flex; justify-content: center; align-items: center; height: 80vh;">
+      <a-spin size="large" />
     </div>
-    <div v-else-if="error" class="d-flex justify-center align-center" style="height: 80vh;">
-      <v-alert type="error">{{ error }}</v-alert>
-    </div>
+    <a-alert v-else-if="error" type="error" :message="error" style="margin: 24px 0;" />
     <div v-else-if="essay">
       <!-- Top Section -->
-      <v-row class="mb-4">
-        <v-col cols="12">
-          <v-btn class="mb-4" prepend-icon="mdi-arrow-left" variant="text" :to="'/essays'">
+      <a-row :gutter="16" style="margin-bottom: 16px;">
+        <a-col :span="24">
+          <a-button style="margin-bottom: 16px;" type="link" href="/essays">
+            <template #icon><ArrowLeftOutlined /></template>
             返回作文列表
-          </v-btn>
-        </v-col>
-        <v-col cols="12" md="4">
-          <v-card>
-            <v-card-title class="text-h5">
-              作文信息
-            </v-card-title>
-            <v-card-text>
-              <p><strong>测验来源:</strong> {{ essay.essayAssignment.description }}</p>
-              <p><strong>测验题目:</strong> {{ essay.essayAssignment.titleContext }}</p>
-              <p><strong>学生:</strong> {{ essay.student?.name }}</p>
-              <p><strong>班级:</strong> {{ classInfo?.name ?? '未分配班级' }}</p>
-              <p v-if="essay.isError" class="error--text">
-                <strong>错误信息:</strong> {{ essay.errorMessage }}
-              </p>
-              <v-list-item>
-                <v-list-item-title class="text-subtitle-1">
-                  <strong>系统评分:</strong>
-                  <v-chip :color="getScoreColor(essay.finalScore, essay.essayAssignment.totalScore)" dark small
-                    class="ml-2">
-                    {{ essay.finalScore }} / {{ essay.essayAssignment.totalScore }}
-                  </v-chip>
-                </v-list-item-title>
-              </v-list-item>
-              <v-list-item v-if="essay.score && essay.score != 0">
-                <v-list-item-title class="text-subtitle-1">
-                  <strong>人工复评:</strong>
-                  <v-chip color="purple" dark small class="ml-2">
-                    {{ essay.score }} / {{ essay.essayAssignment.totalScore }}
-                  </v-chip>
-                  <v-icon small color="purple" class="ml-2">mdi-account-check</v-icon>
-                </v-list-item-title>
-              </v-list-item>
-            </v-card-text>
-            <v-card-actions class="pa-4">
-              <v-row dense>
-                <v-col cols="12">
-                  <v-btn color="primary" block @click="() => setVisible(true)" v-if="essay.imageUrl">查看原文图片</v-btn>
-                </v-col>
-                <v-col cols="12">
-                  <v-btn color="secondary" block @click="openEditScoreDialog">修改分数及学生</v-btn>
-                </v-col>
-                <v-col cols="12">
-                  <ExportToWord :essay-id="essay.id" :class-info="classInfo" block />
-                </v-col>
-              </v-row>
-            </v-card-actions>
-          </v-card>
-        </v-col>
-        <v-col cols="12" md="8">
-          <v-card>
-            <v-card-title class="d-flex justify-space-between align-center">
-              原文内容
-              <v-btn prepend-icon="mdi-pencil" variant="text" small @click="onOpenEditTextDialog">修改标题与内容</v-btn>
-            </v-card-title>
-            <v-card-text style="white-space: pre-wrap; word-wrap: break-word;">{{ essay.parsedText }}</v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+          </a-button>
+        </a-col>
+        <a-col :xs="24" :md="8">
+          <a-card title="作文信息">
+            <p><strong>测验来源:</strong> {{ essay.essayAssignment.description }}</p>
+            <p><strong>测验题目:</strong> {{ essay.essayAssignment.titleContext }}</p>
+            <p><strong>学生:</strong> {{ essay.student?.name }}</p>
+            <p><strong>班级:</strong> {{ classInfo?.name ?? '未分配班级' }}</p>
+            <p v-if="essay.isError" style="color: #ff4d4f;">
+              <strong>错误信息:</strong> {{ essay.errorMessage }}
+            </p>
+            <div style="margin: 8px 0;">
+              <strong>系统评分:</strong>
+              <a-tag :color="getScoreColor(essay.finalScore, essay.essayAssignment.totalScore)" style="margin-left: 8px;">
+                {{ essay.finalScore }} / {{ essay.essayAssignment.totalScore }}
+              </a-tag>
+            </div>
+            <div v-if="essay.score && essay.score != 0" style="margin: 8px 0;">
+              <strong>人工复评:</strong>
+              <a-tag color="purple" style="margin-left: 8px;">
+                {{ essay.score }} / {{ essay.essayAssignment.totalScore }}
+              </a-tag>
+              <UserOutlined style="color: #722ed1; margin-left: 8px;" />
+            </div>
+            <div style="margin-top: 16px;">
+              <a-row :gutter="8">
+                <a-col :span="24">
+                  <a-button type="primary" size="large" block @click="() => setVisible(true)" v-if="essay.imageUrl">查看原文图片</a-button>
+                </a-col>
+                <a-col :span="24">
+                  <a-button size="large" style="margin-top: 8px;" block @click="openEditScoreDialog">修改分数及学生</a-button>
+                </a-col>
+                <a-col :span="24">
+                  <ExportToWord :essay-id="essay.id" :class-info="classInfo" block style="margin-top: 8px;" />
+                </a-col>
+              </a-row>
+            </div>
+          </a-card>
+        </a-col>
+        <a-col :xs="24" :md="16">
+          <a-card>
+            <template #title>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>原文内容</span>
+                <a-button type="link" size="small" @click="onOpenEditTextDialog">
+                  <template #icon><EditOutlined /></template>
+                  修改标题与内容
+                </a-button>
+              </div>
+            </template>
+            <div style="white-space: pre-wrap; word-wrap: break-word;">{{ essay.parsedText }}</div>
+          </a-card>
+        </a-col>
+      </a-row>
 
       <!-- Bottom Section -->
+<<<<<<< Updated upstream
       <v-row>
         <v-col cols="12" lg="8">
           <v-card>
@@ -105,59 +100,128 @@
           </v-card>
         </v-col>
       </v-row>
+=======
+      <a-row :gutter="16">
+        <a-col :xs="24" :lg="16">
+          <a-card title="综合评判">
+            <div class="markdown-body" v-html="renderedMarkdown"></div>
+          </a-card>
+        </a-col>
+        <a-col :xs="24" :lg="8">
+          <a-card title="AI模型评分">
+            <a-list :data-source="essay.aiResults" item-layout="horizontal" size="small">
+              <template #renderItem="{ item }">
+                <a-list-item>
+                  <a-list-item-meta>
+                    <template #title>{{ item.modelName }}</template>
+                    <template #description>{{ item.feedback }}</template>
+                  </a-list-item-meta>
+                  <template #actions>
+                    <a-tag :color="getScoreColor(item.score, essay.essayAssignment.totalScore)">{{ item.score ?? 'N/A' }}</a-tag>
+                  </template>
+                </a-list-item>
+              </template>
+            </a-list>
+          </a-card>
+        </a-col>
+      </a-row>
+>>>>>>> Stashed changes
     </div>
 
     <!-- Image Dialog -->
-
     <a-image :src="imageUrl" :style="{ display: 'none' }" :preview="{
         visible,
         onVisibleChange: setVisible,
       }"></a-image>
 
     <!-- Edit Text Dialog -->
-    <v-dialog v-model="editTextDialog" persistent max-width="600px">
-      <v-card>
-        <v-toolbar color="primary" dark flat>
-          <v-toolbar-title>修改作文标题与内容</v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-btn icon dark @click="editTextDialog = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-toolbar>
-
-        <v-card-text class="pt-4">
-          <v-container>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field v-model="editableTitle" label="作文标题"
-                  :rules="[v => v.length != 0 || '标题不能为空']"
-                  required></v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-textarea v-model="editableText" label="作文内容" auto-grow rows="10" outlined
-                :rules="[v => v.length != 0 || '内容不能为空']"
-                required></v-textarea>
-              </v-col>
-            </v-row>
-            
-          </v-container>
-        </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
-          <v-btn variant="text" color="grey-darken-1" @click="editTextDialog = false">
-            取消
-          </v-btn>
-          <v-btn color="primary" variant="elevated" :loading="loading" :disabled="editableTitle === null || editableText === null" @click="updateTexts">
-            保存修改
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <a-modal
+      v-model:open="editTextDialog"
+      title="修改作文标题与内容"
+      :closable="false"
+      :maskClosable="false"
+      width="600px"
+    >
+      <a-form layout="vertical">
+        <a-form-item label="作文标题" required>
+          <a-input v-model:value="editableTitle" />
+        </a-form-item>
+        <a-form-item label="作文内容" required>
+          <a-textarea v-model:value="editableText" :rows="10" />
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="editTextDialog = false">取消</a-button>
+        <a-button type="primary" :loading="loading" :disabled="!editableTitle || !editableText" @click="updateTexts">保存修改</a-button>
+      </template>
+    </a-modal>
 
     <!-- Edit Score Dialog -->
+<<<<<<< HEAD
+    <a-modal
+      v-model:open="editScoreDialog"
+      title="作文评分与分配"
+      :closable="false"
+      :maskClosable="false"
+      width="600px"
+    >
+      <a-form layout="vertical">
+        <a-form-item label="复评分数" required>
+          <a-input-number
+            v-model:value="editableScore"
+            :min="0"
+            :max="essay.essayAssignment.totalScore"
+            style="width: 100%"
+            :placeholder="`总分: ${essay.essayAssignment.totalScore}`"
+          >
+            <template #prefix><EditOutlined /></template>
+          </a-input-number>
+        </a-form-item>
+        <a-form-item label="搜索学生">
+          <a-input
+            v-model:value="searchQuery"
+            placeholder="搜索学生"
+            allowClear
+            style="margin-bottom: 8px;"
+          >
+            <template #prefix><SearchOutlined /></template>
+          </a-input>
+          <a-select
+            v-model:value="selectedStudentId"
+            :options="filteredStudentOptions"
+            :loading="loadingStudents"
+            :disabled="loadingStudents"
+            :placeholder="currentClassInfo ? `班级: ${currentClassInfo.name}` : '未分配班级'"
+            style="width: 100%"
+          >
+            <template #option="{ value, label, raw }">
+              <div style="display: flex; align-items: center;">
+                <UserOutlined v-if="raw.classId" style="color: #1890ff; margin-right: 8px;" />
+                <UserOutlined v-else style="color: #999; margin-right: 8px;" />
+                <span>{{ label }}</span>
+                <span style="color: #999; margin-left: 8px; font-size: 12px;">{{ raw.studentId }}</span>
+              </div>
+              <div v-if="loadingClass && selectedStudentId === raw.id" style="margin-top: 4px;">
+                <a-progress size="small" :percent="100" status="active" :show-info="false" />
+              </div>
+              <div v-else style="margin-top: 4px; color: #999; font-size: 12px;">
+                {{ getClassFromCache(raw.classId)?.name || '未分配班级' }}
+              </div>
+            </template>
+          </a-select>
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="editScoreDialog = false">取消</a-button>
+        <a-button
+          type="primary"
+          :loading="loading"
+          :disabled="(editableScore === originalEssayScore && !selectedStudentId) || selectedStudentId === originalStudentId"
+          @click="updateScore"
+        >保存修改</a-button>
+      </template>
+    </a-modal>
+=======
     <v-dialog v-model="editScoreDialog" persistent max-width="600px">
       <v-card>
         <v-toolbar color="primary" dark flat>
@@ -224,28 +288,29 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+>>>>>>> 000e7f83aef32ce16de076fe02c015f1c51bc48f
 
     <BackToTop />
-  </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { ArrowLeftOutlined, EditOutlined, UserOutlined, SearchOutlined } from '@ant-design/icons-vue'
 import { getSubmissionById, updateSubmissionScore, getStudents, getClassById, updateSubmissionTexts } from '@/services/apiService'
 import type { Student, Class } from '@/services/apiService'
 import MarkdownIt from 'markdown-it'
 import 'github-markdown-css/github-markdown.css'
 import ExportToWord from '@/components/ExportToWord.vue'
 
-// 初始化 markdown-it 时添加更多配置
+// 初始化 markdown-it
 const md = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
-  breaks: true,    // 转换段落里的 '\n' 到 <br>
+  breaks: true,
   highlight: function (str, lang) {
-    // 可以在这里添加代码高亮功能
     return str;
   }
 })
@@ -268,10 +333,9 @@ const searchQuery = ref('')
 const loadingStudents = ref(false)
 const classInfo = ref<Class | null>(null)
 const loadingClass = ref(false)
-// 添加班级信息缓存
 const classCache = ref<Map<string, Class>>(new Map())
 const classCacheExpiry = ref<Map<string, number>>(new Map())
-const CACHE_EXPIRY_TIME = 5 * 60 * 1000 // 5分钟缓存过期时间
+const CACHE_EXPIRY_TIME = 5 * 60 * 1000
 
 // 添加 imageUrl 计算属性
 const imageUrl = computed(() => {
@@ -284,7 +348,6 @@ const currentClassInfo = computed(() => {
   if (selectedStudentId.value) {
     const selectedStudent = students.value.find(s => s.id === selectedStudentId.value);
     if (selectedStudent?.classId) {
-      // 如果有缓存的班级信息，优先使用缓存
       const cachedClass = getClassFromCache(selectedStudent.classId);
       if (cachedClass) {
         return cachedClass;
@@ -300,17 +363,16 @@ const getClassFromCache = (classId: string|undefined): Class | null => {
 
   const cachedClass = classCache.value.get(classId);
   const expiryTime = classCacheExpiry.value.get(classId);
-  
+
   if (cachedClass && expiryTime && Date.now() < expiryTime) {
     return cachedClass;
-  }
-  
-  // 如果缓存过期，清除缓存
+ }
+
   if (cachedClass) {
     classCache.value.delete(classId);
     classCacheExpiry.value.delete(classId);
   }
-  
+
   return null;
 };
 
@@ -323,19 +385,17 @@ const setClassCache = (classId: string, classData: Class) => {
 
 const fetchClassInfo = async (classId: string) => {
   if (!classId) return;
-  
-  // 先尝试从缓存获取
+
   const cachedClass = getClassFromCache(classId);
   if (cachedClass) {
     classInfo.value = cachedClass;
     return;
   }
-  
+
   loadingClass.value = true;
   try {
     const data = await getClassById(classId);
     classInfo.value = data;
-    // 存入缓存
     setClassCache(classId, data);
   } catch (err) {
     console.error('Failed to load class info:', err);
@@ -348,11 +408,20 @@ const fetchClassInfo = async (classId: string) => {
 const filteredStudents = computed<Student[]>(() => {
   if (!searchQuery.value) return students.value;
   const query = searchQuery.value.toLowerCase();
-  return students.value.filter(student => 
-    student.name.toLowerCase().includes(query) || 
+  return students.value.filter(student =>
+    student.name.toLowerCase().includes(query) ||
     student.studentId?.toLowerCase().includes(query)
   );
 });
+
+// Filtered student options for select
+const filteredStudentOptions = computed(() => {
+  return filteredStudents.value.map(student => ({
+    value: student.id,
+    label: student.name,
+    raw: student
+  }))
+})
 
 // 添加计算属性用于markdown渲染
 const renderedMarkdown = computed(() => {
@@ -365,7 +434,6 @@ const fetchEssay = async () => {
   try {
     const data = await getSubmissionById(id);
     essay.value = data;
-    // 获取作文当前学生的班级信息
     if (data.student?.classId) {
       await fetchClassInfo(data.student?.classId);
     }
@@ -390,10 +458,10 @@ const fetchStudents = async () => {
 }
 
 const getScoreColor = (score: number | null, totalScore: number) => {
-  if (score === null) return 'grey'
+  if (score === null) return 'default'
   const percentage = (score / totalScore) * 100
   if (percentage >= 50) return 'green'
-  if (percentage >= 42) return 'light-green'
+  if (percentage >= 42) return 'cyan'
   if (percentage >= 38) return 'orange'
   return 'red'
 }
@@ -405,7 +473,6 @@ const openEditScoreDialog = () => {
     originalStudentId.value = essay.value.studentId;
     originalEssayScore.value = essay.value.score;
     searchQuery.value = '';
-    // 重新获取当前学生的班级信息
     if (essay.value.student?.classId) {
       fetchClassInfo(essay.value.student.classId);
     }
@@ -416,13 +483,12 @@ const openEditScoreDialog = () => {
 const updateScore = async () => {
   if (essay.value === null) return;
   const id = (route.params as { id: string }).id;
-  
+
   try {
-    // 只有当分配的学生发生改变时才传递 studentId
     const studentChanged = selectedStudentId.value !== originalStudentId.value;
     await updateSubmissionScore(
-      id, 
-      editableScore.value ? editableScore.value : undefined, 
+      id,
+      editableScore.value ? editableScore.value : undefined,
       studentChanged ? selectedStudentId.value : undefined
     );
     editScoreDialog.value = false;
@@ -531,5 +597,44 @@ onMounted(async () => {
   padding: 0 1em;
   color: #8b949e;
   border-left: 0.25em solid #30363d;
+}
+
+/* 表格样式修复 */
+.markdown-body table {
+  display: table; /* 恢复表格的正常显示 */
+  border-collapse: collapse;
+  margin: 0;
+  overflow: auto;
+  width: 100%;
+  background-color: var(--ant-color-bg-container);
+}
+
+.markdown-body table tr {
+  background-color: var(--ant-color-bg-container);
+  border-top: 1px solid var(--ant-color-split);
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: var(--ant-color-fill-secondary);
+}
+
+.markdown-body table td,
+.markdown-body table th {
+  padding: 6px 13px;
+  border: 1px solid var(--ant-color-split);
+  color: var(--ant-color-text);
+}
+
+.markdown-body table th {
+  background-color: var(--ant-color-fill-content);
+  font-weight: 600;
+}
+
+.markdown-body table td {
+  background-color: var(--ant-color-bg-container);
+}
+
+.markdown-body table tr:hover {
+  background-color: var(--ant-color-fill);
 }
 </style>

@@ -1,30 +1,82 @@
 <template>
-  <v-container class="fill-height" fluid>
-    <v-row align="center" justify="center" class="text-center">
-      <v-col cols="12" sm="8" md="6">
-        <v-card class="pa-8" elevation="4">
-          <v-icon size="100" color="error" class="mb-4">mdi-alert-circle-outline</v-icon>
-          <h1 class="text-h1 font-weight-bold text-primary">404</h1>
-          <h2 class="text-h4 my-4">有这个页面吗？</h2>
-          <p class="text-medium-emphasis mb-8">
-            抱歉，您正在寻找的页面不存在或已被移动，请检查统一资源定位器输入是否正确。
-          </p>
-          <v-btn color="primary" to="/" size="large" prepend-icon="mdi-home">
-            返回首页
-          </v-btn>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+  <div class="not-found-container">
+    <a-row justify="center" align="middle" class="not-found-row">
+      <a-col :xs="24" :sm="20" :md="16" :lg="12">
+        <a-card class="not-found-card">
+          <div class="not-found-content">
+            <ExclamationCircleOutlined class="error-icon" />
+            <h1 class="error-code">404</h1>
+            <h2 class="error-title">有这个页面吗？</h2>
+            <p class="error-description">
+              抱歉，您正在寻找的页面不存在或已被移动，请检查统一资源定位器输入是否正确。
+            </p>
+            <a-button type="primary" size="large" @click="$router.push('/')">
+              <template #icon>
+                <HomeOutlined />
+              </template>
+              返回首页
+            </a-button>
+          </div>
+        </a-card>
+      </a-col>
+    </a-row>
+  </div>
   <BackToTop />
 </template>
 
 <script setup lang="ts">
-// 此页面不需要特定的脚本逻辑
+import { ExclamationCircleOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import BackToTop from '@/components/BackToTop.vue'
 </script>
 
 <style scoped>
-.fill-height {
+.not-found-container {
   min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.not-found-row {
+  width: 100%;
+}
+
+.not-found-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.not-found-content {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.error-icon {
+  font-size: 100px;
+  color: var(--ant-color-error);
+  margin-bottom: 24px;
+  display: block;
+}
+
+.error-code {
+  font-size: 72px;
+  font-weight: bold;
+  color: var(--ant-color-primary);
+  margin: 0 0 16px 0;
+}
+
+.error-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--ant-color-text-base);
+}
+
+.error-description {
+  font-size: 16px;
+  color: var(--ant-color-text-secondary);
+  margin: 0 0 32px 0;
+  line-height: 1.6;
 }
 </style>
