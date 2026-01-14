@@ -123,7 +123,19 @@
               </div>
             </a-upload>
           </a-form-item>
-
+          <!-- 图片上传模式 -->
+          <div v-if="submitMode === 'image'">
+            <!-- 图片上传 -->
+            <v-file-input
+             v-model="imageFile" 
+             label="上传作文图片" 
+             accept="image/*" 
+             :error-messages="imageError" 
+             show-size
+             multiple
+             @change="handleImageSelected" 
+             class="mb-4" />
+          </div>
           <!-- 图片预览 -->
           <a-card v-if="processedImageUrl" class="mb-4">
             <template #title>
