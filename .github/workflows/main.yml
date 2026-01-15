@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - v2 # 建议指定只在 v2 分支上触发
+      - v2 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
