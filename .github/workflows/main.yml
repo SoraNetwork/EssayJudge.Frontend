@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - v2 
+      - v3
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          publish_branch: dist # <-- 这里已修改为您指定的分支
+          publish_branch: distv3 # <-- 这里已修改为您指定的分支
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: "Deploy SEJ-F/${{github.sha}} From CI"
