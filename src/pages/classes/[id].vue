@@ -3,11 +3,11 @@
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-semibold">班级详情: {{ classInfo?.name }}</h1>
       <div>
-        <a-button type="primary" @click="openAddStudentDialog">
+        <a-button type="primary" @click="openAddStudentDialog" style="margin-bottom: 8px;">
           <template #icon><PlusOutlined /></template>
           添加学生
         </a-button>
-        <a-button class="ml-2" :href="'/classes'">
+        <a-button class="ml-2" :href="'/classes'" style="margin-bottom: 8px;">
           <template #icon><ArrowLeftOutlined /></template>
           返回班级列表
         </a-button>
