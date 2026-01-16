@@ -112,7 +112,7 @@
           <a-input v-model:value="editableTitle" />
         </a-form-item>
         <a-form-item label="作文内容" required>
-          <a-textarea v-model:value="editableText" :rows="10" />
+          <a-textarea v-model:value="editableText" :rows="15" />
         </a-form-item>
       </a-form>
       <template #footer>
@@ -167,9 +167,6 @@
               </div>
               <div v-if="loadingClass && selectedStudentId === raw.id" style="margin-top: 4px;">
                 <a-progress size="small" :percent="100" status="active" :show-info="false" />
-              </div>
-              <div v-else style="margin-top: 4px; color: #999; font-size: 12px;">
-                {{ getClassFromCache(raw.classId)?.name || '未分配班级' }}
               </div>
             </template>
           </a-select>
