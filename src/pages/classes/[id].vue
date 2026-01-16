@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-semibold">班级详情: {{ classInfo?.name }}</h1>
       <div>
-        <a-button type="primary" @click="openAddStudentDialog" style="margin-bottom: 8px;">
+        <a-button type="primary" @click="openAddStudentDialog" style="margin-bottom: 8px;margin-right: 8px">
           <template #icon><PlusOutlined /></template>
           添加学生
         </a-button>
