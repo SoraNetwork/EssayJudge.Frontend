@@ -284,10 +284,10 @@ const filterOption = (input: string, option: any) => {
 
 // 表格列定义
 const columns = [
-  { title: '测验题目', dataIndex: 'assignmentTitle', key: 'assignmentTitle' },
-  { title: '状态', key: 'status' },
-  { title: '分数', key: 'score' },
-  { title: '提交时间', key: 'submissionDate' },
+  { title: '测验题目', dataIndex: 'assignmentTitle', key: 'assignmentTitle', sorter: (a: any, b: any) => (a.assignmentTitle || '').localeCompare(b.assignmentTitle || '') },
+  { title: '状态', key: 'status', sorter: (a: any, b: any) => (a.status || '').localeCompare(b.status || '') },
+  { title: '分数', key: 'score', sorter: (a: any, b: any) => (a.score || 0) - (b.score || 0) },
+  { title: '提交时间', key: 'submissionDate', sorter: (a: any, b: any) => new Date(a.submissionDate || 0).getTime() - new Date(b.submissionDate || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 

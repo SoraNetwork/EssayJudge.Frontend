@@ -27,7 +27,6 @@
               :columns="apiKeyColumns"
               :data-source="apiKeys"
               :loading="apiKeysLoading"
-              :pagination="false"
               row-key="id"
             >
               <template #bodyCell="{ column, record }">
@@ -100,8 +99,8 @@
               :columns="settingColumns"
               :data-source="usageSettings"
               :loading="settingsLoading"
-              :pagination="false"
               row-key="id"
+              :custom-row="(record, index) => ({ index })"
             >
               <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'aiModel'">

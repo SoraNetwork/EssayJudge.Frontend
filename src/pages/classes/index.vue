@@ -17,7 +17,6 @@
           :columns="columns"
           :data-source="classes"
           :loading="loading"
-          :pagination="false"
           row-key="id"
         >
           <template #bodyCell="{ column, record }">
@@ -133,8 +132,8 @@ interface ClassItem {
 
 // 表格列定义
 const columns = [
-  { title: '班级名称', dataIndex: 'name', key: 'name' },
-  { title: '学生数量', dataIndex: 'studentCount', key: 'studentCount' },
+  { title: '班级名称', dataIndex: 'name', key: 'name', sorter: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
+  { title: '学生数量', dataIndex: 'studentCount', key: 'studentCount', sorter: (a: any, b: any) => (a.studentCount || 0) - (b.studentCount || 0) },
   { title: '操作', key: 'actions' }
 ]
 

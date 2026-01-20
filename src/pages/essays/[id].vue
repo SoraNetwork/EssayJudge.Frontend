@@ -75,19 +75,19 @@
         </a-col>
         <a-col :xs="24" :lg="8">
           <a-card title="AI模型评分">
-            <a-list :data-source="essay.aiResults" item-layout="horizontal" size="small">
-              <template #renderItem="{ item }">
-                <a-list-item>
-                  <a-list-item-meta>
-                    <template #title>{{ item.modelName }}</template>
-                    <template #description>{{ item.feedback }}</template>
-                  </a-list-item-meta>
-                  <template #actions>
-                    <a-tag :color="getScoreColor(item.score, essay.essayAssignment.totalScore)">{{ item.score ?? 'N/A' }}</a-tag>
-                  </template>
-                </a-list-item>
+            <a-table
+              :columns="aiResultsColumns"
+              :data-source="essay.aiResults"
+              :pagination="false"
+              size="small"
+              :custom-row="(record, index) => ({ index })"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.key === 'score'">
+                  <a-tag :color="getScoreColor(record.score, essay.essayAssignment.totalScore)">{{ record.score ?? 'N/A' }}</a-tag>
+                </template>
               </template>
-            </a-list>
+            </a-table>
           </a-card>
         </a-col>
       </a-row>
@@ -130,7 +130,7 @@
       width="600px"
     >
       <a-form layout="vertical">
-        <a-form-item label="复评分数" required>
+        <a-form-item label="复评分数">
           <a-input-number
             v-model:value="editableScore"
             :min="0"
@@ -361,7 +361,6 @@ const getScoreColor = (score: number | null, totalScore: number) => {
 
 const openEditScoreDialog = () => {
   if (essay.value) {
-    editableScore.value = essay.value.score || essay.value.finalScore;
     selectedStudentId.value = essay.value.studentId;
     originalStudentId.value = essay.value.studentId;
     originalEssayScore.value = essay.value.score;

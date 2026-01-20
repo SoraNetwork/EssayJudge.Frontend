@@ -63,6 +63,7 @@
         rowKey="id"
         background="var(--ant-color-bg-container)"
         :pagination="{ showSizeChanger: true, showQuickJumper: true, showTotal: ((total: any) => `共 ${total} 条`) }"
+        :custom-row="(record, index) => ({ index })"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'actions'">

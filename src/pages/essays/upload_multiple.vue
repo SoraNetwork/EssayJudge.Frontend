@@ -158,7 +158,7 @@ let batchTimeoutId: number | null = null;
 // 完成对话框状态
 const completionDialog = ref(false);
 const completionMessage = ref('');
-const enableV3 = ref(false);
+const enableV3 = ref(true);
 
 // Assignment options for select
 const assignmentOptions = computed(() => {
@@ -184,11 +184,18 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
   if (currentFiles.length + fileList.value.length >= maxFiles) {
     return false;
   }
+  selectedFiles.value = [...currentFiles, file];
   return false; // Prevent automatic upload
 };
 
 async function uploadEssay() {
+  console.log('uploadEssay 被调用');
+  console.log('selectedAssignment.value:', selectedAssignment.value);
+  console.log('selectedFiles.value:', selectedFiles.value);
+  console.log('selectedFiles.value.length:', selectedFiles.value?.length);
+
   if (!selectedAssignment.value || !selectedFiles.value || selectedFiles.value.length === 0) {
+    console.log('验证失败: 未选择测验或文件');
     return;
   }
   if (selectedFiles.value.length > maxFiles) {
@@ -205,6 +212,7 @@ async function uploadEssay() {
       throw new Error('未选择文件');
     }
     const files = selectedFiles.value;
+    console.log('开始上传，文件数量:', files.length);
     const response = await uploadEssayBatchSubmission(selectedAssignment.value, files, columnCount.value, enableV3.value);
     const ids = response.submissionIds || [];
     processingFiles.value = ids.map((id, idx) => ({
@@ -215,6 +223,7 @@ async function uploadEssay() {
     currentFileIndex = 0;
     processPollingBatch();
   } catch (error) {
+    console.error('上传失败:', error);
     viewState.value = 'form';
   }
   isSubmitting.value = false;

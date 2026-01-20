@@ -1,165 +1,179 @@
 <template>
-  <div>
+  <div style="padding: 24px;">
     <!-- 返回按钮 -->
-    <v-btn class="mb-4" prepend-icon="mdi-arrow-left" variant="text" :to="'/assignments'">返回测验列表</v-btn>
+    <a-button style="margin-bottom: 16px;" type="link" href="/assignments">
+      <template #icon><ArrowLeftOutlined /></template>
+      返回测验列表
+    </a-button>
 
     <!-- 加载状态 -->
-    <div v-if="loading" class="d-flex justify-center align-center" style="height: 400px;">
-      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
+    <div v-if="loading" style="display: flex; justify-content: center; align-items: center; height: 400px;">
+      <a-spin size="large" />
     </div>
 
     <!-- 错误状态 -->
-    <div v-else-if="error" class="text-center py-8">
-      <v-icon color="error" size="64" class="mb-4">mdi-alert-circle</v-icon>
-      <h2 class="text-h5 text-error">{{ error }}</h2>
-      <v-btn class="mt-4" color="primary" :to="'/assignments'">返回测验列表</v-btn>
+    <div v-else-if="error" style="text-align: center; padding: 32px 0;">
+      <ExclamationCircleOutlined style="color: #ff4d4f; font-size: 64px; margin-bottom: 16px;" />
+      <h2 style="color: #ff4d4f; font-size: 20px;">{{ error }}</h2>
+      <a-button style="margin-top: 16px;" type="primary" href="/assignments">返回测验列表</a-button>
     </div>
 
     <!-- 主要内容 -->
     <div v-else>
       <!-- 测验信息卡片 -->
-      <v-card class="mb-6">
-        <v-card-title class="text-h5">{{ assignment.description }}</v-card-title>
+      <a-card style="margin-bottom: 24px;">
+        <template #title>{{ assignment.description }}</template>
 
-        <v-card-text>
-          <v-row>
-            <!-- 作文题目 -->
-            <v-col cols="12" md="8">
-              <div class="text-subtitle-1 mb-2">作文题目</div>
-              <v-sheet class="pa-4 rounded" color="grey-lighten-4">
-                <div class="text-body-1" style="white-space: pre-wrap; line-height: 1.8;">
-                  {{ assignment.titleContext }}
-                </div>
-              </v-sheet>
-            </v-col>
+        <a-row :gutter="16">
+          <!-- 作文题目 -->
+          <a-col :xs="24" :md="16">
+            <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">作文题目</div>
+            <div style="padding: 16px; background-color: #f5f5f5; border-radius: 8px;">
+              <div style="white-space: pre-wrap; line-height: 1.8;">
+                {{ assignment.titleContext }}
+              </div>
+            </div>
+          </a-col>
 
-            <!-- 评分标准 -->
-            <v-col cols="12" md="8">
-              <div class="text-subtitle-1 mb-2">评分标准</div>
-              <v-sheet class="pa-4 rounded" color="grey-lighten-4">
-                <div class="text-body-1" style="white-space: pre-wrap; line-height: 1.8;">{{
-                  assignment.scoringCriteria || '未设置评分标准' }}</div>
-              </v-sheet>
-            </v-col>
+          <!-- 评分标准 -->
+          <a-col :xs="24" :md="16">
+            <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">评分标准</div>
+            <div style="padding: 16px; background-color: #f5f5f5; border-radius: 8px;">
+              <div style="white-space: pre-wrap; line-height: 1.8;">
+                {{ assignment.scoringCriteria || '未设置评分标准' }}
+              </div>
+            </div>
+          </a-col>
 
-            <!-- 测验详细信息 -->
-            <v-col cols="12" md="4">
-              <v-list>
-                <!-- 年级信息 -->
-                <v-list-item>
-                  <template v-slot:prepend>
-                    <v-icon color="primary">mdi-account-star</v-icon>
-                  </template>
-                  <v-list-item-title>年级</v-list-item-title>
-                  <v-list-item-subtitle>{{ assignment.grade || '未设置' }}</v-list-item-subtitle>
-                </v-list-item>
+          <!-- 测验详细信息 -->
+          <a-col :xs="24" :md="8">
+            <a-list size="small">
+              <!-- 年级信息 -->
+              <a-list-item>
+                <template #prepend>
+                  <StarOutlined style="color: #1890ff; margin-right: 8px;" />
+                </template>
+                <a-list-item-meta title="年级" :description="assignment.grade || '未设置'" />
+              </a-list-item>
 
-                <!-- 分数信息 -->
-                <v-list-item>
-                  <template v-slot:prepend>
-                    <v-icon color="primary">mdi-star-circle</v-icon>
-                  </template>
-                  <v-list-item-title>总分 / 基础分</v-list-item-title>
-                  <v-list-item-subtitle>{{ assignment.totalScore || 'N/A' }} / {{ assignment.baseScore || 'N/A'
-                    }}</v-list-item-subtitle>
-                </v-list-item>
+              <!-- 分数信息 -->
+              <a-list-item>
+                <template #prepend>
+                  <StarFilled style="color: #1890ff; margin-right: 8px;" />
+                </template>
+                <a-list-item-meta title="总分 / 基础分" :description="`${assignment.totalScore || 'N/A'} / ${assignment.baseScore || 'N/A'}`" />
+              </a-list-item>
 
-                <!-- 创建时间 -->
-                <v-list-item>
-                  <template v-slot:prepend>
-                    <v-icon color="primary">mdi-calendar</v-icon>
-                  </template>
-                  <v-list-item-title>创建时间</v-list-item-title>
-                  <v-list-item-subtitle>{{ formatDate(assignment.createdAt) }}</v-list-item-subtitle>
-                </v-list-item>
+              <!-- 创建时间 -->
+              <a-list-item>
+                <template #prepend>
+                  <CalendarOutlined style="color: #1890ff; margin-right: 8px;" />
+                </template>
+                <a-list-item-meta title="创建时间" :description="formatDate(assignment.createdAt)" />
+              </a-list-item>
 
-                <!-- 更新时间 -->
-                <v-list-item>
-                  <template v-slot:prepend>
-                    <v-icon color="primary">mdi-calendar-clock</v-icon>
-                  </template>
-                  <v-list-item-title>更新时间</v-list-item-title>
-                  <v-list-item-subtitle>{{ formatDate(assignment.updatedAt) }}</v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
+              <!-- 更新时间 -->
+              <a-list-item>
+                <template #prepend>
+                  <ClockCircleOutlined style="color: #1890ff; margin-right: 8px;" />
+                </template>
+                <a-list-item-meta title="更新时间" :description="formatDate(assignment.updatedAt)" />
+              </a-list-item>
+            </a-list>
 
-              <v-divider class="my-4"></v-divider>
+            <a-divider style="margin: 16px 0;" />
 
-              <!-- 提交数量统计 -->
-              <v-card variant="outlined" class="mb-4">
-                <v-card-text class="text-center">
-                  <div class="text-h4 font-weight-bold">{{ submissions.length }}</div>
-                  <div class="text-subtitle-2">作文提交数量</div>
-                </v-card-text>
-              </v-card>
-              <v-btn
-                block
-                color="primary"
-                prepend-icon="mdi-pencil"
-                @click="editDialog = true"
-              >
-                编辑测验
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
+            <!-- 提交数量统计 -->
+            <a-card style="margin-bottom: 16px; text-align: center;">
+              <div style="font-size: 36px; font-weight: bold;">{{ submissions.length }}</div>
+              <div style="font-size: 14px; color: #666;">作文提交数量</div>
+            </a-card>
+            <a-button
+              block
+              type="primary"
+              @click="editDialog = true"
+            >
+              <template #icon><EditOutlined /></template>
+              编辑测验
+            </a-button>
+          </a-col>
+        </a-row>
+      </a-card>
 
       <!-- 作文提交列表 -->
-      <v-card>
-        <v-card-title class="d-flex justify-space-between align-center">
-          <span>作文提交列表</span>
-          <!-- 搜索框 -->
-          <v-text-field v-model="search" append-inner-icon="mdi-magnify" label="搜索学生" single-line hide-details
-            density="compact" style="max-width: 300px"></v-text-field>
-        </v-card-title>
+      <a-card>
+        <template #title>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>作文提交列表</span>
+            <!-- 搜索框 -->
+            <a-input
+              v-model:value="search"
+              placeholder="搜索学生"
+              allowClear
+              style="max-width: 300px;"
+            >
+              <template #prefix><SearchOutlined /></template>
+            </a-input>
+          </div>
+        </template>
 
-        <v-card-text>
-          <!-- 桌面端表格 -->
-          <v-data-table v-if="display.mdAndUp.value" :headers="headers" :items="filteredSubmissions"
-            :loading="loadingSubmissions" loading-text="加载中..." no-data-text="暂无作文提交">
-            <!-- 分数列 -->
-            <template v-slot:item.score="{ item }">
-              <template v-if="item.status === 'Evaluated'">
-                <span :class="getScoreColor(item.score)">{{ item.score }}</span>
+        <!-- 桌面端表格 -->
+        <a-table
+          v-if="isDesktop"
+          :columns="columns"
+          :data-source="filteredSubmissions"
+          :loading="loadingSubmissions"
+          :pagination="false"
+          :scroll="{ x: true }"
+          :custom-row="(record, index) => ({ index })"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'finalScore'">
+              <template v-if="record.status === 'Evaluated'">
+                <span :style="{ color: getScoreColor(record.finalScore) }">{{ record.finalScore }}</span>
               </template>
               <span v-else>-</span>
             </template>
-
-            <!-- 提交时间列 -->
-            <template v-slot:item.submissionDate="{ item }">
-              {{ formatDate(item.submissionDate) }}
+            <template v-if="column.key === 'createdAt'">
+              {{ formatDate(record.createdAt) }}
             </template>
-
-            <!-- 操作列 -->
-            <template v-slot:item.actions="{ item }">
-              <v-btn icon variant="text" size="small" :to="`/essays/${item.id}`">
-                <v-icon>mdi-eye</v-icon>
-              </v-btn>
+            <template v-if="column.key === 'actions'">
+              <a-button type="link" size="small" :href="`/essays/${record.id}`">
+                <EyeOutlined />
+              </a-button>
             </template>
-          </v-data-table>
+          </template>
+        </a-table>
 
-          <!-- 移动端列表 -->
-          <v-list v-else>
-            <v-list-item v-for="item in filteredSubmissions" :key="item.id" :to="`/essays/${item.id}`" class="mb-2">
-              <v-list-item-content>
-                <v-list-item-title>{{ item.studentName || '未知学生' }}</v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ item.className || '未知班级' }} - {{ formatDate(item.createdAt) }}
-                </v-list-item-subtitle>
-              </v-list-item-content>
-              <template v-slot:append>
-                <!-- 分数显示 -->
-                <span v-if="item.status === 'Evaluated'" :class="getScoreColor(item.score)"
-                  class="ml-2 font-weight-bold">
-                  {{ item.score || '未评分' }}
-                </span>
-                <span v-else>-</span>
+        <!-- 移动端列表 -->
+        <a-list v-else :data-source="filteredSubmissions" item-layout="horizontal">
+          <template #renderItem="{ item }">
+            <a-list-item :style="{ marginBottom: '8px' }">
+              <template #actions>
+                <a-button type="link" size="small" :href="`/essays/${item.id}`">
+                  <EyeOutlined />
+                </a-button>
               </template>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-      </v-card>
+              <a-list-item-meta>
+                <template #title>
+                  <a :href="`/essays/${item.id}`">{{ item.studentName || '未知学生' }}</a>
+                </template>
+                <template #description>
+                  {{ item.className || '未知班级' }} - {{ formatDate(item.createdAt) }}
+                </template>
+              </a-list-item-meta>
+              <template v-if="item.status === 'Evaluated'" #extra>
+                <span :style="{ color: getScoreColor(item.finalScore), fontWeight: 'bold', marginLeft: '8px' }">
+                  {{ item.finalScore || '未评分' }}
+                </span>
+              </template>
+              <template v-else #extra>
+                <span>-</span>
+              </template>
+            </a-list-item>
+          </template>
+        </a-list>
+      </a-card>
 
       <!-- 编辑测验对话框 -->
       <EditAssignments
@@ -176,13 +190,13 @@
 </template>
 
 <script setup lang="ts">
-// 导入所需模块
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
+import { ArrowLeftOutlined, EditOutlined, SearchOutlined, EyeOutlined, StarOutlined, StarFilled, CalendarOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
 import EditAssignments from '@/components/EditAssignments.vue';
 
-// Responsive display detection (Vuetify-independent)
+// Responsive display detection
 const windowWidth = ref(window.innerWidth)
 
 const updateWindowWidth = () => {
@@ -197,14 +211,10 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateWindowWidth)
 })
 
-const display = computed(() => ({
-  mdAndUp: { value: windowWidth.value >= 768 }
-}))
+const isDesktop = computed(() => windowWidth.value >= 768)
 
-// 获取路由和路由器实例
+// 获取路由实例
 const route = useRoute()
-const router = useRouter()
-// 断言 route.params 具有字符串类型的 'id' 属性
 const assignmentId = computed(() => (route.params as { id: string }).id)
 
 // 状态变量定义
@@ -239,12 +249,12 @@ const editedItem = ref<any>({
 })
 
 // 表格列定义
-const headers = [
-  { title: '学生', key: 'studentName' },
-  { title: '班级', key: 'className' },
+const columns = [
+  { title: '学生', dataIndex: 'studentName', key: 'studentName' },
+  { title: '班级', dataIndex: 'className', key: 'className' },
   { title: '分数', key: 'finalScore' },
   { title: '提交时间', key: 'createdAt' },
-  { title: '操作', key: 'actions', sortable: false }
+  { title: '操作', key: 'actions' }
 ]
 
 // 过滤后的提交列表
@@ -301,20 +311,8 @@ async function fetchSubmissions() {
   try {
     const submissionData = await searchSubmissions({ assignmentId: assignmentId.value });
 
-    // 获取每个提交的学生和班级信息 (这部分可能需要后端支持或单独的API调用)
-    // 假设 searchSubmissions 现在包含 studentName 和 className
     const enrichedSubmissions = await Promise.all(submissionData.map(async (submission: any) => {
-      // 如果后端不返回 studentName/className，您可能需要:
-      // const studentResponse = await api.get(`/Student/${submission.studentId}`);
-      // const student = studentResponse.data;
-      // let className = '';
-      // if (student && student.classId) {
-      //   const classResponse = await api.get(`/Class/${student.classId}`);
-      //   className = classResponse.data?.name || '';
-      // }
-      // return { ...submission, studentName: student?.name || '未知学生', className: className || '未分配班级' };
-      // 现在假设 searchSubmissions 返回了增强的数据
-      return submission; // 假设 searchSubmissions 返回了增强的数据
+      return submission;
     }));
 
     submissions.value = enrichedSubmissions
@@ -377,13 +375,12 @@ function getStatusColor(status: string) {
 
 // 获取分数颜色
 function getScoreColor(score: number) {
-  // 假设分数是基于 assignment.value.totalScore 计算的
   if (assignment.value.totalScore && score >= assignment.value.totalScore * 0.8) {
-    return 'text-success'; // 高分
+    return '#52c41a'; // 高分 - 绿色
   } else if (assignment.value.totalScore && score >= assignment.value.totalScore * 0.6) {
-    return 'text-warning'; // 中等分数
+    return '#faad14'; // 中等分数 - 橙色
   } else {
-    return 'text-error'; // 低分
+    return '#ff4d4f'; // 低分 - 红色
   }
 }
 

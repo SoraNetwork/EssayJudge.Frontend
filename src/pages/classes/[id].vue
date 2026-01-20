@@ -26,6 +26,7 @@
           :loading="loading"
           :pagination="false"
           row-key="id"
+          :custom-row="(record, index) => ({ index })"
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'actions'">
