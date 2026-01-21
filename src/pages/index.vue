@@ -3,6 +3,7 @@
     <v-row v-if="authStore.isAuthenticated">
       <v-col cols="12">
         <h1 class="text-h4 mb-4">欢迎使用作文评测系统</h1>
+        <v-btn href="v3.ej.xingsora.cn">使用V3，享受更好的体验！</v-btn>
       </v-col>
 
       <!-- 统计卡片 -->
