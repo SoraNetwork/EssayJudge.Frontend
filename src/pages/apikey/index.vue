@@ -100,7 +100,6 @@
               :data-source="usageSettings"
               :loading="settingsLoading"
               row-key="id"
-              :custom-row="(record, index) => ({ index })"
             >
               <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'aiModel'">

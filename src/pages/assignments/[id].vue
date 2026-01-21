@@ -125,7 +125,6 @@
           :loading="loadingSubmissions"
           :pagination="false"
           :scroll="{ x: true }"
-          :custom-row="(record, index) => ({ index })"
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'finalScore'">

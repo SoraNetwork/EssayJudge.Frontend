@@ -80,7 +80,6 @@
               :data-source="essay.aiResults"
               :pagination="false"
               size="small"
-              :custom-row="(record, index) => ({ index })"
             >
               <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'score'">
@@ -321,6 +320,20 @@ const renderedMarkdown = computed(() => {
   if (!essay.value?.judgeResult) return '';
   return md.render(essay.value.judgeResult);
 });
+
+// AI Results table columns
+const aiResultsColumns = [
+  {
+    title: '模型',
+    dataIndex: 'modelName',
+    key: 'modelName',
+  },
+  {
+    title: '分数',
+    dataIndex: 'score',
+    key: 'score',
+  },
+];
 
 const fetchEssay = async () => {
   const id = (route.params as { id: string }).id;
