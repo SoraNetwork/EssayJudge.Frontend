@@ -310,12 +310,12 @@ const currentTab = ref('apiKeys'); // 'apiKeys' 或 'modelUsage'
 
 // API 密钥的表格列定义
 const apiKeyColumns = [
-  { title: '服务类型', dataIndex: 'serviceType', key: 'serviceType' },
+  { title: '服务类型', dataIndex: 'serviceType', key: 'serviceType' ,sorter: (a: any, b: any) => a.serviceType.localeCompare(b.serviceType)},
   { title: 'Key', key: 'key' },
   { title: '关联模型', key: 'aiModels' },
   { title: '描述', dataIndex: 'description', key: 'description' },
-  { title: '启用', key: 'isEnabled' },
-  { title: '创建时间', key: 'createdAt' },
+  { title: '启用', key: 'isEnabled' ,sorter: (a: any, b: any) => Number(a.isEnabled) - Number(b.isEnabled)},
+  { title: '创建时间', key: 'createdAt' ,sorter:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 
@@ -497,10 +497,10 @@ const toggleApiKeyEnabled = async (item: ApiKey) => {
 
 // 使用设置的表格列定义
 const settingColumns = [
-  { title: '使用场景类型', dataIndex: 'usageType', key: 'usageType' },
-  { title: 'AI 模型', key: 'aiModel' },
-  { title: '启用', key: 'isEnabled' },
-  { title: '创建时间', key: 'createdAt' },
+  { title: '使用场景类型', dataIndex: 'usageType', key: 'usageType', sorter: (a: any, b: any) => a.usageType.localeCompare(b.usageType) },
+  { title: 'AI 模型', key: 'aiModel' ,sorter: (a: any, b: any) => {const modelA = a.aiModel ? a.aiModel.modelId : '';const modelB = b.aiModel ? b.aiModel.modelId : '';return modelA.localeCompare(modelB);}},
+  { title: '启用', key: 'isEnabled' ,sorter: (a: any, b: any) => Number(a.isEnabled) - Number(b.isEnabled)},
+  { title: '创建时间', key: 'createdAt' ,sorter:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 

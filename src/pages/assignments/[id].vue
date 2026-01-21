@@ -127,11 +127,11 @@
           :scroll="{ x: true }"
         >
           <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'finalScore'">
-              <template v-if="record.status === 'Evaluated'">
-                <span :style="{ color: getScoreColor(record.finalScore) }">{{ record.finalScore }}</span>
-              </template>
-              <span v-else>-</span>
+            <template v-if="column.key === 'finalScore' && (record.finalScore !== null || record.score !== null)">
+              <span :style="{ color: getScoreColor(record.finalScore) }">{{ record.finalScore }}</span>
+            </template>
+            <template v-if="column.key === 'finalScore' && record.finalScore === null && record.score === null">
+              <span>-</span>
             </template>
             <template v-if="column.key === 'createdAt'">
               {{ formatDate(record.createdAt) }}

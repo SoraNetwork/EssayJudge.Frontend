@@ -50,7 +50,6 @@
         :columns="columns"
         :data-source="recentSubmissions"
         :loading="loading.recentSubmissions"
-        rowKey="id"
         :scroll="{ x: 768 }"
       >
         <template #bodyCell="{ column, text, record }">

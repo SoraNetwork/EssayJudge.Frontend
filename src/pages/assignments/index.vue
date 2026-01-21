@@ -27,6 +27,7 @@
         :columns="columns"
         :data-source="filteredAssignments"
         :loading="loading"
+        rowKey="id"
         :scroll="{ x: true }"
       >
         <template #bodyCell="{ column, record }">
@@ -125,9 +126,9 @@ watch(dialog, (newValue, oldValue) => {
 
 // 表格列定义
 const columns = [
-  { title: '描述', dataIndex: 'description', key: 'description' },
-  { title: '年级', dataIndex: 'grade', key: 'grade' },
-  { title: '创建时间', key: 'createdAt' },
+  { title: '描述', dataIndex: 'description', key: 'description', sorter: (a: any, b: any) => (a.description || '').localeCompare(b.description || '') },
+  { title: '年级', dataIndex: 'grade', key: 'grade',sorter: (a: any, b: any) => (a.grade || '').localeCompare(b.grade || '') },
+  { title: '创建时间', key: 'createdAt',sorter:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 

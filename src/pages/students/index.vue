@@ -60,7 +60,7 @@
         :columns="columns"
         :data-source="filteredStudents"
         :loading="loading"
-        rowKey="id"
+        row-key="id"
         background="var(--ant-color-bg-container)"
         :pagination="{ showSizeChanger: true, showQuickJumper: true, showTotal: ((total: any) => `共 ${total} 条`) }"      
         ></a-table>
@@ -156,9 +156,9 @@ interface EditedStudent {
 
 // 表格列定义
 const columns = [
-  { title: '姓名', dataIndex: 'name', key: 'name' },
-  { title: '学号', dataIndex: 'studentId', key: 'studentId' },
-  { title: '班级', dataIndex: 'className', key: 'className' },
+  { title: '姓名', dataIndex: 'name', key: 'name', sorted: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
+  { title: '学号', dataIndex: 'studentId', key: 'studentId' , sorted: (a: any, b: any) => (a.studentId || '').localeCompare(b.studentId || '') },
+  { title: '班级', dataIndex: 'className', key: 'className' ,sorted: (a: any, b: any) => (a.className || '').localeCompare(b.className || '') },
   { title: '操作', key: 'actions', width: 120 }
 ];
 
