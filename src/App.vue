@@ -5,6 +5,7 @@
     <div>
       <component :is="contextHolder" />
     </div>
+    <OrientationOverlay />
   </div>
 </template>
 
@@ -15,6 +16,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import * as dd from 'dingtalk-jsapi'
 import { message } from 'ant-design-vue'
+import OrientationOverlay from '@/components/OrientationOverlay.vue'
 
 const appStore = useAppStore()
 const authStore = useAuthStore()

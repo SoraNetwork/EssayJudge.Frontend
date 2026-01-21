@@ -131,8 +131,8 @@ interface ClassInfo {
 
 // 表格列定义
 const columns = [
-  { title: '姓名', dataIndex: 'name', key: 'name' },
-  { title: '学号', dataIndex: 'studentId', key: 'studentId' },
+  { title: '姓名', dataIndex: 'name', key: 'name', sorter: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
+  { title: '学号', dataIndex: 'studentId', key: 'studentId' , sorter: (a: any, b: any) => (a.studentId || '').localeCompare(b.studentId || '') },
   { title: '操作', key: 'actions' }
 ];
 

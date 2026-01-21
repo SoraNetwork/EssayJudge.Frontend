@@ -61,7 +61,10 @@
         <a-dropdown>
           <template #overlay>
             <a-menu @click="handleUserMenuClick">
-              <a-menu-item key="logout" v-if="authStore.isAuthenticated">
+               <a-menu-item v-if="authStore.isAuthenticated">
+                  用户： {{ authStore.realName || authStore.user }}
+                </a-menu-item>
+                <a-menu-item key="logout" v-if="authStore.isAuthenticated">
                 <LogoutOutlined />
                 退出登录
               </a-menu-item>

@@ -55,16 +55,12 @@
     </a-card>
 
     <!-- 学生列表 -->
-    <a-card :body-style="{ padding: '0' }">
-      <a-table
-        :columns="columns"
-        :data-source="filteredStudents"
-        :loading="loading"
-        row-key="id"
-        background="var(--ant-color-bg-container)"
-        :pagination="{ showSizeChanger: true, showQuickJumper: true, showTotal: ((total: any) => `共 ${total} 条`) }"      
-        ></a-table>
-      <a-table>
+    <a-card>
+      <a-table :columns="columns" :data-source="filteredStudents" :loading="loading" row-key="id" :pagination="{
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total: any) => `共 ${total} 条`
+      }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'actions'">
             <a-space>
@@ -75,7 +71,6 @@
         </template>
       </a-table>
     </a-card>
-
     <!-- 新建/编辑学生对话框 -->
     <a-modal
       v-model:open="dialog"
@@ -156,10 +151,10 @@ interface EditedStudent {
 
 // 表格列定义
 const columns = [
-  { title: '姓名', dataIndex: 'name', key: 'name', sorted: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
-  { title: '学号', dataIndex: 'studentId', key: 'studentId' , sorted: (a: any, b: any) => (a.studentId || '').localeCompare(b.studentId || '') },
-  { title: '班级', dataIndex: 'className', key: 'className' ,sorted: (a: any, b: any) => (a.className || '').localeCompare(b.className || '') },
-  { title: '操作', key: 'actions', width: 120 }
+  { title: '姓名', dataIndex: 'name', key: 'name', sorter: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
+  { title: '学号', dataIndex: 'studentId', key: 'studentId' , sorter: (a: any, b: any) => (a.studentId || '').localeCompare(b.studentId || '') },
+  { title: '班级', dataIndex: 'className', key: 'className' ,sorter: (a: any, b: any) => (a.className || '').localeCompare(b.className || '') },
+  { title: '操作', key: 'actions', }
 ];
 
 // 数据和状态

@@ -180,10 +180,10 @@ interface Assignment {
 
 // 表格列定义
 const columns = [
-  { title: '标题', dataIndex: 'title', key: 'title', sorted: (a: any, b: any) => (a.title || '').localeCompare(b.title || '') },
-  { title: '学生', dataIndex: 'studentName', key: 'studentName', sorted: (a: any, b: any) => (a.studentName || '').localeCompare(b.studentName || '') },
-  { title: '分数', key: 'finalScore' ,sorted: (a: any, b: any) => (a.finalScore || 0) - (b.finalScore || 0) },
-  { title: '提交时间', key: 'createdAt' ,sorted:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
+  { title: '标题', dataIndex: 'title', key: 'title', sorter: (a: any, b: any) => (a.title || '').localeCompare(b.title || '') },
+  { title: '学生', dataIndex: 'studentName', key: 'studentName', sorter: (a: any, b: any) => (a.studentName || '').localeCompare(b.studentName || '') },
+  { title: '分数', key: 'finalScore' ,sorter: (a: any, b: any) => (a.finalScore || 0) - (b.finalScore || 0) },
+  { title: '提交时间', key: 'createdAt' ,sorter:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 

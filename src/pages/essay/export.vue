@@ -59,7 +59,7 @@
         <a-form-item>
           <a-button
             type="primary"
-            html-type="submit"
+            @click="exportEssays"
             :loading="loading"
             :disabled="!canExport"
           >

@@ -195,6 +195,7 @@ import type { Student, Class } from '@/services/apiService'
 import MarkdownIt from 'markdown-it'
 import 'github-markdown-css/github-markdown.css'
 import ExportToWord from '@/components/ExportToWord.vue'
+import { max } from 'lodash-es'
 
 // 初始化 markdown-it
 const md = new MarkdownIt({
@@ -327,11 +328,20 @@ const aiResultsColumns = [
     title: '模型',
     dataIndex: 'modelName',
     key: 'modelName',
+    ellipsis: true,
+  },
+  {
+    title:"评价",
+    dataIndex: 'feedback',
+    key: 'feedback',
+    align:"center",
+    ellipsis: true,
   },
   {
     title: '分数',
     dataIndex: 'score',
     key: 'score',
+    align:"right",
   },
 ];
 

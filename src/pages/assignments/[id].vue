@@ -249,10 +249,10 @@ const editedItem = ref<any>({
 
 // 表格列定义
 const columns = [
-  { title: '学生', dataIndex: 'studentName', key: 'studentName' },
-  { title: '班级', dataIndex: 'className', key: 'className' },
-  { title: '分数', key: 'finalScore' },
-  { title: '提交时间', key: 'createdAt' },
+  { title: '学生', dataIndex: 'studentName', key: 'studentName' ,sorter: (a: any, b: any) => (a.studentName || '').localeCompare(b.studentName || '') },
+  { title: '班级', dataIndex: 'className', key: 'className' ,sorter: (a: any, b: any) => (a.className || '').localeCompare(b.className || '') },
+  { title: '分数', key: 'finalScore' ,sorter: (a: any, b: any) => (a.finalScore || 0) - (b.finalScore || 0) },
+  { title: '提交时间', key: 'createdAt' ,sorter:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 

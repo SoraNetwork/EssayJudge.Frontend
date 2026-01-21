@@ -13,6 +13,7 @@ declare module 'vue' {
     EditAssignments: typeof import('./components/EditAssignments.vue')['default']
     ExportToWord: typeof import('./components/ExportToWord.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    OrientationOverlay: typeof import('./components/OrientationOverlay.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
