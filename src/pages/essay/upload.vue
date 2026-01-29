@@ -176,7 +176,7 @@
             </a-button>
             <a-button
               type="primary"
-              html-type="submit"
+              @click="submitEssay"
               :loading="submitting"
               :disabled="!isFormValid"
             >
