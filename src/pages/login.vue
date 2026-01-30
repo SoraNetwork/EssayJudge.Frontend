@@ -250,7 +250,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: var(--color-background);
   padding: 16px;
 }
 
@@ -271,12 +271,12 @@ onMounted(() => {
 .login-title {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2d3d;
+  color: var(--color-text-primary);
 }
 
 .login-subtitle {
   margin-bottom: 24px !important;
-  color: #303133;
+  color: var(--color-text-secondary);
 }
 
 .mt-6 {

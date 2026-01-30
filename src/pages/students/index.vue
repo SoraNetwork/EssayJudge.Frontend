@@ -56,7 +56,11 @@
 
     <!-- 学生列表 -->
     <a-card>
-      <a-table :columns="columns" :data-source="filteredStudents" :loading="loading" row-key="id" :pagination="{
+      <a-table :columns="columns" 
+      :data-source="filteredStudents" 
+      :loading="loading" 
+      row-key="id" 
+      :pagination="{
         showSizeChanger: true,
         showQuickJumper: true,
         showTotal: (total: any) => `共 ${total} 条`

@@ -28,6 +28,11 @@
               :data-source="apiKeys"
               :loading="apiKeysLoading"
               row-key="id"
+              :pagination="{
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total: any) => `共 ${total} 条`
+              }"
             >
               <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'key'">
@@ -100,6 +105,11 @@
               :data-source="usageSettings"
               :loading="settingsLoading"
               row-key="id"
+              :pagination="{
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total: any) => `共 ${total} 条`
+              }"
             >
               <template #bodyCell="{ column, record }">
                 <template v-if="column.key === 'aiModel'">

@@ -29,6 +29,11 @@
         :loading="loading"
         rowKey="id"
         :scroll="{ x: true }"
+        :pagination="{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total: any) => `共 ${total} 条`
+        }"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'createdAt'">

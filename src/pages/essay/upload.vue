@@ -292,7 +292,10 @@ const assignmentError = ref('')
 const columnCount = ref(1)
 
 const assignmentOptions = computed(() => {
-  return assignments.value.map(item => ({
+  return assignments.value
+  .slice() // 创建副本避免修改原始数组
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // 按创建时间降序排列
+  .map(item => ({
     label: item.description || item.titleContext || '请选择作业',
     value: item.id,
     createdAt: item.createdAt

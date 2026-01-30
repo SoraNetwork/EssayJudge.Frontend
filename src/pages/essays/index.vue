@@ -54,6 +54,11 @@
         :data-source="filteredEssays"
         :loading="loading"
         :scroll="{ x: true }"
+        :pagination="{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total: any) => `共 ${total} 条`
+        }"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'createdAt'">
@@ -209,14 +214,16 @@ const isDesktop = ref(window.innerWidth >= 768)
 
 // Assignment options for select
 const assignmentOptions = computed(() => {
-  return assignments.value.map(item => ({
-    value: item.id,
-    label: item.description || item.title,
-    description: item.description,
-    createdAt: item.createdAt
-  }))
+return assignments.value
+  .slice() // 创建副本避免修改原始数组
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // 按创建时间降序排列
+  .map(item => ({
+     value: item.id,
+     label: item.description || item.title,
+     description: item.description,
+     createdAt: item.createdAt
+   }))
 })
-
 // 添加计算属性用于过滤作文列表
 const filteredEssays = computed(() => {
   if (!filters.value.studentName) {

@@ -50,6 +50,11 @@
         :columns="columns"
         :data-source="recentSubmissions"
         :loading="loading.recentSubmissions"
+        :pagination="{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total: any) => `共 ${total} 条`
+        }"        
         :scroll="{ x: 768 }"
       >
         <template #bodyCell="{ column, text, record }">
@@ -199,7 +204,7 @@ onMounted(() => {
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 24px;
-  color: #1f2d3d;
+  color: var(--ant-color-bg-layout);
 }
 
 .stat-card-wrapper {

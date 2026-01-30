@@ -140,22 +140,18 @@
             <template #prefix><EditOutlined /></template>
           </a-input-number>
         </a-form-item>
-        <a-form-item label="搜索学生">
-          <a-input
-            v-model:value="searchQuery"
-            placeholder="搜索学生"
-            allowClear
-            style="margin-bottom: 8px;"
-          >
-            <template #prefix><SearchOutlined /></template>
-          </a-input>
+        <a-form-item label="手动选择学生">
           <a-select
             v-model:value="selectedStudentId"
             :options="filteredStudentOptions"
             :loading="loadingStudents"
+            show-search
+            allow-clear
             :disabled="loadingStudents"
-            :placeholder="currentClassInfo ? `班级: ${currentClassInfo.name}` : '未分配班级'"
+            placeholder="请输入学生姓名或考号"
             style="width: 100%"
+            @search="(value: string) => searchQuery = value"
+            :filter-option="false"  
           >
             <template #option="{ value, label, raw }">
               <div style="display: flex; align-items: center;">
@@ -169,7 +165,7 @@
               </div>
             </template>
           </a-select>
-        </a-form-item>
+      </a-form-item>
       </a-form>
       <template #footer>
         <a-button @click="editScoreDialog = false">取消</a-button>

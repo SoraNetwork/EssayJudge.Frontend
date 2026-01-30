@@ -198,13 +198,16 @@ const completionMessage = ref('');
 
 // Assignment options for select
 const assignmentOptions = computed(() => {
-  return assignments.value.map(item => ({
-    value: item.id,
-    label: item.description || item.titleContext || item.id,
-    createdAt: item.createdAt
-  }))
+return assignments.value
+  .slice() // 创建副本避免修改原始数组
+  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // 按创建时间降序排列
+  .map(item => ({
+     value: item.id,
+     label: item.description ,
+     description: item.description,
+     createdAt: item.createdAt
+   }))
 })
-
 async function fetchAssignments() {
   try {
     const data = await getAssignments();
