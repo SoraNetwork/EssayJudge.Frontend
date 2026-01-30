@@ -30,7 +30,7 @@
 
         <a-row :gutter="16">
           <!-- 作文题目 -->
-          <a-col :xs="24" :md="16">
+          <a-col :xs="24" :md="16" style="margin-bottom: 24px;">
             <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">作文题目</div>
             <transition name="fade" mode="out-in">
               <div v-if="!isEditing" key="view-title" style="padding: 16px; background-color: var(--ant-color-bg-layout); border-radius: 8px;">
@@ -50,7 +50,7 @@
           </a-col>
 
           <!-- 评分标准 -->
-          <a-col :xs="24" :md="16">
+          <a-col :xs="24" :md="16" style="margin-bottom: 24px;">
             <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">评分标准</div>
             <transition name="fade" mode="out-in">
               <div v-if="!isEditing" key="view-criteria" style="padding: 16px; background-color: var(--ant-color-bg-layout); border-radius: 8px;">
@@ -64,7 +64,7 @@
                 v-model:value="editableScoringCriteria"
                 :rows="6"
                 placeholder="评分标准"
-                :auto-size="{ minRows: 6, maxRows: 12 }"
+                :auto-size="{ minRows: 6, maxRows: 100 }"
               />
             </transition>
           </a-col>
@@ -105,25 +105,24 @@
                   <div style="font-size: 36px; font-weight: bold;">{{ submissions.length }}</div>
                   <div style="font-size: 14px; color: #666;">作文提交数量</div>
                 </a-card>
-                    <div v-if="!isEditing">
-                      <a-button block size="large" type="primary" @click="startEditing">
-                        <template #icon><EditOutlined /></template>
-                        编辑测验
-                      </a-button>
-                    </div>
-                    <div v-else>
-                      <a-button type="text" size="small" @click="cancelEditing">
-                        取消
-                      </a-button>
-                      <a-button type="primary" size="small" :loading="saving" @click="saveEditing">
-                        保存
-                      </a-button>
-                    </div>
+                
+                <a-button block size="large" type="primary" @click="startEditing">
+                  <template #icon><EditOutlined /></template>
+                  编辑测验
+                </a-button>
               </div>
+              
               <div v-else key="edit-info">
                 <a-form layout="vertical">
-                  <a-form-item label="年级">
-                    <a-input v-model:value="editableGrade" placeholder="年级" />
+                  <a-form-item
+                    label="选择年级"
+                    name="grade"
+                  >
+                    <a-select
+                      v-model:value="editableGrade"
+                      :options="grades.map(g => ({ label: g.grade, value: g.string }))"
+                      placeholder="请选择年级"
+                    />
                   </a-form-item>
                   <a-form-item label="总分">
                     <a-input-number
@@ -142,6 +141,15 @@
                     />
                   </a-form-item>
                 </a-form>
+                
+                <div style="margin-top: 16px; display: flex; gap: 8px;">
+                  <a-button type="dashed" size="big" block @click="cancelEditing">
+                    取消
+                  </a-button>
+                  <a-button type="primary" size="big" block :loading="saving" @click="saveEditing">
+                    保存
+                  </a-button>
+                </div>
               </div>
             </transition>
           </a-col>
@@ -237,6 +245,21 @@ import { formatDateUTC8 } from '@/utils/dateUtils';
 
 // Responsive display detection
 const windowWidth = ref(window.innerWidth)
+
+const grades = ref([
+  { grade: '一年级', string: '一年级' },
+  { grade: '二年级', string: '二年级' },
+  { grade: '三年级', string: '三年级' },
+  { grade: '四年级', string: '四年级' },
+  { grade: '五年级', string: '五年级' },
+  { grade: '六年级', string: '六年级' },
+  { grade: '初一', string: '初一' },
+  { grade: '初二', string: '初二' },
+  { grade: '初三', string: '初三' },
+  { grade: '高一', string: '高一' },
+  { grade: '高二', string: '高二' },
+  { grade: '高三', string: '高三' },
+]);
 
 const updateWindowWidth = () => {
   windowWidth.value = window.innerWidth
