@@ -22,80 +22,128 @@
     <div v-else>
       <!-- 测验信息卡片 -->
       <a-card style="margin-bottom: 24px;">
-        <template #title>{{ assignment.description }}</template>
+        <template #title>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ assignment.description }}</span>
+          </div>
+        </template>
 
         <a-row :gutter="16">
           <!-- 作文题目 -->
           <a-col :xs="24" :md="16">
             <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">作文题目</div>
-            <div style="padding: 16px; background-color: #f5f5f5; border-radius: 8px;">
-              <div style="white-space: pre-wrap; line-height: 1.8;">
-                {{ assignment.titleContext }}
+            <transition name="fade" mode="out-in">
+              <div v-if="!isEditing" key="view-title" style="padding: 16px; background-color: var(--ant-color-bg-layout); border-radius: 8px;">
+                <div style="white-space: pre-wrap; line-height: 1.8;">
+                  {{ assignment.titleContext }}
+                </div>
               </div>
-            </div>
+              <a-textarea
+                v-else
+                key="edit-title"
+                v-model:value="editableTitleContext"
+                :rows="6"
+                placeholder="作文题目"
+                :auto-size="{ minRows: 6, maxRows: 12 }"
+              />
+            </transition>
           </a-col>
 
           <!-- 评分标准 -->
           <a-col :xs="24" :md="16">
             <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">评分标准</div>
-            <div style="padding: 16px; background-color: #f5f5f5; border-radius: 8px;">
-              <div style="white-space: pre-wrap; line-height: 1.8;">
-                {{ assignment.scoringCriteria || '未设置评分标准' }}
+            <transition name="fade" mode="out-in">
+              <div v-if="!isEditing" key="view-criteria" style="padding: 16px; background-color: var(--ant-color-bg-layout); border-radius: 8px;">
+                <div style="white-space: pre-wrap; line-height: 1.8;">
+                  {{ assignment.scoringCriteria || '未设置评分标准' }}
+                </div>
               </div>
-            </div>
+              <a-textarea
+                v-else
+                key="edit-criteria"
+                v-model:value="editableScoringCriteria"
+                :rows="6"
+                placeholder="评分标准"
+                :auto-size="{ minRows: 6, maxRows: 12 }"
+              />
+            </transition>
           </a-col>
 
           <!-- 测验详细信息 -->
           <a-col :xs="24" :md="8">
-            <a-list size="small">
-              <!-- 年级信息 -->
-              <a-list-item>
-                <template #prepend>
-                  <StarOutlined style="color: #1890ff; margin-right: 8px;" />
-                </template>
-                <a-list-item-meta title="年级" :description="assignment.grade || '未设置'" />
-              </a-list-item>
+            <transition name="fade" mode="out-in">
+              <div v-if="!isEditing" key="view-info">
+                <a-list size="small">
+                  <!-- 年级信息 -->
+                  <a-list-item>
+                    <template #prepend>
+                      <StarOutlined style="color: #1890ff; margin-right: 8px;" />
+                    </template>
+                    <a-list-item-meta title="年级" :description="assignment.grade || '未设置'" />
+                  </a-list-item>
 
-              <!-- 分数信息 -->
-              <a-list-item>
-                <template #prepend>
-                  <StarFilled style="color: #1890ff; margin-right: 8px;" />
-                </template>
-                <a-list-item-meta title="总分 / 基础分" :description="`${assignment.totalScore || 'N/A'} / ${assignment.baseScore || 'N/A'}`" />
-              </a-list-item>
+                  <!-- 分数信息 -->
+                  <a-list-item>
+                    <template #prepend>
+                      <StarFilled style="color: #1890ff; margin-right: 8px;" />
+                    </template>
+                    <a-list-item-meta title="总分 / 基础分" :description="`${assignment.totalScore || 'N/A'} / ${assignment.baseScore || 'N/A'}`" />
+                  </a-list-item>
 
-              <!-- 创建时间 -->
-              <a-list-item>
-                <template #prepend>
-                  <CalendarOutlined style="color: #1890ff; margin-right: 8px;" />
-                </template>
-                <a-list-item-meta title="创建时间" :description="formatDate(assignment.createdAt)" />
-              </a-list-item>
+                  <!-- 创建时间 -->
+                  <a-list-item>
+                    <template #prepend>
+                      <CalendarOutlined style="color: #1890ff; margin-right: 8px;" />
+                    </template>
+                    <a-list-item-meta title="创建时间" :description="formatDateUTC8(assignment.createdAt)" />
+                  </a-list-item>
+                </a-list>
+                <a-divider style="margin: 16px 0;" />
 
-              <!-- 更新时间 -->
-              <a-list-item>
-                <template #prepend>
-                  <ClockCircleOutlined style="color: #1890ff; margin-right: 8px;" />
-                </template>
-                <a-list-item-meta title="更新时间" :description="formatDate(assignment.updatedAt)" />
-              </a-list-item>
-            </a-list>
-
-            <a-divider style="margin: 16px 0;" />
-
-            <!-- 提交数量统计 -->
-            <a-card style="margin-bottom: 16px; text-align: center;">
-              <div style="font-size: 36px; font-weight: bold;">{{ submissions.length }}</div>
-              <div style="font-size: 14px; color: #666;">作文提交数量</div>
-            </a-card>
-            <a-button
-              block
-              type="primary"
-              @click="editDialog = true"
-            >
-              <template #icon><EditOutlined /></template>
-              编辑测验
-            </a-button>
+                <!-- 提交数量统计 -->
+                <a-card style="margin-bottom: 16px; text-align: center;">
+                  <div style="font-size: 36px; font-weight: bold;">{{ submissions.length }}</div>
+                  <div style="font-size: 14px; color: #666;">作文提交数量</div>
+                </a-card>
+                    <div v-if="!isEditing">
+                      <a-button block size="large" type="primary" @click="startEditing">
+                        <template #icon><EditOutlined /></template>
+                        编辑测验
+                      </a-button>
+                    </div>
+                    <div v-else>
+                      <a-button type="text" size="small" @click="cancelEditing">
+                        取消
+                      </a-button>
+                      <a-button type="primary" size="small" :loading="saving" @click="saveEditing">
+                        保存
+                      </a-button>
+                    </div>
+              </div>
+              <div v-else key="edit-info">
+                <a-form layout="vertical">
+                  <a-form-item label="年级">
+                    <a-input v-model:value="editableGrade" placeholder="年级" />
+                  </a-form-item>
+                  <a-form-item label="总分">
+                    <a-input-number
+                      v-model:value="editableTotalScore"
+                      :min="0"
+                      style="width: 100%"
+                      placeholder="总分"
+                    />
+                  </a-form-item>
+                  <a-form-item label="基础分">
+                    <a-input-number
+                      v-model:value="editableBaseScore"
+                      :min="0"
+                      style="width: 100%"
+                      placeholder="基础分"
+                    />
+                  </a-form-item>
+                </a-form>
+              </div>
+            </transition>
           </a-col>
         </a-row>
       </a-card>
@@ -134,10 +182,10 @@
               <span>-</span>
             </template>
             <template v-if="column.key === 'createdAt'">
-              {{ formatDate(record.createdAt) }}
+              {{ formatDateUTC8(record.createdAt) }}
             </template>
             <template v-if="column.key === 'actions'">
-              <a-button type="link" size="small" :href="`/essays/${record.id}`">
+              <a-button type="link" size="small" @click="openInNewTab(`/essays/${record.id}`)">
                 <EyeOutlined />
               </a-button>
             </template>
@@ -149,16 +197,16 @@
           <template #renderItem="{ item }">
             <a-list-item :style="{ marginBottom: '8px' }">
               <template #actions>
-                <a-button type="link" size="small" :href="`/essays/${item.id}`">
+                <a-button type="link" size="small" @click="openInNewTab(`/essays/${item.id}`)">
                   <EyeOutlined />
                 </a-button>
               </template>
               <a-list-item-meta>
                 <template #title>
-                  <a :href="`/essays/${item.id}`">{{ item.studentName || '未知学生' }}</a>
+                  <a @click="openInNewTab(`/essays/${item.id}`)" style="cursor: pointer;">{{ item.studentName || '未知学生' }}</a>
                 </template>
                 <template #description>
-                  {{ item.className || '未知班级' }} - {{ formatDate(item.createdAt) }}
+                  {{ item.className || '未知班级' }} - {{ formatDateUTC8(item.createdAt) }}
                 </template>
               </a-list-item-meta>
               <template v-if="item.status === 'Evaluated'" #extra>
@@ -174,15 +222,7 @@
         </a-list>
       </a-card>
 
-      <!-- 编辑测验对话框 -->
-      <EditAssignments
-        v-model="editDialog"
-        :edited-item="editedItem"
-        :is-editing="true"
-        :saving="saving"
-        @update:editedItem="editedItem = $event"
-        @save="saveAssignment"
-      />
+      
     </div>
     <BackToTop />
   </div>
@@ -193,7 +233,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeftOutlined, EditOutlined, SearchOutlined, EyeOutlined, StarOutlined, StarFilled, CalendarOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
-import EditAssignments from '@/components/EditAssignments.vue';
+import { formatDateUTC8 } from '@/utils/dateUtils';
 
 // Responsive display detection
 const windowWidth = ref(window.innerWidth)
@@ -231,21 +271,17 @@ const submissions = ref<any[]>([])
 const loading = ref(true)
 const loadingSubmissions = ref(true)
 const error = ref('')
-const editDialog = ref(false)
+const isEditing = ref(false)
 const saving = ref(false)
 const search = ref('')
 const form = ref<any>(null)
 
-// 编辑项
-const editedItem = ref<any>({
-  id: '',
-  grade: null,
-  titleContext: '',
-  description: '',
-  totalScore: null,
-  baseScore: null,
-  scoringCriteria: '',
-})
+// 编辑相关变量
+const editableTitleContext = ref('')
+const editableScoringCriteria = ref('')
+const editableGrade = ref<string | null>(null)
+const editableTotalScore = ref<number | null>(null)
+const editableBaseScore = ref<number | null>(null)
 
 // 表格列定义
 const columns = [
@@ -281,17 +317,6 @@ async function fetchAssignmentDetails() {
       return
     }
 
-    // 初始化编辑项
-    editedItem.value = {
-      id: assignment.value.id,
-      titleContext: assignment.value.titleContext,
-      description: assignment.value.description,
-      grade: assignment.value.grade,
-      totalScore: assignment.value.totalScore,
-      baseScore: assignment.value.baseScore,
-      scoringCriteria: assignment.value.scoringCriteria,
-    }
-
     // 获取作文提交列表
     await fetchSubmissions()
 
@@ -322,35 +347,7 @@ async function fetchSubmissions() {
   }
 }
 
-// 保存测验
-async function saveAssignment() {
-  saving.value = true
-  try {
-    await updateAssignment(editedItem.value);
 
-    // 关闭对话框并刷新数据
-    editDialog.value = false
-    await fetchAssignmentDetails()
-  } catch (err: any) {
-    console.error('保存测验失败:', err)
-    alert(err.response?.data?.message || '保存测验失败，请稍后重试')
-  } finally {
-    saving.value = false
-  }
-}
-
-// 格式化日期
-function formatDate(dateString: string) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 // 获取状态文本
 function getStatusText(status: string) {
@@ -383,8 +380,73 @@ function getScoreColor(score: number) {
   }
 }
 
+// 开始编辑
+function startEditing() {
+  if (assignment.value) {
+    editableTitleContext.value = assignment.value.titleContext || '';
+    editableScoringCriteria.value = assignment.value.scoringCriteria || '';
+    editableGrade.value = assignment.value.grade || null;
+    editableTotalScore.value = assignment.value.totalScore || null;
+    editableBaseScore.value = assignment.value.baseScore || null;
+    isEditing.value = true;
+  }
+}
+
+// 取消编辑
+function cancelEditing() {
+  isEditing.value = false;
+  editableTitleContext.value = '';
+  editableScoringCriteria.value = '';
+  editableGrade.value = null;
+  editableTotalScore.value = null;
+  editableBaseScore.value = null;
+}
+
+// 保存编辑
+async function saveEditing() {
+  if (!assignment.value) return;
+
+  saving.value = true;
+  try {
+    const updateData = {
+      ...assignment.value,
+      titleContext: editableTitleContext.value,
+      scoringCriteria: editableScoringCriteria.value,
+      grade: editableGrade.value,
+      totalScore: editableTotalScore.value,
+      baseScore: editableBaseScore.value,
+    };
+
+    await updateAssignment(updateData);
+    isEditing.value = false;
+    await fetchAssignmentDetails();
+  } catch (err: any) {
+    console.error('保存测验失败:', err);
+    alert(err.response?.data?.message || '保存测验失败，请稍后重试');
+  } finally {
+    saving.value = false;
+  }
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   fetchAssignmentDetails()
 })
+
+function openInNewTab(path: string) {
+  window.open(path, '_blank', 'noopener,noreferrer')
+}
 </script>
+
+<style scoped>
+/* 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

@@ -51,7 +51,7 @@
         <a-descriptions-item label="作文ID">{{ essay.id }}</a-descriptions-item>
         <a-descriptions-item label="学生姓名">{{ essay.student.name }}</a-descriptions-item>
         <a-descriptions-item label="学号">{{ essay.student.studentId }}</a-descriptions-item>
-        <a-descriptions-item label="提交时间">{{ formatDate(essay.createdAt) }}</a-descriptions-item>
+        <a-descriptions-item label="提交时间">{{ formatDateUTC8(essay.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="状态">{{ displayStatus }}</a-descriptions-item>
       </a-descriptions>
       <template #extra>
@@ -82,6 +82,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { FileWordOutlined } from '@ant-design/icons-vue'
 import { queryEssayByShortId, type QueriedEssay as Essay } from '@/services/apiService'
+import { formatDateUTC8 } from '@/utils/dateUtils'
 import MarkdownIt from 'markdown-it'
 import 'github-markdown-css/github-markdown.css'
 import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle } from 'docx'
@@ -180,7 +181,7 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun({ text: "提交时间：", bold: true }),
-              new TextRun(formatDate(essay.value.createdAt)),
+              new TextRun(formatDateUTC8(essay.value.createdAt)),
             ],
           }),
           new Paragraph({
@@ -307,19 +308,6 @@ async function queryEssay() {
   } finally {
     loading.value = false
   }
-}
-
-function formatDate(dateString: string) {
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  };
-  const date = new Date(dateString);
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options);
 }
 
 onMounted(() => {

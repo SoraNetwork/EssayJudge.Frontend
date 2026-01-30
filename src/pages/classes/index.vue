@@ -26,7 +26,7 @@
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'name'">
-              <a-button type="link" :href="`/classes/${record.id}`">{{ record.name }}</a-button>
+              <a-button type="link" @click="openInNewTab(`/classes/${record.id}`)">{{ record.name }}</a-button>
             </template>
             <template v-if="column.key === 'studentCount'">
               <a-tag>{{ record.studentCount || 0 }}</a-tag>
@@ -42,7 +42,7 @@
         <!-- 移动端列表 -->
         <a-list v-else :data-source="classes" item-layout="horizontal">
           <template #renderItem="{ item }">
-            <a-list-item class="mb-2" :href="`/classes/${item.id}`">
+            <a-list-item class="mb-2" @click="openInNewTab(`/classes/${item.id}`)" style="cursor: pointer;">
               <a-list-item-meta>
                 <template #title>{{ item.name }}</template>
                 <template #description>学生数量: {{ item.studentCount || 0 }}</template>
@@ -253,4 +253,8 @@ function resetForm() {
 onMounted(() => {
   fetchClasses()
 })
+
+function openInNewTab(path: string) {
+  window.open(path, '_blank', 'noopener,noreferrer')
+}
 </script>

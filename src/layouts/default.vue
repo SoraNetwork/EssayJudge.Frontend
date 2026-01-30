@@ -154,7 +154,7 @@
 
     <a-layout-footer class="footer" style="text-align: center; padding: 16px 50px;">
       <div class="footer-content">
-        <span>Copyright &copy; {{ new Date().getFullYear() }} - SoraEssayJudge &nbsp;&nbsp; <a class="text-md select-none font-semibold text-neutral-500 dark:text-neutral-400" href="https://beian.miit.gov.cn/">浙ICP备2024113182号-1</a></span>
+        <span>Copyright &copy; {{ new Date().getFullYear() }} - SoraEssayJudge &nbsp;&nbsp; <a class="text-md select-none font-semibold text-neutral-500 dark:text-neutral-400" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">浙ICP备2024113182号-1</a></span>
       </div>
     </a-layout-footer>
   </a-layout>

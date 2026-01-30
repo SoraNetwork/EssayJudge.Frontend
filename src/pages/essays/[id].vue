@@ -55,13 +55,40 @@
             <template #title>
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span>原文内容</span>
-                <a-button type="link" size="small" @click="onOpenEditTextDialog">
-                  <template #icon><EditOutlined /></template>
-                  修改标题与内容
-                </a-button>
+                <div v-if="!isEditingText">
+                  <a-button type="link" size="small" @click="startEditingText">
+                    <template #icon><EditOutlined /></template>
+                    修改标题与内容
+                  </a-button>
+                </div>
+                <div v-else>
+                  <a-button type="text" size="small" @click="cancelEditingText">
+                    取消
+                  </a-button>
+                  <a-button type="primary" size="small" :loading="loading" :disabled="!editableTitle|| !editableText" @click="saveEditingText">
+                    保存
+                  </a-button>
+                </div>
               </div>
             </template>
-            <div style="white-space: pre-wrap; word-wrap: break-word;">{{ essay.parsedText }}</div>
+            <transition name="fade" mode="out-in">
+              <div v-if="!isEditingText" key="view" style="white-space: pre-wrap; word-wrap: break-word;">{{ essay.parsedText }}</div>
+              <div v-else key="edit" style="display: flex; flex-direction: column; gap: 12px;">
+                <a-input 
+                  v-model:value="editableTitle" 
+                  placeholder="作文标题" 
+                  size="large"
+                  @keydown.enter.prevent="focusTextArea"
+                />
+                <a-textarea 
+                  ref="textAreaRef"
+                  v-model:value="editableText" 
+                  :rows="15" 
+                  placeholder="作文内容"
+                  :auto-size="{ minRows: 15, maxRows: 25 }"
+                />
+              </div>
+            </transition>
           </a-card>
         </a-col>
       </a-row>
@@ -97,28 +124,6 @@
         visible,
         onVisibleChange: setVisible,
       }"></a-image>
-
-    <!-- Edit Text Dialog -->
-    <a-modal
-      v-model:open="editTextDialog"
-      title="修改作文标题与内容"
-      :closable="false"
-      :maskClosable="false"
-      width="600px"
-    >
-      <a-form layout="vertical">
-        <a-form-item label="作文标题" required>
-          <a-input v-model:value="editableTitle" />
-        </a-form-item>
-        <a-form-item label="作文内容" required>
-          <a-textarea v-model:value="editableText" :rows="15" />
-        </a-form-item>
-      </a-form>
-      <template #footer>
-        <a-button @click="editTextDialog = false">取消</a-button>
-        <a-button type="primary" :loading="loading" :disabled="!editableTitle || !editableText" @click="updateTexts">保存修改</a-button>
-      </template>
-    </a-modal>
 
     <!-- Edit Score Dialog -->
     <a-modal
@@ -210,10 +215,12 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const imageDialog = ref(false)
 const editScoreDialog = ref(false)
+const isEditingText = ref(false)
 const editTextDialog = ref(false)
 const editableScore = ref<number | null>(null)
 const editableTitle = ref<string | null>(null)
 const editableText = ref<string | null>(null)
+const textAreaRef = ref<any>(null)
 const students = ref<Student[]>([])
 const selectedStudentId = ref<string | undefined>(undefined)
 const originalStudentId = ref<string | undefined>(undefined)
@@ -423,16 +430,51 @@ const onOpenEditTextDialog = () => {
   }
 };
 
-const updateTexts = async () => {
+const startEditingText = () => {
+  if (essay.value) {
+    const text = essay.value.parsedText ?? '';
+    const lines = text.split('\n');
+    editableTitle.value = lines[0] || '';
+    editableText.value = lines.slice(1).join('\n');
+    isEditingText.value = true;
+    // 自动聚焦到标题输入框
+    nextTick(() => {
+      const titleInput = document.querySelector('.ant-input-lg') as HTMLInputElement;
+      if (titleInput) {
+        titleInput.focus();
+        titleInput.select();
+      }
+    });
+  }
+};
+
+const focusTextArea = () => {
+  nextTick(() => {
+    if (textAreaRef.value) {
+      textAreaRef.value.focus();
+    }
+  });
+};
+
+const cancelEditingText = () => {
+  isEditingText.value = false;
+  editableTitle.value = null;
+  editableText.value = null;
+};
+
+const saveEditingText = async () => {
   if (essay.value === null) return;
   const id = (route.params as { id: string }).id;
   try {
+    const title = editableTitle.value || '';
+    const text = editableText.value || '';
+    const fullText = title + '\n' + text;
     await updateSubmissionTexts(
       id,
-      editableText.value ?? '',
-      editableTitle.value ?? ''
+      fullText,
+      title
     );
-    editTextDialog.value = false;
+    isEditingText.value = false;
     await fetchEssay();
   } catch (err) {
     console.error('Failed to update:', err);
@@ -465,6 +507,17 @@ onMounted(async () => {
 
 <style>
 @import 'github-markdown-css/github-markdown.css';
+
+/* 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
 .markdown-body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;

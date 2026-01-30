@@ -144,16 +144,9 @@ import { useRouter } from 'vue-router';
 import { UploadOutlined, PlusOutlined, CheckCircleOutlined, ExclamationCircleOutlined, EllipsisOutlined } from '@ant-design/icons-vue';
 import { getAssignments, uploadEssaySubmission, uploadEssayBatchSubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 import type { UploadProps } from 'ant-design-vue';
+import { formatDateUTC8 } from '@/utils/dateUtils';
 
 const router = useRouter();
-
-// Helper function to format date
-function formatDate(dateString: string) {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  const date = new Date(dateString);
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options);
-}
 
 const assignments = ref<Assignment[]>([]);
 const selectedAssignment = ref<string | null>(null);

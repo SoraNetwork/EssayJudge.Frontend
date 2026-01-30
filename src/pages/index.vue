@@ -62,7 +62,7 @@
             {{ formatDateUTC8(record.createdAt) }}
           </template>
           <template v-else-if="column.key === 'actions'">
-            <a-button type="link" @click="goTo(`/essays/${record.id}`)">查看</a-button>
+            <a-button type="link" @click="openInNewTab(`/essays/${record.id}`)">查看</a-button>
           </template>
           <template v-else-if="column.dataIndex === 'finalScore' && record.finalScore">
             <a-tag color="blue">{{ record.finalScore }}</a-tag>
@@ -185,6 +185,10 @@ async function fetchRecentSubmissions() {
 
 function goTo(path: string) {
   router.push(path)
+}
+
+function openInNewTab(path: string) {
+  window.open(path, '_blank', 'noopener,noreferrer')
 }
 
 onMounted(() => {

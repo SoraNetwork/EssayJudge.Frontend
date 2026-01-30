@@ -1,13 +1,17 @@
-export function formatDateUTC8(dateString: string): string {
-  const options: Intl.DateTimeFormatOptions = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  };
-  const date = new Date(dateString);
-  // 加8小时，转换为UTC+8
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options);
-}
+/**
+ * 日期格式化工具
+ * 
+ * 这个文件提供了向后兼容的导出，实际实现位于 @/composables/useDateFormat
+ * 
+ * @deprecated 建议使用 @/composables/useDateFormat 中的函数
+ */
+
+export {
+  useDateFormat,
+  formatDateUTC8,
+  formatShortDate,
+  formatFullDate,
+  formatRelativeTime,
+  useReactiveDateFormat,
+  type DateFormatOptions,
+} from '@/composables/useDateFormat'

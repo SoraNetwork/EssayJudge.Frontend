@@ -71,7 +71,7 @@
           </template>
           <template v-if="column.key === 'actions'">
             <a-tooltip title="查看详情">
-              <a-button type="text" size="small" :href="`/essays/${record.id}`">
+              <a-button type="text" size="small" @click="openInNewTab(`/essays/${record.id}`)">
                 <EyeOutlined />
               </a-button>
             </a-tooltip>
@@ -112,7 +112,7 @@
             </template>
             <a-list-item-meta>
               <template #title>
-                <a :href="`/essays/${item.id}`">{{ item.title }}</a>
+                <a @click="openInNewTab(`/essays/${item.id}`)" style="cursor: pointer;">{{ item.title }}</a>
               </template>
               <template #description>
                 {{ item.studentName }} - {{ formatDateUTC8(item.createdAt) }}
@@ -352,4 +352,8 @@ onMounted(() => {
   fetchEssays();
   fetchAssignments();
 });
+
+function openInNewTab(path: string) {
+  window.open(path, '_blank', 'noopener,noreferrer')
+}
 </script>

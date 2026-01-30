@@ -115,11 +115,11 @@
                 </template>
 
                 <template v-if="column.key === 'submissionDate'">
-                  {{ formatDate(record.submissionDate) }}
+                  {{ formatDateUTC8(record.submissionDate) }}
                 </template>
 
                 <template v-if="column.key === 'actions'">
-                  <a-button type="text" size="small" :href="`/essays/${record.id}`">
+                  <a-button type="text" size="small" @click="openInNewTab(`/essays/${record.id}`)">
                     <template #icon><EyeOutlined /></template>
                   </a-button>
                 </template>
@@ -216,6 +216,7 @@ import {
   MailOutlined
 } from '@ant-design/icons-vue'
 import { getStudentById, searchSubmissions, getClasses, updateStudent, getClassById } from '@/services/apiService';
+import { formatDateUTC8 } from '@/utils/dateUtils';
 
 const route = useRoute()
 const router = useRouter()
@@ -426,19 +427,6 @@ function getInitials(name: string) {
   return name.charAt(0).toUpperCase()
 }
 
-// 格式化日期
-function formatDate(dateString: string) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
 // 获取状态文本
 function getStatusText(status: string) {
   const statusMap: Record<string, string> = {
@@ -471,4 +459,8 @@ function getScoreColor(score: number) {
 onMounted(() => {
   fetchStudentDetails()
 })
+
+function openInNewTab(path: string) {
+  window.open(path, '_blank', 'noopener,noreferrer')
+}
 </script>

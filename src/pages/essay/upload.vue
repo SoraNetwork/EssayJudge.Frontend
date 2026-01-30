@@ -233,6 +233,7 @@ import {
   type Student as Student,
   type Assignment
 } from '@/services/apiService'
+import { formatDateUTC8 } from '@/utils/dateUtils'
 import api from '@/services/api'
 import { message } from 'ant-design-vue'
 
@@ -326,20 +327,6 @@ const submitting = ref(false)
 const showSuccessDialog = ref(false)
 const submittedEssayShortId = ref('')
 const isCopied = ref(false)
-
-// 日期格式化
-function formatDate(dateString: string) {
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  };
-  const date = new Date(dateString);
-  date.setHours(date.getHours() + 8);
-  return date.toLocaleString(undefined, options);
-}
 
 // 文字验证规则
 const textRules = [
