@@ -1,5 +1,38 @@
 <template>
   <v-app>
+    <!-- 检测到非移动端设备时显示遮罩 -->
+    <div v-if="showMobileOverlay" class="mobile-overlay">
+      <div class="overlay-content">
+        <v-card width="400" class="pa-4">
+          <v-card-title class="text-h6 d-flex justify-space-between align-center">
+            <span>提示</span>
+          </v-card-title>
+          <v-card-text>
+            使用V3享受更好的体验！
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <!-- 原按钮： <v-btn href="https://v3.ej.xingsora.cn" target="_blank" color="primary" elevation="12" size="x-large" width="50%">   前往V3   </v-btn> -->
+            <v-btn
+              href="https://v3.ej.xingsora.cn"
+              target="_blank"
+              elevation="12"
+              size="x-large"
+              width="50%"
+              class="cool-btn"
+              aria-label="前往 V3"
+            >
+              <span class="btn-content">
+                <v-icon left>mdi-rocket-launch</v-icon>
+                前往V3
+              </span>
+            </v-btn>
+            <v-btn @click="closeOverlay" variant="plain" size="small">我知道了</v-btn>
+          </v-card-actions>
+        </v-card>
+      </div>
+    </div>
+
     <v-progress-linear
       v-if="appStore.loading"
       indeterminate
@@ -116,6 +149,24 @@ const theme = useTheme()
 const preferredDark = usePreferredDark() // 获取系统主题偏好
 const serverStatus = ref<ServerStatus | null>(null);
 
+// 添加移动设备检测相关变量
+const showMobileOverlay = ref(false);
+
+// 移动设备检测函数
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  
+  // 检查各种移动设备的关键字
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+}
+
+// 关闭遮罩的方法
+function closeOverlay() {
+  showMobileOverlay.value = false;
+}
+
 watch(mdAndUp, (newVal) => {
   drawer.value = newVal
 })
@@ -181,11 +232,110 @@ onMounted(async () => {
       console.error("获取服务器状态失败:", error);
     }
   }
+  
+  // 检查是否为移动设备，如果不是，则显示遮罩（每次都显示）
+  if (!isMobileDevice()) {
+    showMobileOverlay.value = true;
+  }
 });
 
 // 监听系统主题变化，并同步更新应用主题
 watch(preferredDark, (newVal) => {
   theme.global.name.value = newVal ? 'dark' : 'light';
 });
-
 </script>
+
+<style scoped>
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.overlay-content {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+
+/* 新增：酷炫按钮样式 */
+.cool-btn {
+  /* 覆盖 Vuetify 颜色，使用动态渐变背景 */
+  background-image: linear-gradient(90deg, #6a11cb 0%, #2575fc 50%, #00c6ff 100%) !important;
+  background-size: 200% 100%;
+  color: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 20px rgba(37, 117, 252, 0.18), 0 0 30px rgba(106, 17, 203, 0.08);
+  overflow: hidden;
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms;
+  position: relative;
+  text-transform: none !important;
+}
+
+/* 内部文本布局 */
+.cool-btn .btn-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* 渐变移动效果 */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.cool-btn {
+  animation: gradientShift 6s ease infinite;
+}
+
+/* 光泽滑过的伪元素 */
+.cool-btn::after {
+  content: "";
+  position: absolute;
+  top: -120%;
+  left: -30%;
+  width: 60%;
+  height: 260%;
+  background: rgba(255,255,255,0.12);
+  transform: rotate(25deg);
+  transition: all 550ms cubic-bezier(.2,.9,.2,1);
+  opacity: 0;
+}
+.cool-btn:hover::after,
+.cool-btn:focus-visible::after {
+  left: 120%;
+  opacity: 1;
+}
+
+/* 悬停与按下的视觉反馈 */
+.cool-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 14px 30px rgba(37,117,252,0.22), 0 0 40px rgba(106,17,203,0.12);
+}
+.cool-btn:active {
+  transform: translateY(-1px) scale(0.995);
+  box-shadow: 0 8px 18px rgba(37,117,252,0.16);
+}
+
+/* 焦点可见性，便于键盘导航 */
+.cool-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37,117,252,0.12), 0 12px 26px rgba(37,117,252,0.18);
+}
+
+/* 小屏幕适配：减少动画强度与尺寸 */
+@media (max-width: 480px) {
+  .cool-btn { transform: none; box-shadow: 0 6px 14px rgba(37,117,252,0.12); }
+  .cool-btn::after { display: none; }
+}
+</style>
