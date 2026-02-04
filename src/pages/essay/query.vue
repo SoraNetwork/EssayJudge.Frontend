@@ -21,7 +21,7 @@
         <a-form-item>
           <a-button
             type="primary"
-            html-type="submit"
+            @click="queryEssay"
             :loading="loading"
             :disabled="!shortId || shortId.length !== 8"
           >
@@ -36,14 +36,6 @@
         <div style="height: 100px;"></div>
       </a-spin>
     </a-card>
-
-    <a-alert
-      v-if="error"
-      type="error"
-      :message="error"
-      class="mt-4"
-      show-icon
-    />
 
     <a-card v-if="essay" class="mt-4">
       <template #title>作文详情</template>
@@ -123,7 +115,6 @@ const displayStatus = computed(() => {
 })
 
 const shortIdRules = [
-  { required: true, message: '请输入ID' },
   { len: 8, message: 'ID必须是8位' },
 ]
 
