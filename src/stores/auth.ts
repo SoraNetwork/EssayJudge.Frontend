@@ -1,7 +1,7 @@
 // stores/auth.ts
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import api from '@/services/api'; // 导入 api 实例
+import httpClient from '@/services/httpClient';
 
 // 定义用户信息的接口
 export interface User {
@@ -54,9 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     formData.append('password', password);
 
     try {
-      const response = await api.post<AuthResponse>('/api/auth/login', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await httpClient.post<AuthResponse>('/api/auth/login', formData);
       setUserInfo(response.data);
     } catch (error: any) {
       // 抛出错误，让组件可以捕获并显示
@@ -73,9 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
     formData.append('code', code);
 
     try {
-      const response = await api.post<AuthResponse>('/api/auth/dingtalk-login', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await httpClient.post<AuthResponse>('/api/auth/dingtalk-login', formData);
       setUserInfo(response.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || '钉钉免密登录失败');
@@ -91,9 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     formData.append('Code', code); 
 
     try {
-      const response = await api.post<AuthResponse>('/api/auth/dingtalk-sso-login', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await httpClient.post<AuthResponse>('/api/auth/dingtalk-sso-login', formData);
       setUserInfo(response.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || '钉钉 SSO 登录失败');

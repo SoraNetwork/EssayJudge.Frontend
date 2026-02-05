@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    <a-spin :spinning="appStore.loading" :fullscreen="true" v-if="appStore.loading" />
     <router-view />
     <div>
       <component :is="contextHolder" />

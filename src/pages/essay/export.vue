@@ -84,7 +84,7 @@ import {
   getClasses,
   exportEssaySubmissions
 } from '@/services/apiService';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 import type { Assignment, Class, ExportFilterDto } from '@/services/apiService';
 
 const selectedAssignmentIds = ref<string[]>([]);

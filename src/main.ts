@@ -8,6 +8,8 @@
 import { registerPlugins } from '@/plugins';
 import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
+import zhCN from 'ant-design-vue/es/locale/zh_CN';
+import { ConfigProvider } from 'ant-design-vue';
 
 import { provideFluentDesignSystem, fluentCard, fluentButton } from '@fluentui/web-components';
 provideFluentDesignSystem().register(fluentCard(), fluentButton());
@@ -16,12 +18,16 @@ provideFluentDesignSystem().register(fluentCard(), fluentButton());
 import App from './App.vue'
 
 // Composables
-import { createApp } from 'vue'
+import { createApp, h } from 'vue'
 
 // Styles
 import 'unfonts.css'
 
-const app = createApp(App)
+const app = createApp({
+  setup() {
+    return () => h(ConfigProvider, { locale: zhCN }, () => h(App));
+  }
+})
 
 registerPlugins(app)
 

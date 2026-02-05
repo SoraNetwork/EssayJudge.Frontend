@@ -9,16 +9,27 @@
     </div>
 
     <!-- 搜索框 -->
-    <a-input
-      v-model:value="searchTerm"
-      placeholder="搜索作文题目"
-      allowClear
-      style="margin-bottom: 16px;"
-      @input="handleSearch"
-    >
-      <template #prefix><SearchOutlined /></template>
-    </a-input>
+    <a-card style="margin-bottom: 16px;">
+      <div style="display: flex; gap: 12px">
+        <a-input
+          v-model:value="searchTerm"
+          placeholder="搜索作文题目"
+          allowClear
+          style="min-width: 180px;max-width: 300px;"
+          @input="handleSearch"
+        >
+          <template #prefix><SearchOutlined /></template>
+        </a-input>
 
+        <a-range-picker
+          v-model:value="dateRange"
+          style="min-width: 200px;"
+          allowClear
+          @change="handleDateChange"
+          :locale="rangePickerLocale"
+        />
+      </div>
+    </a-card>
     <!-- 测验列表 -->
     <a-card>
       <!-- 桌面端表格 -->
@@ -116,13 +127,23 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { PlusOutlined, SearchOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { getAssignments, createAssignment, updateAssignment, deleteAssignment as deleteAssignmentApi, type Assignment } from '@/services/apiService';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 import EditAssignments from '@/components/EditAssignments.vue';
+import zhCN from 'ant-design-vue/es/date-picker/locale/zh_CN'; // 导入中文本地化
 
 // 数据和状态
 const loading = ref(false)
 const dialog = ref(false)
 const searchTerm = ref('')
+// 添加日期选择器本地化配置
+const rangePickerLocale = ref({
+  ...zhCN,
+  lang: {
+    ...zhCN.lang,
+    placeholder: '请选择日期',
+    rangePlaceholder: ['开始日期', '结束日期'],
+  }
+})
 watch(dialog, (newValue, oldValue) => {
   if (oldValue === true && newValue === false) {
     window.location.reload();
@@ -174,20 +195,41 @@ const editedItem = ref<EditedAssignment>({
 // 待删除的项
 const itemToDelete = ref<any>(null)
 
-// 根据搜索词过滤作业列表
+const dateRange = ref<any[]>([])
+
+// 根据搜索词和创建时间范围过滤作业列表
 const filteredAssignments = computed(() => {
-  if (!searchTerm.value) {
-    return assignments.value;
+  let list = assignments.value;
+
+  if (searchTerm.value) {
+    const term = searchTerm.value.toLowerCase();
+    list = list.filter(assignment =>
+      assignment.description && assignment.description.toLowerCase().includes(term)
+    );
   }
 
-  const term = searchTerm.value.toLowerCase();
-  return assignments.value.filter(assignment =>
-    assignment.description && assignment.description.toLowerCase().includes(term)
-  );
+  if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
+    const [startRaw, endRaw] = dateRange.value;
+    const startTime = startRaw.toDate ? startRaw.toDate().setHours(0,0,0,0) : new Date(startRaw).setHours(0,0,0,0);
+    const endTime = endRaw.toDate ? endRaw.toDate().setHours(23,59,59,999) : new Date(endRaw).setHours(23,59,59,999);
+
+    list = list.filter(a => {
+      if (!a.createdAt) return false;
+      const t = new Date(a.createdAt).getTime();
+      return t >= startTime && t <= endTime;
+    });
+  }
+
+  return list;
 });
 
 // 处理搜索输入
 const handleSearch = () => {
+};
+
+// 处理日期选择变化
+const handleDateChange = (dates: any) => {
+  dateRange.value = dates || []
 };
 
 // 确认删除测验

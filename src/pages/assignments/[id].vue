@@ -241,7 +241,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeftOutlined, EditOutlined, SearchOutlined, EyeOutlined, StarOutlined, StarFilled, CalendarOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 // Responsive display detection
 const windowWidth = ref(window.innerWidth)

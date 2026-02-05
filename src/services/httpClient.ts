@@ -1,25 +1,27 @@
-// API服务配置
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
-// 创建axios实例
-//const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-const api = axios.create({
-  //baseURL: baseURL, // 后端API基础URL
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/', // 后端API基础URL
-  timeout: 10000, // 请求超时时间
+export const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+
+const httpClient = axios.create({
+  baseURL,
+  timeout: 10000,
   headers: {
-    'Content-Type': 'multipart/form-data'
+    'Content-Type': 'application/json'
   }
 })
 
-// 请求拦截器 - 添加认证令牌
-api.interceptors.request.use(
+httpClient.interceptors.request.use(
   config => {
     const authStore = useAuthStore()
     if (authStore.token) {
       config.headers['Authorization'] = `Bearer ${authStore.token}`
     }
+
+    if (config.data instanceof FormData) {
+      config.headers['Content-Type'] = 'multipart/form-data'
+    }
+
     return config
   },
   error => {
@@ -27,13 +29,11 @@ api.interceptors.request.use(
   }
 )
 
-// 响应拦截器 - 处理错误
-api.interceptors.response.use(
+httpClient.interceptors.response.use(
   response => response,
   error => {
     const { response } = error
     if (response && response.status === 401) {
-      // 未授权，清除令牌并重定向到登录页
       const authStore = useAuthStore()
       authStore.logout()
       window.location.href = '/login'
@@ -42,4 +42,4 @@ api.interceptors.response.use(
   }
 )
 
-export default api
+export default httpClient

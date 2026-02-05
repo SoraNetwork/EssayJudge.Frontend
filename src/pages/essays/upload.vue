@@ -144,7 +144,7 @@ import { useRouter } from 'vue-router';
 import { UploadOutlined, PlusOutlined, CheckCircleOutlined, ExclamationCircleOutlined, EllipsisOutlined } from '@ant-design/icons-vue';
 import { getAssignments, uploadEssaySubmission, uploadEssayBatchSubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 import type { UploadProps } from 'ant-design-vue';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 const router = useRouter();
 

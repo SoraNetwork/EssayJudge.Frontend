@@ -68,8 +68,12 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'actions'">
             <a-space>
-              <a-button size="small" type="primary" @click="editStudent(record)">编辑</a-button>
-              <a-button size="small" type="primary" danger @click="confirmDelete(record)">删除</a-button>
+              <a-tooltip title="编辑">
+                <a-button size="small" type="text" @click="editStudent(record)"><EditOutlined /></a-button>
+              </a-tooltip> 
+              <a-tooltip title="删除">
+                <a-button size="small" type="text" danger @click="confirmDelete(record)"><DeleteOutlined /></a-button>
+              </a-tooltip>
             </a-space>
           </template>
         </template>
@@ -137,7 +141,7 @@ import { ref, computed, onMounted } from 'vue'
 import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
 
 // Ant Design 组件
-import { SearchOutlined, ReloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons-vue';
+import { SearchOutlined, ReloadOutlined, PlusOutlined, UploadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
 interface Class {
   id: string;
@@ -431,7 +435,6 @@ async function uploadCsv() {
       console.warn(`CSV 文本导入完成，存在问题。成功：${successfulImports}，失败：${failedImports}。请检查控制台获取详情。`);
       // 您可能希望在此处显示一个 snackbar 或 alert
   } else {
-      console.log(`CSV 文本导入成功。总共导入学生：${successfulImports}。`);
       // 您可能希望在此处显示一个成功 snackbar
   }
 

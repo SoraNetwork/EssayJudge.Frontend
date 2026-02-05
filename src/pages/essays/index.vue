@@ -161,7 +161,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { UploadOutlined, SearchOutlined, ReloadOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { searchSubmissions, getAssignments, submitSubmissionForEvaluation, deleteSubmission } from '@/services/apiService';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 // Define interface for Essay item
 interface Essay {

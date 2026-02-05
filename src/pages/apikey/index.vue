@@ -292,7 +292,7 @@ import {
   getAIModelUsageSettings, createAIModelUsageSetting, updateAIModelUsageSetting, deleteAIModelUsageSetting, getAllAIModels, type AIModelUsageSetting, type AIModel,
   toggleApiKeyStatus
 } from '@/services/apiService';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 // Responsive display detection (Vuetify-independent)
 const windowWidth = ref(window.innerWidth)
@@ -372,9 +372,6 @@ const modelIdOptions = computed(() => {
 const addModelId = (modelId: string) => {
   if (!editedApiKey.value.modelIds.includes(modelId)) {
     editedApiKey.value.modelIds.push(modelId);
-    console.log(`已添加模型: ${modelId}`);
-  } else {
-    console.log(`模型 ${modelId} 已存在`);
   }
 }
 
@@ -440,10 +437,8 @@ const saveApiKey = async () => {
 
     if (isEditingApiKey.value) {
       await updateApiKey(editedApiKey.value.id, dataToSave);
-      console.log('API密钥更新成功');
     } else {
       await createApiKey(dataToSave);
-      console.log('API密钥创建成功');
     }
     closeApiKeyDialog()
     await fetchApiKeys()
@@ -466,13 +461,10 @@ const deleteApiKey = async () => {
   try {
     await deleteApiKeyService(apiKeyToDelete.value.id);
     apiKeyDeleteDialog.value = false;
-    console.log('API密钥删除成功');
     // 刷新列表
     await fetchApiKeys();
   } catch (error: any) {
-    console.error('删除 API 密钥失败:', error);
     const errorMessage = error.response?.data?.message || '删除失败，请重试';
-    console.error(errorMessage);
   } finally {
     deletingApiKey.value = false;
     apiKeyToDelete.value = null;

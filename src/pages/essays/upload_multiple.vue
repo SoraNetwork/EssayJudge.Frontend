@@ -114,7 +114,7 @@ import { useRouter } from 'vue-router';
 import { UploadOutlined, PlusOutlined, CheckCircleOutlined, ExclamationCircleOutlined, EllipsisOutlined } from '@ant-design/icons-vue';
 import { getAssignments, uploadEssayBatchSubmission, getSubmissionById, type Assignment } from '@/services/apiService';
 import type { UploadProps } from 'ant-design-vue';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 const router = useRouter();
 
@@ -182,13 +182,7 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
 };
 
 async function uploadEssay() {
-  console.log('uploadEssay 被调用');
-  console.log('selectedAssignment.value:', selectedAssignment.value);
-  console.log('selectedFiles.value:', selectedFiles.value);
-  console.log('selectedFiles.value.length:', selectedFiles.value?.length);
-
   if (!selectedAssignment.value || !selectedFiles.value || selectedFiles.value.length === 0) {
-    console.log('验证失败: 未选择测验或文件');
     return;
   }
   if (selectedFiles.value.length > maxFiles) {
@@ -205,7 +199,6 @@ async function uploadEssay() {
       throw new Error('未选择文件');
     }
     const files = selectedFiles.value;
-    console.log('开始上传，文件数量:', files.length);
     const response = await uploadEssayBatchSubmission(selectedAssignment.value, files, columnCount.value, enableV3.value);
     const ids = response.submissionIds || [];
     processingFiles.value = ids.map((id, idx) => ({
@@ -236,8 +229,6 @@ function processPollingBatch() {
   currentFileIndex = endIndex;
   if (currentFileIndex < processingFiles.value.length) {
     batchTimeoutId = setTimeout(processPollingBatch, batchDelay) as any;
-  } else {
-    console.log('所有文件轮询已安排');
   }
 }
 
@@ -252,13 +243,11 @@ function startPollingForFile(item: typeof processingFiles.value[0]) {
 
   const interval = setInterval(() => checkPollingStatusForFile(item), 2000) as any;
   pollingIntervals.set(item.submissionId, interval);
-  console.log(`为 submissionId ${item.submissionId} 启动轮询定时器 ID: ${interval}`);
 }
 
 async function checkPollingStatusForFile(item: typeof processingFiles.value[0]) {
   if (!item.submissionId || item.status !== 'polling') {
       if (item.submissionId && pollingIntervals.has(item.submissionId) && pollingIntervals.get(item.submissionId) !== null) {
-          console.log(`停止轮询 submissionId ${item.submissionId} (状态不是 polling 或无 ID)`);
           clearInterval(pollingIntervals.get(item.submissionId)!);
           pollingIntervals.delete(item.submissionId);
       }
@@ -289,7 +278,6 @@ async function checkPollingStatusForFile(item: typeof processingFiles.value[0]) 
     item.error = error.response?.data?.message || '处理失败';
 
     if (pollingIntervals.has(item.submissionId) && pollingIntervals.get(item.submissionId) !== null) {
-        console.log(`停止轮询 submissionId ${item.submissionId} (发生错误)`);
         clearInterval(pollingIntervals.get(item.submissionId)!);
         pollingIntervals.delete(item.submissionId);
     }
@@ -317,7 +305,6 @@ function checkOverallCompletion() {
     const completedOrErroredCount = processingFiles.value.filter(item => item.status === 'completed' || item.status === 'error').length;
 
     if (completedOrErroredCount === totalFiles) {
-        console.log('所有文件处理完成');
         calculateOverallProgress();
         completionMessage.value = '全部批改完成！';
         completionDialog.value = true;
@@ -325,7 +312,6 @@ function checkOverallCompletion() {
         if (batchTimeoutId !== null) {
             clearTimeout(batchTimeoutId);
             batchTimeoutId = null;
-            console.log('清除批次定时器');
         }
 
         setTimeout(() => {
@@ -395,7 +381,6 @@ function clearAllTimers() {
     pollingIntervals.forEach((intervalId, submissionId) => {
         if (intervalId !== null) {
             clearInterval(intervalId);
-            console.log(`清除轮询定时器 ID: ${intervalId} (submissionId: ${submissionId})`);
         }
     });
     pollingIntervals.clear();

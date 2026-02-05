@@ -92,7 +92,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getAssignments, getStudents, searchSubmissions, type Submission } from '@/services/apiService'; // Import from apiService
 import { useRouter } from 'vue-router'
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 // Ant Design 组件
 import { BookOutlined, TeamOutlined, FileTextOutlined } from '@ant-design/icons-vue';

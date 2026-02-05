@@ -233,8 +233,8 @@ import {
   type Student as Student,
   type Assignment
 } from '@/services/apiService'
-import { formatDateUTC8 } from '@/utils/dateUtils'
-import api from '@/services/api'
+import { formatDateUTC8 } from '@/composables/useDateFormat'
+import httpClient from '@/services/httpClient'
 import { message } from 'ant-design-vue'
 
 const router = useRouter()
@@ -315,7 +315,7 @@ const fullProcessedImageUrl = computed(() => {
   if (processedImageUrl.value.startsWith('http')) {
     return processedImageUrl.value
   }
-  const baseURL = api.defaults.baseURL || ''
+  const baseURL = (httpClient.defaults.baseURL as string) || ''
   return `${baseURL.replace(/\/$/, '')}/${processedImageUrl.value.replace(/^\//, '')}`
 })
 

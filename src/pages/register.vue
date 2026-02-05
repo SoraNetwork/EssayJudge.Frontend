@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/services/api'
+import httpClient from '@/services/httpClient'
 import { message } from 'ant-design-vue';
 
 // Ant Design 组件
@@ -144,7 +144,7 @@ async function register() {
       formData.append('PhoneNumber', phoneNumber.value)
     }
     
-    await api.post('/api/Auth/register', formData)
+    await httpClient.post('/api/Auth/register', formData)
 
     // 注册成功
     success.value = '注册成功！即将跳转到登录页面...'

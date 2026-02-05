@@ -26,15 +26,22 @@
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'name'">
-              <a-button type="link" @click="openInNewTab(`/classes/${record.id}`)">{{ record.name }}</a-button>
+              {{ record.name }}
             </template>
             <template v-if="column.key === 'studentCount'">
               <a-tag>{{ record.studentCount || 0 }}</a-tag>
             </template>
             <template v-if="column.key === 'actions'">
-              <a-button type="text" size="small" danger @click="confirmDelete(record)">
-                <template #icon><DeleteOutlined /></template>
-              </a-button>
+              <a-tooltip title="查看详情">
+                <a-button type="text" size="small" @click="openInNewTab(`/classes/${record.id}`)">
+                  <template #icon><EyeOutlined /></template>
+                </a-button>
+              </a-tooltip>
+              <a-tooltip title="删除">
+                <a-button type="text" size="small" danger @click="confirmDelete(record)">
+                  <template #icon><DeleteOutlined /></template>
+                </a-button>
+              </a-tooltip>
             </template>
           </template>
         </a-table>
@@ -106,7 +113,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons-vue'
 import { getClasses, createClass, deleteClass as apiDeleteClass, getStudents } from '@/services/apiService';
 
 // Responsive display detection (Vuetify-independent)

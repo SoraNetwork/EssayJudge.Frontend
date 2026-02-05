@@ -216,7 +216,7 @@ import {
   MailOutlined
 } from '@ant-design/icons-vue'
 import { getStudentById, searchSubmissions, getClasses, updateStudent, getClassById } from '@/services/apiService';
-import { formatDateUTC8 } from '@/utils/dateUtils';
+import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 const route = useRoute()
 const router = useRouter()

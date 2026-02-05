@@ -260,8 +260,8 @@ onMounted(async () => {
   top: 0;
   left: 0;
   width: 100%;
-  height: 4px;
-  background: #1890ff;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
   z-index: 9999;
   display: flex;
   align-items: center;
