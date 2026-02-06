@@ -199,22 +199,28 @@ export const getSubmissionById = async (id: string): Promise<Submission> => {
   return response.data
 }
 
-export const uploadEssaySubmission = async (assignmentId: string, imageFile: File, columnCount: number, enableV3: boolean): Promise<{ submissionId: string }> => {
+export const uploadEssaySubmission = async (assignmentId: string, imageFile: File, columnCount: number, enableV3: boolean, splitCoordinates?: number[]): Promise<{ submissionId: string }> => {
   const formData = new FormData()
   formData.append('essayAssignmentId', assignmentId)
   formData.append('imageFile', imageFile)
   formData.append('columnCount', columnCount.toString())
   formData.append('enableV3', enableV3.toString())
+  if (splitCoordinates && splitCoordinates.length > 0) {
+    formData.append('splitCoordinates', JSON.stringify(splitCoordinates))
+  }
 
   const response = await httpClient.post<{ submissionId: string }>('/EssaySubmission', formData)
   return response.data
 }
 
-export const uploadEssayBatchSubmission = async (assignmentId: string, imageFiles: File[], columnCount: number, enableV3: boolean): Promise<{ submissionIds: string[] }> => {
+export const uploadEssayBatchSubmission = async (assignmentId: string, imageFiles: File[], columnCount: number, enableV3: boolean, splitCoordinates?: number[]): Promise<{ submissionIds: string[] }> => {
   const formData = new FormData()
   formData.append('essayAssignmentId', assignmentId)
   formData.append('columnCount', columnCount.toString())
   formData.append('enableV3', enableV3.toString())
+  if (splitCoordinates && splitCoordinates.length > 0) {
+    formData.append('splitCoordinates', JSON.stringify(splitCoordinates))
+  }
   imageFiles.forEach(file => {
     formData.append('imageFiles', file)
   })
