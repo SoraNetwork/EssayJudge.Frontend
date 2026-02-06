@@ -56,6 +56,14 @@ export interface StudentInfo {
   classId?: string
 }
 
+export interface EssaySubmissionSummaryDto {
+  id: string
+  titleContext: string
+  finalScore?: number
+  isError: boolean
+  createdAt: string
+}
+
 export interface Submission {
   id: string
   title: string

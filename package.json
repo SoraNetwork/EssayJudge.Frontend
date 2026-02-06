@@ -12,6 +12,7 @@
     "lint": "eslint . --fix"
   },
   "dependencies": {
+    "@ant-design/charts": "^2.6.7",
     "@ant-design/icons-vue": "^7.0.1",
     "@bytemd/vue-next": "^1.22.0",
     "@fluentui/web-components": "^2.6.1",

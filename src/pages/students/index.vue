@@ -68,6 +68,9 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'actions'">
             <a-space>
+              <a-tooltip title="查看详情">
+                <a-button size="small" type="text" :href="`/students/${record.id}`" target="_blank"><EyeOutlined /></a-button>
+              </a-tooltip>
               <a-tooltip title="编辑">
                 <a-button size="small" type="text" @click="editStudent(record)"><EditOutlined /></a-button>
               </a-tooltip> 
@@ -141,7 +144,7 @@ import { ref, computed, onMounted } from 'vue'
 import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as apiDeleteStudent, type Student } from '@/services/apiService';
 
 // Ant Design 组件
-import { SearchOutlined, ReloadOutlined, PlusOutlined, UploadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined, UploadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 
 interface Class {
   id: string;

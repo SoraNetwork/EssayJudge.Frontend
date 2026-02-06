@@ -13,7 +13,8 @@ import type {
   StudentForUpload,
   ClassWithStudents,
   QueriedEssay,
-  ApiKeyUpdateDto
+  ApiKeyUpdateDto,
+  EssaySubmissionSummaryDto
 } from './types'
 
 export type {
@@ -30,7 +31,8 @@ export type {
   StudentForUpload,
   ClassWithStudents,
   QueriedEssay,
-  ApiKeyUpdateDto
+  ApiKeyUpdateDto,
+  EssaySubmissionSummaryDto
 }
 
 export const getStudentInfoForUpload = async (): Promise<ClassWithStudents[]> => {
@@ -93,11 +95,6 @@ export const getStudents = async (filters: { classId?: string, searchTerm?: stri
   }
 
   const response = await httpClient.get<Student[]>(url)
-  return response.data
-}
-
-export const getStudentById = async (id: string): Promise<Student> => {
-  const response = await httpClient.get<Student>(`/Student/${id}`)
   return response.data
 }
 
@@ -168,7 +165,11 @@ export const updateAssignment = async (assignmentData: Assignment): Promise<Assi
 export const deleteAssignment = async (id: string): Promise<void> => {
   await httpClient.delete(`/EssayAssignment/${id}`)
 }
-
+export const submissionSummary = async (studentId: string): Promise<EssaySubmissionSummaryDto[]> => {
+  let url = `/EssaySubmission/summary?studentId=${studentId}`
+  const response = await httpClient.get<EssaySubmissionSummaryDto[]>(url)
+  return response.data
+}
 export const searchSubmissions = async (filters: { assignmentId?: string, studentId?: string, top?: number }): Promise<Submission[]> => {
   let url = '/EssaySubmissionSearch'
   const params = new URLSearchParams()

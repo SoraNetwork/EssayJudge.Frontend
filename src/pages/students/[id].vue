@@ -1,8 +1,8 @@
 <template>
   <div>
-    <a-button class="mb-4" :href="'/students'">
+    <a-button style="margin-bottom: 16px;" type="link" href="/students">
       <template #icon><ArrowLeftOutlined /></template>
-      返回学生列表
+        返回学生列表
     </a-button>
 
     <div v-if="loading" class="flex justify-center items-center" style="height: 400px;">
@@ -12,7 +12,6 @@
     <div v-else-if="error" class="text-center py-8">
       <ExclamationCircleOutlined class="text-red-500 text-6xl mb-4" />
       <h2 class="text-xl text-red-500">{{ error }}</h2>
-      <a-button class="mt-4" type="primary" :href="'/students'">返回学生列表</a-button>
     </div>
 
     <div v-else>
@@ -26,25 +25,8 @@
               </a-avatar>
 
               <h2 class="text-xl mb-1">{{ student.name }}</h2>
-              <p class="text-gray-500 mb-4">{{ student.className || '未分配班级' }}</p>
-
-              <a-divider class="mb-4" />
-
-              <a-list :data-source="studentInfoList" size="small">
-                <template #renderItem="{ item }">
-                  <a-list-item>
-                    <template #prepend>
-                      <component :is="item.icon" class="text-blue-500" />
-                    </template>
-                    <a-list-item-meta>
-                      <template #title>{{ item.label }}</template>
-                      <template #description>{{ item.value || '未设置' }}</template>
-                    </a-list-item-meta>
-                  </a-list-item>
-                </template>
-              </a-list>
-
-              <a-divider class="my-4" />
+              <p class="text-gray-500 mb-4" >班级：{{ student.className || '未分配班级' }}</p>
+              <p class="text-gray-500 mb-4">学号：{{ student.studentId }}</p>
 
               <a-button
                 block
@@ -63,7 +45,7 @@
             <a-col :span="12">
               <a-card>
                 <div class="text-center">
-                  <div class="text-4xl font-bold">{{ submissions.length }}</div>
+                  <div class="text-4xl font-bold">{{ submissionSummaries.length }}</div>
                   <div class="text-sm text-gray-500">作文提交</div>
                 </div>
               </a-card>
@@ -87,35 +69,35 @@
 
             <a-table
               :columns="columns"
-              :data-source="submissions"
+              :data-source="submissionSummaries"
               :loading="loadingSubmissions"
               :pagination="false"
               row-key="id"
             >
               <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'assignmentTitle'">
-                  <a-tooltip :title="record.assignmentTitle">
+                <template v-if="column.key === 'titleContext'">
+                  <a-tooltip :title="record.titleContext">
                     <span class="truncate inline-block" style="max-width: 200px">
-                      {{ record.assignmentTitle }}
+                      {{ record.titleContext }}
                     </span>
                   </a-tooltip>
                 </template>
 
-                <template v-if="column.key === 'status'">
-                  <a-tag :color="getStatusColor(record.status)">
-                    {{ getStatusText(record.status) }}
+                <template v-if="column.key === 'isError'">
+                  <a-tag :color="record.isError ? 'red' : 'green'">
+                    {{ record.isError ? '错误' : '正常' }}
                   </a-tag>
                 </template>
 
-                <template v-if="column.key === 'score'">
-                  <template v-if="record.status === 'Evaluated'">
-                    <span :class="getScoreColor(record.score)">{{ record.score }}</span>
+                <template v-if="column.key === 'finalScore'">
+                  <template v-if="!record.isError && record.finalScore !== undefined">
+                    <span :class="getScoreColor(record.finalScore)">{{ record.finalScore }}</span>
                   </template>
                   <span v-else>-</span>
                 </template>
 
-                <template v-if="column.key === 'submissionDate'">
-                  {{ formatDateUTC8(record.submissionDate) }}
+                <template v-if="column.key === 'createdAt'">
+                  {{ formatDateUTC8(record.createdAt) }}
                 </template>
 
                 <template v-if="column.key === 'actions'">
@@ -131,11 +113,33 @@
           <a-card class="mt-4" v-if="hasEvaluatedSubmissions">
             <template #title>成绩趋势</template>
 
-            <div style="height: 300px;">
-              <!-- 这里可以集成图表库，如Chart.js或Echarts -->
-              <!-- 简单起见，这里使用占位符 -->
-              <div class="flex justify-center items-center h-full text-gray-400">
-                图表功能待实现
+            <div style="height: 300px; position: relative;">
+              <canvas
+                ref="chartCanvas"
+                style="width: 100%; height: 100%; cursor: pointer;"
+                @click="handleChartClick"
+                @mousemove="handleChartMouseMove"
+                @mouseleave="handleChartMouseLeave"
+              ></canvas>
+              <!-- 自定义提示框 -->
+              <div
+                v-if="tooltipVisible"
+                :style="{
+                  position: 'absolute',
+                  left: tooltipPosition.x + 'px',
+                  top: tooltipPosition.y + 'px',
+                  transform: 'translate(-50%, -100%)',
+                  pointerEvents: 'none',
+                  zIndex: 1000
+                }"
+                class="chart-tooltip"
+              >
+                <div class="tooltip-content">
+                  <div class="tooltip-title">{{ tooltipData.title }}</div>
+                  <div class="tooltip-score">分数: <span :class="getScoreColor(tooltipData.score)">{{ tooltipData.score }}</span></div>
+                  <div class="tooltip-date">时间: {{ tooltipData.date }}</div>
+                  <div class="tooltip-hint">点击查看详情</div>
+                </div>
               </div>
             </div>
           </a-card>
@@ -179,23 +183,7 @@
               :loading="loadingClasses"
               allowClear
             />
-          </a-form-item>
-
-          <a-form-item
-            label="联系电话"
-            name="phone"
-          >
-            <a-input v-model:value="editedItem.phone" />
-          </a-form-item>
-
-          <a-form-item
-            label="电子邮箱"
-            name="email"
-            :rules="[
-              { type: 'email', message: '请输入有效的邮箱地址' }
-            ]"
-          >
-            <a-input v-model:value="editedItem.email" />
+            
           </a-form-item>
         </a-form>
       </a-modal>
@@ -204,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeftOutlined,
@@ -215,8 +203,8 @@ import {
   PhoneOutlined,
   MailOutlined
 } from '@ant-design/icons-vue'
-import { getStudentById, searchSubmissions, getClasses, updateStudent, getClassById } from '@/services/apiService';
-import { formatDateUTC8 } from '@/composables/useDateFormat';
+import { submissionSummary, getClasses, updateStudent, getClassById, getStudents } from '@/services/apiService'
+import { formatDateUTC8 } from '@/composables/useDateFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -233,6 +221,7 @@ const student = ref<any>({
   email: ''
 })
 const submissions = ref<any[]>([])
+const submissionSummaries = ref<any[]>([])
 const classes = ref<any[]>([])
 const loading = ref(true)
 const loadingSubmissions = ref(true)
@@ -241,6 +230,12 @@ const error = ref('')
 const editDialog = ref(false)
 const saving = ref(false)
 const form = ref<any>(null)
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+const tooltipVisible = ref(false)
+const tooltipData = ref<any>({})
+const tooltipPosition = ref({ x: 0, y: 0 })
+const chartPoints = ref<{x: number, y: number, data: any}[]>([])
+const hoveredPointIndex = ref<number>(-1)
 
 // 编辑项
 const editedItem = ref<any>({
@@ -250,25 +245,6 @@ const editedItem = ref<any>({
   phone: '',
   email: ''
 })
-
-// 学生信息列表
-const studentInfoList = computed(() => [
-  {
-    icon: UserOutlined,
-    label: '学号',
-    value: student.value.studentId
-  },
-  {
-    icon: PhoneOutlined,
-    label: '联系电话',
-    value: student.value.phone
-  },
-  {
-    icon: MailOutlined,
-    label: '电子邮箱',
-    value: student.value.email
-  }
-])
 
 // 班级选项
 const classOptions = computed(() => {
@@ -285,25 +261,39 @@ const filterOption = (input: string, option: any) => {
 
 // 表格列定义
 const columns = [
-  { title: '测验题目', dataIndex: 'assignmentTitle', key: 'assignmentTitle', sorter: (a: any, b: any) => (a.assignmentTitle || '').localeCompare(b.assignmentTitle || '') },
-  { title: '状态', key: 'status', sorter: (a: any, b: any) => (a.status || '').localeCompare(b.status || '') },
-  { title: '分数', key: 'score', sorter: (a: any, b: any) => (a.score || 0) - (b.score || 0) },
-  { title: '提交时间', key: 'submissionDate', sorter: (a: any, b: any) => new Date(a.submissionDate || 0).getTime() - new Date(b.submissionDate || 0).getTime() },
+  { title: '测验题目', dataIndex: 'titleContext', key: 'titleContext', sorter: (a: any, b: any) => (a.titleContext || '').localeCompare(b.titleContext || '') },
+  { title: '状态', key: 'isError', sorter: (a: any, b: any) => (a.isError === b.isError) ? 0 : (a.isError ? 1 : -1) },
+  { title: '分数', key: 'finalScore', sorter: (a: any, b: any) => (a.finalScore || 0) - (b.finalScore || 0) },
+  { title: '提交时间', key: 'createdAt', sorter: (a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
 ]
 
+// 图表数据
+const chartData = computed(() => {
+  const validSubmissions = submissionSummaries.value
+    .filter(s => !s.isError && s.finalScore !== undefined)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
+  return validSubmissions.map(sub => ({
+    date: formatDateUTC8(sub.createdAt),
+    score: sub.finalScore,
+    title: sub.titleContext || '无标题',
+    id: sub.id
+  }))
+})
+
 // 计算属性：平均分
 const averageScore = computed(() => {
-  const evaluatedSubmissions = submissions.value.filter(s => s.status === 'Evaluated' && s.score !== undefined)
-  if (evaluatedSubmissions.length === 0) return '-'
+  const validSubmissions = submissionSummaries.value.filter(s => !s.isError && s.finalScore !== undefined)
+  if (validSubmissions.length === 0) return '-'
 
-  const sum = evaluatedSubmissions.reduce((acc, curr) => acc + curr.score, 0)
-  return (sum / evaluatedSubmissions.length).toFixed(1)
+  const sum = validSubmissions.reduce((acc, curr) => acc + (curr.finalScore || 0), 0)
+  return (sum / validSubmissions.length).toFixed(1)
 })
 
 // 计算属性：是否有已评测的提交
 const hasEvaluatedSubmissions = computed(() => {
-  return submissions.value.some(s => s.status === 'Evaluated' && s.score !== undefined)
+  return submissionSummaries.value.some(s => !s.isError && s.finalScore !== undefined)
 })
 
 // 获取学生详情
@@ -312,7 +302,9 @@ async function fetchStudentDetails() {
   error.value = ''
 
   try {
-    const studentData = await getStudentById(studentId.value);
+    // 使用 getStudents 获取所有学生，然后通过 id 查找特定学生
+    const allStudents = await getStudents({});
+    const studentData = allStudents.find(s => s.id === studentId.value);
 
     if (!studentData) {
       error.value = '未找到学生信息'
@@ -344,8 +336,8 @@ async function fetchStudentDetails() {
       email: student.value.email
     }
 
-    // 获取作文提交列表
-    await fetchSubmissions()
+    // 获取作文提交摘要列表
+    await fetchSubmissionSummaries()
 
     // 获取班级列表
     await fetchClasses()
@@ -358,27 +350,15 @@ async function fetchStudentDetails() {
   }
 }
 
-// 获取作文提交列表
-async function fetchSubmissions() {
+// 获取作文提交摘要列表
+async function fetchSubmissionSummaries() {
   loadingSubmissions.value = true
 
   try {
-    const submissionData = await searchSubmissions({ studentId: studentId.value });
-
-    // 获取每个提交的测验题目信息 (This part might need backend support or a separate API call if assignment title isn't included)
-    // Assuming the backend searchSubmissions now includes assignmentTitle or we fetch it here
-    const enrichedSubmissions = await Promise.all(submissionData.map(async (submission: any) => {
-      // If backend doesn't return assignmentTitle, you might need:
-      // const assignmentResponse = await api.get(`/EssayAssignment/${submission.assignmentId}`);
-      // const assignment = assignmentResponse.data;
-      // return { ...submission, assignmentTitle: assignment?.title || '未知题目' };
-      // For now, assuming searchSubmissions includes assignmentTitle
-       return submission; // Assuming searchSubmissions returns enriched data
-    }));
-
-    submissions.value = enrichedSubmissions
+    const data = await submissionSummary(studentId.value);
+    submissionSummaries.value = data || [];
   } catch (err) {
-    console.error('获取作文提交列表失败:', err)
+    console.error('获取作文提交摘要列表失败:', err)
   } finally {
     loadingSubmissions.value = false
   }
@@ -427,26 +407,6 @@ function getInitials(name: string) {
   return name.charAt(0).toUpperCase()
 }
 
-// 获取状态文本
-function getStatusText(status: string) {
-  const statusMap: Record<string, string> = {
-    'Submitted': '已提交',
-    'Evaluating': '评测中',
-    'Evaluated': '已评测'
-  }
-  return statusMap[status] || status
-}
-
-// 获取状态颜色
-function getStatusColor(status: string) {
-  const colorMap: Record<string, string> = {
-    'Submitted': 'blue',
-    'Evaluating': 'orange',
-    'Evaluated': 'green'
-  }
-  return colorMap[status] || 'default'
-}
-
 // 获取分数颜色
 function getScoreColor(score: number) {
   if (score >= 90) return 'text-green-500'
@@ -455,12 +415,254 @@ function getScoreColor(score: number) {
   return 'text-red-500'
 }
 
-// 页面加载时获取数据
-onMounted(() => {
-  fetchStudentDetails()
+// 绘制图表
+function drawChart() {
+  const canvas = chartCanvas.value
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const rect = canvas.getBoundingClientRect()
+  canvas.width = rect.width * 2
+  canvas.height = rect.height * 2
+  ctx.scale(2, 2)
+
+  const width = rect.width
+  const height = rect.height
+  const padding = { top: 20, right: 20, bottom: 40, left: 50 }
+
+  const data = chartData.value
+  if (data.length === 0) return
+
+  const chartWidth = width - padding.left - padding.right
+  const chartHeight = height - padding.top - padding.bottom
+
+  // 清空画布
+  ctx.clearRect(0, 0, width, height)
+
+  // 绘制网格线和坐标轴
+  ctx.strokeStyle = '#e8e8e8'
+  ctx.lineWidth = 1
+
+  // Y轴网格线 (0-100分，每20分一条线)
+  for (let i = 0; i <= 5; i++) {
+    const y = padding.top + (chartHeight * i) / 5
+    const score = 100 - i * 20
+
+    ctx.beginPath()
+    ctx.moveTo(padding.left, y)
+    ctx.lineTo(width - padding.right, y)
+    ctx.stroke()
+
+    // Y轴标签
+    ctx.fillStyle = '#666'
+    ctx.font = '12px Arial'
+    ctx.textAlign = 'right'
+    ctx.fillText(score.toString(), padding.left - 10, y + 4)
+  }
+
+  // 计算数据点的位置
+  const pointPositions: {x: number, y: number, data: any}[] = []
+
+  data.forEach((item, index) => {
+    const x = padding.left + (chartWidth * index) / (data.length - 1 || 1)
+    const y = padding.top + chartHeight - (item.score / 100) * chartHeight
+    pointPositions.push({ x, y, data: item })
+  })
+
+  chartPoints.value = pointPositions
+
+  // 绘制折线
+  if (pointPositions.length > 0) {
+    ctx.beginPath()
+    ctx.strokeStyle = '#1890ff'
+    ctx.lineWidth = 3
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    pointPositions.forEach((point, index) => {
+      if (index === 0) {
+        ctx.moveTo(point.x, point.y)
+      } else {
+        ctx.lineTo(point.x, point.y)
+      }
+    })
+    ctx.stroke()
+
+    // 绘制数据点
+    pointPositions.forEach((point, index) => {
+      ctx.beginPath()
+      // 悬停时放大数据点
+      const radius = index === hoveredPointIndex.value ? 9 : 6
+      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2)
+      ctx.fillStyle = '#1890ff'
+      ctx.fill()
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 2
+      ctx.stroke()
+
+      // 悬停时添加阴影效果
+      if (index === hoveredPointIndex.value) {
+        ctx.shadowColor = 'rgba(24, 144, 255, 0.5)'
+        ctx.shadowBlur = 10
+        ctx.beginPath()
+        ctx.arc(point.x, point.y, radius + 3, 0, Math.PI * 2)
+        ctx.strokeStyle = 'rgba(24, 144, 255, 0.3)'
+        ctx.lineWidth = 2
+        ctx.stroke()
+        ctx.shadowBlur = 0
+      }
+    })
+  }
+
+  // X轴标签
+  ctx.fillStyle = '#666'
+  ctx.font = '11px Arial'
+  ctx.textAlign = 'center'
+
+  data.forEach((item, index) => {
+    const x = padding.left + (chartWidth * index) / (data.length - 1 || 1)
+    // 悬停时高亮标签
+    if (index === hoveredPointIndex.value) {
+      ctx.fillStyle = '#1890ff'
+      ctx.font = 'bold 12px Arial'
+    } else {
+      ctx.fillStyle = '#666'
+      ctx.font = '11px Arial'
+    }
+    ctx.fillText(item.date, x, height - padding.bottom + 20)
+  })
+}
+
+// 处理图表点击
+function handleChartClick(event: MouseEvent) {
+  const canvas = chartCanvas.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+
+  // 检查是否点击了某个数据点附近
+  for (let i = 0; i < chartPoints.value.length; i++) {
+    const point = chartPoints.value[i]
+    const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2)
+    if (distance < 15) {
+      openInNewTab(`/essays/${point.data.id}`)
+      return
+    }
+  }
+}
+
+// 处理鼠标移动
+function handleChartMouseMove(event: MouseEvent) {
+  const canvas = chartCanvas.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+
+  let foundIndex = -1
+
+  // 检查鼠标是否在某个数据点附近
+  for (let i = 0; i < chartPoints.value.length; i++) {
+    const point = chartPoints.value[i]
+    const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2)
+    if (distance < 15) {
+      foundIndex = i
+      break
+    }
+  }
+
+  // 如果悬停状态改变，重新绘制图表
+  if (foundIndex !== hoveredPointIndex.value) {
+    hoveredPointIndex.value = foundIndex
+    drawChart()
+  }
+
+  // 显示或隐藏提示框
+  if (foundIndex !== -1) {
+    const point = chartPoints.value[foundIndex]
+    tooltipVisible.value = true
+    tooltipData.value = point.data
+    tooltipPosition.value = {
+      x: point.x,
+      y: point.y - 15
+    }
+  } else {
+    tooltipVisible.value = false
+  }
+}
+
+// 处理鼠标离开
+function handleChartMouseLeave() {
+  if (hoveredPointIndex.value !== -1) {
+    hoveredPointIndex.value = -1
+    tooltipVisible.value = false
+    drawChart()
+  }
+}
+
+// 监听数据变化重新绘制图表
+watch(submissionSummaries, () => {
+  nextTick(() => drawChart())
+}, { deep: true })
+
+// 窗口大小变化时重新绘制图表
+window.addEventListener('resize', drawChart)
+
+// 保留原有数据加载逻辑
+onMounted(async () => {
+  await fetchStudentDetails()
+  nextTick(() => drawChart())
 })
 
 function openInNewTab(path: string) {
   window.open(path, '_blank', 'noopener,noreferrer')
 }
 </script>
+
+<style scoped>
+.chart-tooltip {
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  min-width: 180px;
+}
+
+.tooltip-content {
+  color: #fff;
+}
+
+.tooltip-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  word-break: break-word;
+  max-width: 200px;
+}
+
+.tooltip-score {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.tooltip-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.tooltip-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  font-style: italic;
+}
+</style>
