@@ -30,6 +30,9 @@
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'actions'">
+              <a-tooltip title="查看详情">
+                <a-button size="small" type="text" :href="`/students/${record.id}`" target="_blank"><EyeOutlined /></a-button>
+              </a-tooltip>
               <a-tooltip title="删除学生">
                 <a-button type="text" size="small" danger @click="confirmDelete(record)">
                   <template #icon><DeleteOutlined /></template>
@@ -102,7 +105,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { PlusOutlined, ArrowLeftOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+import { PlusOutlined, ArrowLeftOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons-vue';
 import { getStudents, deleteStudent as apiDeleteStudent, getClasses, createStudent, type Student } from '@/services/apiService';
 
 // Responsive display detection (Vuetify-independent)

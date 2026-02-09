@@ -15,9 +15,9 @@
         </a-col>
         <a-col :xs="24" :md="8">
           <a-card title="作文信息">
-            <p><strong>测验来源:</strong> {{ essay.essayAssignment.description }}</p>
+            <a style="color:var(--background-color)" :href="`/assignments/${essay.essayAssignment.id}`" target="_blank"><strong>测验来源:</strong> {{ essay.essayAssignment.description }}</a>
             <p><strong>测验题目:</strong> {{ essay.essayAssignment.titleContext }}</p>
-            <p><strong>学生:</strong> {{ essay.student?.name }}</p>
+            <a style="color:var(--background-color)" :href="`/students/${essay.student?.id}`" target="_blank"><strong>学生:</strong> {{ essay.student?.name  ?? "未知学生"}}</a>
             <p><strong>班级:</strong> {{ classInfo?.name ?? '未分配班级' }}</p>
             <p v-if="essay.isError" style="color: #ff4d4f;">
               <strong>错误信息:</strong> {{ essay.errorMessage }}

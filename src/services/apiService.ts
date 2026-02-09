@@ -35,6 +35,7 @@ export type {
   EssaySubmissionSummaryDto
 }
 
+/// 学生上传相关API
 export const getStudentInfoForUpload = async (): Promise<ClassWithStudents[]> => {
   const response = await httpClient.get<ClassWithStudents[]>('/essay/studentupload/studentinfo')
   return response.data
@@ -78,6 +79,7 @@ export const queryEssayByShortId = async (shortId: string): Promise<QueriedEssay
   return response.data
 }
 
+// 学生管理相关API
 export const getStudents = async (filters: { classId?: string, searchTerm?: string }): Promise<Student[]> => {
   let url = '/Student'
   const params = new URLSearchParams()
@@ -112,6 +114,7 @@ export const deleteStudent = async (id: string): Promise<void> => {
   await httpClient.delete(`/Student/${id}`)
 }
 
+// 班级管理相关API
 export const getClasses = async (): Promise<Class[]> => {
   const response = await httpClient.get<Class[]>('/Class')
   return response.data
@@ -136,6 +139,7 @@ export const deleteClass = async (id: string): Promise<void> => {
   await httpClient.delete(`/Class/${id}`)
 }
 
+// 作业管理相关API
 export const getAssignments = async (): Promise<Assignment[]> => {
   const response = await httpClient.get<Assignment[]>('/EssayAssignment', {
     headers: {
@@ -165,11 +169,14 @@ export const updateAssignment = async (assignmentData: Assignment): Promise<Assi
 export const deleteAssignment = async (id: string): Promise<void> => {
   await httpClient.delete(`/EssayAssignment/${id}`)
 }
+
+// 提交管理相关API
 export const submissionSummary = async (studentId: string): Promise<EssaySubmissionSummaryDto[]> => {
   let url = `/EssaySubmission/summary?studentId=${studentId}`
   const response = await httpClient.get<EssaySubmissionSummaryDto[]>(url)
   return response.data
 }
+
 export const searchSubmissions = async (filters: { assignmentId?: string, studentId?: string, top?: number }): Promise<Submission[]> => {
   let url = '/EssaySubmissionSearch'
   const params = new URLSearchParams()
@@ -198,6 +205,22 @@ export const getSubmissionById = async (id: string): Promise<Submission> => {
   const response = await httpClient.get<Submission>(`/EssaySubmission/${id}`)
   return response.data
 }
+
+/*
+export const essayUploadRE = async (assignmentId: string, imageFile: File, splitCoordinates?: number[]): Promise<{ submissionId: string }> => {
+  const formData = new FormData()
+  formData.append('essayAssignmentId', assignmentId)
+  formData.append('splitCoordinates', JSON.stringify(splitCoordinates))
+  imageFiles.forEach(file => {
+    formData.append('imageFiles', file)
+  })
+  const response = await httpClient.post<{ submissionIds: string[] }>('/EssaySubmission/batch', formData, {
+    timeout: 180000
+  })
+  return response.data
+
+}
+*/
 
 export const uploadEssaySubmission = async (assignmentId: string, imageFile: File, columnCount: number, enableV3: boolean, splitCoordinates?: number[]): Promise<{ submissionId: string }> => {
   const formData = new FormData()
@@ -260,6 +283,7 @@ export const deleteSubmission = async (id: string): Promise<void> => {
   await httpClient.delete(`/EssaySubmission`, { params: { id } })
 }
 
+// API密钥管理相关API
 export const getApiKeys = async (): Promise<ApiKey[]> => {
   const response = await httpClient.get<ApiKey[]>('/api/ApiKey')
   return response.data
@@ -300,6 +324,7 @@ export const deleteApiKey = async (id: string): Promise<void> => {
   await httpClient.delete(`/api/ApiKey/${id}`)
 }
 
+// AI模型管理相关API
 export const getAllAIModels = async (): Promise<AIModel[]> => {
   const response = await httpClient.get<AIModel[]>('/api/ApiKey/all-models')
   return response.data
@@ -333,6 +358,7 @@ export const deleteAIModelUsageSetting = async (id: string): Promise<void> => {
   await httpClient.delete(`/api/ApiKey/model-usage-settings/${id}`)
 }
 
+// 导出功能相关API
 export const exportEssaySubmissions = async (filter?: ExportFilterDto): Promise<Blob> => {
   const response = await httpClient.post<Blob>('/export/essays', filter, {
     responseType: 'blob'
@@ -362,6 +388,7 @@ export const exportEssaySubmissionsByGet = async (
   return response.data
 }
 
+// 系统状态相关API
 export const getServerStatus = async (): Promise<ServerStatus> => {
   const response = await httpClient.get<ServerStatus>('/api/Status')
   return response.data
