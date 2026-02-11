@@ -46,13 +46,24 @@ export const getAssignmentsForStudent = async (studentId: string): Promise<Assig
   return response.data
 }
 
-export const checkEssayImage = async (imageFile: File): Promise<{ success: boolean; processedImageUrl: string; message?: string }> => {
+export const checkImg = async (imageFile: File): Promise<{ success: boolean; processedImageUrl: string; message?: string }> => {
   const formData = new FormData()
   formData.append('file', imageFile)
   const response = await httpClient.post<{ success: boolean; processedImageUrl: string; message?: string }>('/essay/studentupload/checkimg', formData, {
     validateStatus: (status) => status < 500,
   })
   return response.data
+}
+
+export const checkImgColumns = async (imageFiles: File[]): Promise<{ success: boolean; processedImageUrl: string; message?: string }> => {
+  const formData = new FormData();
+  imageFiles.forEach(file => {
+    formData.append('files', file);
+  });
+  const response = await httpClient.post<{ success: boolean; processedImageUrl: string; message?: string }>('/essay/studentupload/checkimg/columns', formData, {
+    validateStatus: (status) => status < 500,
+  });
+  return response.data;
 }
 
 export const submitEssayWithImage = async (data: { studentId: string; essayAssignmentId: string; processedImageUrl: string; columnCount: number }): Promise<{ id: string }> => {
