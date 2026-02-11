@@ -177,7 +177,7 @@
         <a-button
           type="primary"
           :loading="loading"
-          :disabled="(editableScore === originalEssayScore && !selectedStudentId) || selectedStudentId === originalStudentId"
+          :disabled=" !selectedStudentId || (editableScore !== null && (editableScore < 0 || editableScore > essay.essayAssignment.totalScore))"
           @click="updateScore"
         >保存修改</a-button>
       </template>

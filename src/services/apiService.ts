@@ -106,7 +106,7 @@ export const createStudent = async (studentData: Omit<Student, 'id' | 'className
 }
 
 export const updateStudent = async (id: string, studentData: Partial<Omit<Student, 'id' | 'className' | 'studentCount'>>): Promise<Student> => {
-  const response = await httpClient.put<Student>(`/Student/${id}`, studentData)
+  const response = await httpClient.put<Student>(`/Student/${id}`, studentData, {headers: { 'Content-Type': 'application/json' }})
   return response.data
 }
 
@@ -162,7 +162,11 @@ export const createAssignment = async (assignmentData: Omit<Assignment, 'id' | '
 }
 
 export const updateAssignment = async (assignmentData: Assignment): Promise<Assignment> => {
-  const response = await httpClient.put<Assignment>('/EssayAssignment', assignmentData)
+  const response = await httpClient.put<Assignment>('/EssayAssignment', assignmentData, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
   return response.data
 }
 
