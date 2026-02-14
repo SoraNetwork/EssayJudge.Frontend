@@ -1,25 +1,23 @@
 <template>
   <v-app>
-    <!-- 检测到非移动端设备时显示遮罩 -->
+    <!-- 路由变化时显示遮罩 -->
     <div v-if="showMobileOverlay" class="mobile-overlay">
       <div class="overlay-content">
-        <v-card width="400" class="pa-4">
-          <v-card-title class="text-h6 d-flex justify-space-between align-center">
+        <v-card :width="mdAndUp ? 400 : '90%'" class="pa-4 position-relative">
+          <v-card-title class="text-h6">
             <span>提示</span>
           </v-card-title>
           <v-card-text>
             使用V3享受更好的体验！
           </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <!-- 原按钮： <v-btn href="https://v3.ej.xingsora.cn" target="_blank" color="primary" elevation="12" size="x-large" width="50%">   前往V3   </v-btn> -->
+          <v-card-actions class="flex-column">
             <v-btn
               href="https://v3.ej.xingsora.cn"
               target="_blank"
               elevation="12"
-              size="x-large"
-              width="50%"
-              class="cool-btn"
+              :size="mdAndUp ? 'x-large' : 'large'"
+              :width="mdAndUp ? '50%' : '100%'"
+              class="cool-btn mb-2"
               aria-label="前往 V3"
             >
               <span class="btn-content">
@@ -27,8 +25,15 @@
                 前往V3
               </span>
             </v-btn>
-            <v-btn @click="closeOverlay" variant="plain" size="small">我知道了</v-btn>
           </v-card-actions>
+          <v-btn 
+            @click="closeOverlay" 
+            variant="text" 
+            size="x-small" 
+            class="close-btn text-caption"
+          >
+            我知道了
+          </v-btn>
         </v-card>
       </div>
     </div>
@@ -237,6 +242,13 @@ onMounted(async () => {
   if (!isMobileDevice()) {
     showMobileOverlay.value = true;
   }
+  
+  // 监听路由变化，每次路由变化时都显示遮罩
+  watch(() => router.currentRoute.value, () => {
+    if (!isMobileDevice()) {
+      showMobileOverlay.value = true;
+    }
+  });
 });
 
 // 监听系统主题变化，并同步更新应用主题
@@ -252,17 +264,28 @@ watch(preferredDark, (newVal) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  padding: 16px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .overlay-content {
   width: 100%;
   max-width: 400px;
-  padding: 20px;
 }
 
 /* 新增：酷炫按钮样式 */
@@ -333,9 +356,61 @@ watch(preferredDark, (newVal) => {
   box-shadow: 0 0 0 4px rgba(37,117,252,0.12), 0 12px 26px rgba(37,117,252,0.18);
 }
 
-/* 小屏幕适配：减少动画强度与尺寸 */
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .mobile-overlay {
+    padding: 12px;
+  }
+  
+  .overlay-content {
+    max-width: 100%;
+  }
+  
+  .cool-btn {
+    transform: none;
+    box-shadow: 0 6px 14px rgba(37,117,252,0.12);
+  }
+  
+  .cool-btn::after {
+    display: none;
+  }
+}
+
+/* 超小屏幕适配 */
 @media (max-width: 480px) {
-  .cool-btn { transform: none; box-shadow: 0 6px 14px rgba(37,117,252,0.12); }
-  .cool-btn::after { display: none; }
+  .mobile-overlay {
+    padding: 8px;
+  }
+  
+  .cool-btn {
+    font-size: 14px;
+  }
+}
+
+/* 右下角关闭按钮样式 */
+.close-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px !important;
+  min-width: auto !important;
+  height: auto !important;
+  padding: 2px 6px !important;
+  opacity: 0.7 !important;
+  color: rgba(0, 0, 0, 0.4) !important;
+  transition: opacity 0.2s ease;
+}
+
+.close-btn:hover {
+  opacity: 0.6 !important;
+}
+
+/* 深色主题下的关闭按钮颜色 */
+.v-theme--dark .close-btn {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.v-theme--dark .close-btn:hover {
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 </style>
