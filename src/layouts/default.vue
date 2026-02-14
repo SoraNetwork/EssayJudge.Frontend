@@ -13,7 +13,6 @@
           <v-card-actions class="flex-column">
             <v-btn
               href="https://v3.ej.xingsora.cn"
-              target="_blank"
               elevation="12"
               :size="mdAndUp ? 'x-large' : 'large'"
               :width="mdAndUp ? '50%' : '100%'"
