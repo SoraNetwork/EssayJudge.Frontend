@@ -14,7 +14,8 @@ import type {
   ClassWithStudents,
   QueriedEssay,
   ApiKeyUpdateDto,
-  EssaySubmissionSummaryDto
+  EssaySubmissionSummaryDto,
+  finihedAssignments
 } from './types'
 
 export type {
@@ -32,10 +33,15 @@ export type {
   ClassWithStudents,
   QueriedEssay,
   ApiKeyUpdateDto,
-  EssaySubmissionSummaryDto
+  EssaySubmissionSummaryDto,
+  finihedAssignments
 }
 
 /// 学生上传相关API
+export const getFinishedAssignments = async (studentId: string): Promise<finihedAssignments> => {
+  const response = await httpClient.get<finihedAssignments>(`/essay/studentupload/query/essays/${studentId}`)
+  return response.data
+}
 export const getStudentInfoForUpload = async (): Promise<ClassWithStudents[]> => {
   const response = await httpClient.get<ClassWithStudents[]>('/essay/studentupload/studentinfo')
   return response.data

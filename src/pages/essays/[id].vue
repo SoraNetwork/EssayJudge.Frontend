@@ -97,7 +97,7 @@
       <a-row :gutter="16">
         <a-col :xs="24" :lg="16">
           <a-card title="综合评判">
-            <div class="markdown-body" v-html="renderedMarkdown"></div>
+            <MarkdownRenderer :content="essay.judgeResult || ''" />
           </a-card>
         </a-col>
         <a-col :xs="24" :lg="8">
@@ -196,6 +196,7 @@ import type { Student, Class } from '@/services/apiService'
 import MarkdownIt from 'markdown-it'
 import 'github-markdown-css/github-markdown.css'
 import ExportToWord from '@/components/ExportToWord.vue'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { max } from 'lodash-es'
 
 // 初始化 markdown-it

@@ -1,3 +1,24 @@
+export interface StudentInfo {
+  id: string
+  name: string
+  studentId: string
+}
+
+export interface SubmissionItem {
+  id: string
+  essayAssignmentId: string
+  title: string
+  isError: boolean
+  score: number
+  finalScore: number
+  createdAt: string
+}
+
+export interface finihedAssignments {
+  student: StudentInfo
+  submissions: SubmissionItem[]
+}
+
 export interface Student {
   id: string
   name: string

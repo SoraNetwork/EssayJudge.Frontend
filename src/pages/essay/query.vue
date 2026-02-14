@@ -1,85 +1,169 @@
 <template>
-  <div class="query-container">
-    <h1 class="page-title">查询作文提交状态</h1>
+ <div>
+  <div style="margin-bottom: 16px;">
+    <a-radio-group v-model:value="queryMode" button-style="solid">
+      <a-radio-button value="queryByShortId">按作文查询码查询</a-radio-button>
+      <a-radio-button value="queryByStudentId">按学生考号查询</a-radio-button>
+    </a-radio-group>
+  </div>
 
-    <a-card>
-      <a-form @finish="queryEssay" layout="vertical">
-        <a-form-item
-          label="输入8位作文ID进行查询"
-          name="shortId"
-          :rules="shortIdRules"
-        >
+  <div v-if="queryMode === 'queryByShortId'">
+    <a-card style="margin-bottom: 16px;">
+      <a-row :gutter="16">
+        <a-col :span="16">
           <a-input
             v-model:value="shortId"
-            placeholder="请输入8位作文ID"
+            placeholder="请输入8位作文查询码"
             maxlength="8"
             show-count
             allow-clear
-            @input="shortId = shortId.toUpperCase()"
+            @input="shortId = shortId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8)"
+            @keydown.enter="queryEssay"
           />
-        </a-form-item>
-        <a-form-item>
+        </a-col>
+        <a-col :span="8">
           <a-button
             type="primary"
+            block
             @click="queryEssay"
             :loading="loading"
             :disabled="!shortId || shortId.length !== 8"
           >
             查询
           </a-button>
-        </a-form-item>
-      </a-form>
+        </a-col>
+      </a-row>
     </a-card>
 
-    <a-card v-if="loading" class="mt-4">
-      <a-spin tip="正在查询...">
-        <div style="height: 100px;"></div>
-      </a-spin>
-    </a-card>
+    <a-spin :spinning="loading">
+      <a-empty v-if="error" :description="error" />
 
-    <a-card v-if="essay" class="mt-4">
-      <template #title>作文详情</template>
-      <a-descriptions :column="1" bordered>
-        <a-descriptions-item label="作文ID">{{ essay.id }}</a-descriptions-item>
-        <a-descriptions-item label="学生姓名">{{ essay.student.name }}</a-descriptions-item>
-        <a-descriptions-item label="学号">{{ essay.student.studentId }}</a-descriptions-item>
-        <a-descriptions-item label="提交时间">{{ formatDateUTC8(essay.createdAt) }}</a-descriptions-item>
-        <a-descriptions-item label="状态">{{ displayStatus }}</a-descriptions-item>
-      </a-descriptions>
-      <template #extra>
-        <a-button
-          type="primary"
-          @click="exportToWord"
-          :loading="exportingWord"
-        >
-          <template #icon>
-            <FileWordOutlined />
-          </template>
-          导出Word
-        </a-button>
-      </template>
-    </a-card>
+      <div v-if="essay">
+        <a-card style="margin-bottom: 16px;">
+          <a-descriptions :column="2" bordered>
+            <a-descriptions-item label="作文ID">{{ essay.id }}</a-descriptions-item>
+            <a-descriptions-item label="学生姓名">{{ essay.student.name }}</a-descriptions-item>
+            <a-descriptions-item label="学号">{{ essay.student.studentId }}</a-descriptions-item>
+            <a-descriptions-item label="提交时间">{{ formatDateUTC8(essay.createdAt) }}</a-descriptions-item>
+            <a-descriptions-item label="状态">
+              <a-tag :color="essay.isError ? 'error' : (essay.finalScore !== null && essay.finalScore !== undefined ? 'success' : 'processing')">
+                {{ displayStatus }}
+              </a-tag>
+            </a-descriptions-item>
+            <a-descriptions-item>
+              <a-button
+                type="primary"
+                size="small"
+                @click="exportToWord"
+                :loading="exportingWord"
+              >
+                <template #icon><FileWordOutlined /></template>
+                导出Word
+              </a-button>
+            </a-descriptions-item>
+          </a-descriptions>
+        </a-card>
 
-    <a-card v-if="essay && essay.judgeResult" class="mt-4">
-      <template #title>综合评判</template>
-      <div class="markdown-body" v-html="renderedMarkdown"></div>
-    </a-card>
-
-    <BackToTop />
+        <a-card v-if="essay.judgeResult">
+          <template #title>综合评判</template>
+          <MarkdownRenderer :content="essay.judgeResult" />
+        </a-card>
+      </div>
+    </a-spin>
   </div>
+
+  <div v-else-if="queryMode === 'queryByStudentId'">
+    <a-card style="margin-bottom: 16px;">
+      <a-row :gutter="16">
+        <a-col :span="16">
+          <a-input
+            v-model:value="studentId"
+            placeholder="请输入8位学生考号"
+            maxlength="8"
+            show-count
+            allow-clear
+            @input="studentId = studentId.replace(/\D/g, '').slice(0, 8)"
+            @keydown.enter="queryStudent"
+          />
+        </a-col>
+        <a-col :span="8">
+          <a-button
+            type="primary"
+            block
+            @click="queryStudent"
+            :loading="loading"
+            :disabled="!studentId || studentId.length !== 8"
+          >
+            查询
+          </a-button>
+        </a-col>
+      </a-row>
+    </a-card>
+
+    <a-spin :spinning="loading">
+      <a-empty v-if="error" :description="error" />
+
+      <div v-if="finishedAssignments.length > 0">
+        <a-card style="margin-bottom: 16px;">
+          <a-descriptions :column="2" bordered>
+            <a-descriptions-item label="姓名">{{ finishedAssignments[0].student.name }}</a-descriptions-item>
+            <a-descriptions-item label="学号">{{ finishedAssignments[0].student.studentId }}</a-descriptions-item>
+            <a-descriptions-item label="提交数量">{{ finishedAssignments.length }} 篇</a-descriptions-item>
+          </a-descriptions>
+        </a-card>
+
+        <a-card>
+          <template #title>提交列表（点击复制查询码）</template>
+          <a-table
+            :dataSource="finishedAssignments"
+            :columns="submissionColumns"
+            :pagination="{ pageSize: 10, showSizeChanger: true, showTotal: (total: any) => `共 ${total} 条` }"
+            row-key="id"
+            :customRow="(record: { id: string }) => ({
+              onClick: () => copyShortId(record.id),
+              style: { cursor: 'pointer' }
+            })"
+          >
+            <template #bodyCell="{ column, record }">
+              <template v-if="column.key === 'title'">
+                <a-tooltip :title="copyTooltipVisible === record.id ? '已复制！' : '点击复制查询码'">
+                  <span>{{ record.title }}</span>
+                </a-tooltip>
+              </template>
+              <template v-else-if="column.key === 'status'">
+                <a-tag :color="record.isError ? 'error' : (record.finalScore !== null && record.finalScore !== undefined ? 'success' : 'processing')">
+                  {{ record.isError ? '批改错误' : (record.finalScore !== null && record.finalScore !== undefined ? '批改完成' : '批改中') }}
+                </a-tag>
+              </template>
+              <template v-else-if="column.key === 'finalScore'">
+                <span v-if="record.finalScore !== null && record.finalScore !== undefined">{{ record.finalScore }}</span>
+                <span v-else>-</span>
+              </template>
+              <template v-else-if="column.key === 'createdAt'">
+                {{ formatDateUTC8(record.createdAt) }}
+              </template>
+            </template>
+          </a-table>
+        </a-card>
+      </div>
+    </a-spin>
+  </div>
+
+  <BackToTop />
+</div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
 import { FileWordOutlined } from '@ant-design/icons-vue'
-import { queryEssayByShortId, type QueriedEssay as Essay } from '@/services/apiService'
+import { getFinishedAssignments, queryEssayByShortId, type QueriedEssay as Essay } from '@/services/apiService'
 import { formatDateUTC8 } from '@/composables/useDateFormat'
 import MarkdownIt from 'markdown-it'
 import 'github-markdown-css/github-markdown.css'
 import { Document, Paragraph, TextRun, HeadingLevel, Packer, Table, TableRow, TableCell, BorderStyle } from 'docx'
 import { saveAs } from 'file-saver'
 import BackToTop from '@/components/BackToTop.vue'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 const md = new MarkdownIt({
   html: true,
@@ -88,20 +172,34 @@ const md = new MarkdownIt({
   breaks: true,
 })
 
-const route = useRoute()
-const router = useRouter()
+const queryMode = ref<'queryByShortId' | 'queryByStudentId'>('queryByShortId')
 
 const errorMessage = ref('')
 const shortId = ref('')
+const studentId = ref('')
+interface SubmissionsResponse {
+  Student: {
+    Id: string
+    Name: string
+    StudentId: string
+  }
+  Submissions: {
+    Id: string
+    EssayAssignmentId: string
+    Title: string
+    IsError: boolean
+    Score: number
+    FinalScore: number
+    CreatedAt: string
+  }[]
+}
+
+const finishedAssignments = ref<any[]>([])
 const essay = ref<Essay | null>(null)
 const loading = ref(false)
 const error = ref('')
 const exportingWord = ref(false)
-
-const renderedMarkdown = computed(() => {
-  if (!essay.value?.judgeResult) return ''
-  return md.render(essay.value.judgeResult)
-})
+const copyTooltipVisible = ref<string | null>(null)
 
 const displayStatus = computed(() => {
   if (!essay.value) return ''
@@ -118,9 +216,40 @@ const shortIdRules = [
   { len: 8, message: 'ID必须是8位' },
 ]
 
-function goToEssayDetail() {
-  if (essay.value) {
-    router.push(`/essays/${essay.value.id}`)
+const submissionColumns = [
+  {
+    title: '作文标题',
+    dataIndex: 'title',
+    key: 'title',
+  },
+  {
+    title: '提交时间',
+    key: 'createdAt',
+  },
+  {
+    title: '状态',
+    key: 'status',
+  },
+  {
+    title: '分数',
+    key: 'finalScore',
+  },
+]
+
+function getShortId(fullId: string): string {
+  return fullId.slice(-8).toUpperCase()
+}
+
+async function copyShortId(fullId: string) {
+  const shortId = getShortId(fullId)
+  try {
+    await navigator.clipboard.writeText(shortId)
+    copyTooltipVisible.value = fullId
+    setTimeout(() => {
+      copyTooltipVisible.value = null
+    }, 2000)
+  } catch (err) {
+    console.error('复制失败:', err)
   }
 }
 
@@ -276,6 +405,48 @@ const convertMarkdownToParagraphs = (markdownText: string): Array<Paragraph | Ta
   return elements;
 };
 
+async function queryStudent() {
+  if (!studentId.value || studentId.value.length !== 8) {
+    error.value = '请输入有效的8位学生考号。'
+    return
+  }
+
+  loading.value = true
+  error.value = ''
+  finishedAssignments.value = []
+
+  try {
+    const response = await getFinishedAssignments(studentId.value)
+    console.log('API返回数据:', response)
+    
+    if (response && response.submissions && response.submissions.length > 0) {
+      // 处理API返回的新数据结构 - 使用正确的字段名
+      const submissionsWithStudentInfo = response.submissions.map((submission: any) => ({
+        id: submission.id,
+        title: submission.title,
+        essayAssignmentId: submission.essayAssignmentId,
+        isError: submission.isError,
+        score: submission.score,
+        finalScore: submission.finalScore,
+        createdAt: submission.createdAt,
+        student: {
+          id: response.student.id,
+          name: response.student.name,
+          studentId: response.student.studentId
+        }
+      }))
+      finishedAssignments.value = submissionsWithStudentInfo
+      console.log('处理后的提交列表:', finishedAssignments.value)
+    } else {
+      error.value = '未找到对应的学生记录或该学生暂无提交。'
+    }
+  } catch (err: any) {
+    console.error('查询失败:', err)
+    error.value = err.response?.data?.message || '查询失败，请稍后再试。'
+  } finally {
+    loading.value = false
+  }
+}
 async function queryEssay() {
   if (!shortId.value || shortId.value.length !== 8) {
     error.value = '请输入有效的8位作文ID。'
@@ -290,7 +461,6 @@ async function queryEssay() {
     const response = await queryEssayByShortId(shortId.value)
     if (response) {
       essay.value = response
-      router.push({ query: { id: shortId.value } })
     } else {
       error.value = '未找到对应的作文记录。'
     }
@@ -302,41 +472,9 @@ async function queryEssay() {
 }
 
 onMounted(() => {
-  if (route.query.id && typeof route.query.id === 'string') {
-    shortId.value = route.query.id.toUpperCase()
-    queryEssay()
-  }
-})
-
-watch(() => route.query.id, (newId) => {
-  if (newId && typeof newId === 'string' && newId.toUpperCase() !== shortId.value) {
-    shortId.value = newId.toUpperCase()
-    queryEssay()
-  }
+  // 不再从URL读取查询参数
 })
 </script>
 
 <style scoped>
-.query-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  color: var(--ant-color-text-base);
-}
-
-.mt-4 {
-  margin-top: 16px;
-}
-
-.markdown-body {
-  background-color: transparent !important;
-  color: inherit !important;
-  font-size: 1rem;
-}
 </style>
