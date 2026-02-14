@@ -119,10 +119,7 @@
             :columns="submissionColumns"
             :pagination="{ pageSize: 10, showSizeChanger: true, showTotal: (total: any) => `共 ${total} 条` }"
             row-key="id"
-            :customRow="(record: { id: string }) => ({
-              onClick: () => copyShortId(record.id),
-              style: { cursor: 'pointer' }
-            })"
+            :customRow="customRowHandler"
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'title'">
@@ -470,6 +467,11 @@ async function queryEssay() {
     loading.value = false
   }
 }
+
+const customRowHandler = (record: { id: string }) => ({
+  onClick: () => copyShortId(record.id),
+  style: { cursor: 'pointer' }
+})
 
 onMounted(() => {
   // 不再从URL读取查询参数
