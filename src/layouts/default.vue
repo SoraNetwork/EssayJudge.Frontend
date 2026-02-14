@@ -140,7 +140,8 @@
       </a-drawer>
 
       <a-layout-content class="content" style="margin: 24px 16px; overflow: initial;">
-        <div class="content-wrapper" :style="{ padding: '24px', background: 'var(--ant-color-bg-container)', borderRadius: '8px' }">
+        <!-- 桌面端：使用 content-wrapper 包装 -->
+        <div v-if="!isMobile" class="content-wrapper" :style="{ padding: '24px', background: 'var(--ant-color-bg-container)', borderRadius: '8px' }">
           <router-view v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <KeepAlive>
@@ -149,6 +150,14 @@
             </transition>
           </router-view>
         </div>
+        <!-- 移动端：直接显示在底部，不使用 content-wrapper -->
+        <router-view v-else v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <KeepAlive>
+              <component :is="Component" />
+            </KeepAlive>
+          </transition>
+        </router-view>
     </a-layout-content>
     </a-layout>
 
@@ -204,6 +213,12 @@ const appStore = useAppStore()
 const serverStatus = ref<ServerStatus | null>(null);
 const selectedKeys = ref<string[]>([route.path]);
 const mobileMenuOpen = ref(false);
+
+// 检测是否为移动设备
+const isMobile = computed(() => {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+});
 
 // 监听路由变化更新选中的菜单项
 watch(
@@ -360,5 +375,15 @@ onMounted(async () => {
   .content-wrapper {
     margin: 0 8px;
   }
+}
+
+/* 移动端内容样式 */
+.content:has(> .router-view-wrapper) {
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 </style>

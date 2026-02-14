@@ -132,7 +132,6 @@
              accept="image/*" 
              :error-messages="imageError" 
              show-size
-             multiple
              @change="handleImageSelected" 
              class="mb-4" />
           </div>
@@ -140,7 +139,7 @@
           <a-card v-if="processedImageUrl" class="mb-4">
             <template #title>
               <span>图片预览</span>
-              <a-tag color="success" style="margin-left: 8px;">已处理</a-tag>
+              <a-tag color="success" style="margin-left: 8px;">已上传</a-tag>
             </template>
             <div class="image-preview">
               <a-image
@@ -176,7 +175,7 @@
             </a-button>
             <a-button
               type="primary"
-              @click="submitEssay"
+              @click="RUSureToSubmit"
               :loading="submitting"
               :disabled="!isFormValid"
             >
@@ -186,7 +185,37 @@
         </a-form-item>
       </a-form>
     </a-card>
-
+    <div v-if="submitCard" class="overlay">
+      <a-card class="confirmation-card">
+        <template #title>
+          <span style="font-size: 1.2em; font-weight: bold;">确认提交</span>
+        </template>
+        <p style="margin-bottom: 12px;">您确定要提交这篇作文吗？提交后所有信息将无法更改！</p>
+        <p style="margin-bottom: 16px; color: #595959;">您当前的信息是：</p>
+        <div class="confirmation-info">
+          <div class="info-item">
+            <span class="info-label">班级：</span>
+            <span class="info-value">{{ classOptions.find(c => c.value === selectedClass)?.label }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">学生：</span>
+            <span class="info-value">{{ studentOptions.find(s => s.value === selectedStudent)?.label }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">作业：</span>
+            <span class="info-value">{{ assignmentOptions.find(a => a.value === selectedAssignment)?.label }}</span>
+          </div>
+          <div v-if="submitMode === 'image'" class="info-item">
+            <span class="info-label">分栏数：</span>
+            <span class="info-value">{{ columnCount }}</span>
+          </div>
+        </div>
+        <a-space style="display: flex; justify-content: flex-end; margin-top: 20px;">
+          <a-button @click="submitCard = false">取消</a-button>
+          <a-button type="primary" @click="submitEssay">确认提交</a-button>
+        </a-space>
+      </a-card>
+    </div>
     <!-- 成功提示 -->
     <a-modal
       v-model:open="showSuccessDialog"
@@ -226,7 +255,7 @@ import type { UploadFile } from 'ant-design-vue'
 import {
   getStudentInfoForUpload,
   getAssignmentsForStudent,
-  checkEssayImage,
+  checkImg,
   submitEssayWithImage,
   submitEssayWithText,
   type ClassWithStudents as Class,
@@ -249,6 +278,7 @@ const errorMessage = ref('')
 
 // 提交方式
 const submitMode = ref<'image' | 'text'>('image')
+const submitCard = ref(false)
 
 // 学生信息相关
 const classes = ref<Class[]>([])
@@ -341,7 +371,7 @@ const isFormValid = computed(() => {
            selectedStudent.value &&
            studentId.value &&
            selectedAssignment.value &&
-           processedImageUrl.value &&
+           (processedImageUrl.value || imageFile.value) &&
            columnCount.value >= 1 &&
            columnCount.value <= 4
   } else {
@@ -412,27 +442,33 @@ async function handleImageSelected(file: File) {
     url: URL.createObjectURL(file)
   }]
 
+  // 不再在选择时调用后端处理（弃用旧的检测/处理流程，保留注释以便回退）
+  /* 弃用（旧逻辑示例）:
   try {
-    const response = await checkEssayImage(file)
+    const response = await checkImgColumns([file])
     if (response?.success && response?.processedImageUrl) {
       processedImageUrl.value = response.processedImageUrl
       imageError.value = ''
-      imageFileList.value = [{
-        uid: file.name,
-        name: file.name,
-        status: 'done',
-        url: URL.createObjectURL(file)
-      }]
+      imageFileList.value = [{ uid: file.name, name: file.name, status: 'done', url: URL.createObjectURL(file) }]
       return false
     } else {
       throw new Error(response?.message || '图片处理失败')
     }
-  } catch (error: any) {
-    imageError.value = error.message || '图片处理失败'
-    processedImageUrl.value = ''
-    showErrorMessage(error.response?.data?.message || error.message || '图片处理失败')
-    return false
+  } catch (err) {
+    // ...
   }
+  */
+
+  // 仅在客户端记录所选文件，上传将在用户点击“提交作文”时进行
+  processedImageUrl.value = ''
+  imageError.value = ''
+  imageFileList.value = [{
+    uid: file.name,
+    name: file.name,
+    status: 'done',
+    url: URL.createObjectURL(file)
+  }]
+  return false
 }
 
 // 处理图片移除
@@ -443,6 +479,7 @@ function handleImageRemove() {
   imageError.value = ''
 }
 
+function RUSureToSubmit() {submitCard.value = true}
 // 提交作文
 async function submitEssay() {
   if (!isFormValid.value) {
@@ -454,12 +491,20 @@ async function submitEssay() {
     submitting.value = true
 
     if (submitMode.value === 'image') {
-      const response = await submitEssayWithImage({
+      // 如果已存在后端返回的 processedImageUrl（老流程），优先使用；
+      // 否则直接把用户选择的 imageFile 上传（新流程，无预处理）。
+      const payload: any = {
         studentId: studentId.value,
         essayAssignmentId: selectedAssignment.value,
-        processedImageUrl: processedImageUrl.value,
         columnCount: Math.floor(Number(columnCount.value))
-      })
+      }
+      if (processedImageUrl.value) {
+        payload.processedImageUrl = processedImageUrl.value
+      } else if (imageFile.value) {
+        payload.imageFile = imageFile.value
+      }
+
+      const response = await submitEssayWithImage(payload)
 
       if (response?.id) {
         submittedEssayShortId.value = response.id.slice(-8).toUpperCase()
@@ -705,5 +750,42 @@ watch(submitMode, () => {
 .modal-footer {
   margin-top: 24px;
   text-align: right;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.confirmation-card {
+  width: 400px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.confirmation-info {
+  margin-bottom: 16px;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.info-label {
+  font-weight: bold;
+}
+
+.info-value {
+  color: #595959;
 }
 </style>
