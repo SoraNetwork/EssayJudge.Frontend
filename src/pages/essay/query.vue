@@ -113,7 +113,7 @@
         </a-card>
 
         <a-card>
-          <template #title>提交列表（点击复制查询码）</template>
+          <template #title>提交列表（点击作文标题复制查询码）</template>
           <a-table
             :dataSource="finishedAssignments"
             :columns="submissionColumns"
@@ -218,18 +218,35 @@ const submissionColumns = [
     title: '作文标题',
     dataIndex: 'title',
     key: 'title',
+    sorter: (a: any, b: any) => a.title.localeCompare(b.title, 'zh-CN'),
   },
   {
     title: '提交时间',
     key: 'createdAt',
+    sorter: (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    defaultSortOrder: 'ascend',
   },
   {
     title: '状态',
     key: 'status',
+    sorter: (a: any, b: any) => {
+      const statusOrder = { '批改错误': 0, '批改中': 1, '批改完成': 2 }
+      const getStatus = (record: any) => {
+        if (record.isError) return '批改错误'
+        if (record.finalScore !== null && record.finalScore !== undefined) return '批改完成'
+        return '批改中'
+      }
+      return statusOrder[getStatus(a)] - statusOrder[getStatus(b)]
+    },
   },
   {
     title: '分数',
     key: 'finalScore',
+    sorter: (a: any, b: any) => {
+      const scoreA = a.finalScore !== null && a.finalScore !== undefined ? a.finalScore : -1
+      const scoreB = b.finalScore !== null && b.finalScore !== undefined ? b.finalScore : -1
+      return scoreB - scoreA
+    },
   },
 ]
 
