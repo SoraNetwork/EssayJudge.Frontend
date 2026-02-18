@@ -110,35 +110,64 @@
           </a-card>
 
           <!-- 成绩趋势图 -->
-          <a-card class="mt-4" v-if="hasEvaluatedSubmissions">
+          <a-card class="mt-4" v-if="hasEvaluatedSubmissions" style="position: relative;">
             <template #title>成绩趋势</template>
 
-            <div style="height: 300px; position: relative;">
-              <canvas
-                ref="chartCanvas"
-                style="width: 100%; height: 100%; cursor: pointer;"
-                @click="handleChartClick"
-                @mousemove="handleChartMouseMove"
-                @mouseleave="handleChartMouseLeave"
-              ></canvas>
-              <!-- 自定义提示框 -->
-              <div
-                v-if="tooltipVisible"
-                :style="{
-                  position: 'absolute',
-                  left: tooltipPosition.x + 'px',
-                  top: tooltipPosition.y + 'px',
-                  transform: 'translate(-50%, -100%)',
-                  pointerEvents: 'none',
-                  zIndex: 1000
-                }"
-                class="chart-tooltip"
-              >
-                <div class="tooltip-content">
-                  <div class="tooltip-title">{{ tooltipData.title }}</div>
-                  <div class="tooltip-score">分数: <span :class="getScoreColor(tooltipData.score)">{{ tooltipData.score }}</span></div>
-                  <div class="tooltip-date">时间: {{ tooltipData.date }}</div>
-                  <div class="tooltip-hint">点击查看详情</div>
+            <div ref="chartWrapper" style="height: 350px; position: relative;">
+              <!-- 图表画布区域 -->
+              <div style="height: 100%; overflow-x: auto; overflow-y: hidden; position: relative;">
+                <div ref="chartContainer" :style="{ width: chartContainerWidth + 'px', height: '100%', position: 'relative' }">
+                  <canvas
+                    ref="chartCanvas"
+                    style="height: 100%; cursor: pointer;"
+                    @click="handleChartClick"
+                    @mousemove="handleChartMouseMove"
+                    @mouseleave="handleChartMouseLeave"
+                  ></canvas>
+                </div>
+              </div>
+
+              <!-- 悬浮层：提示框和日期标签 -->
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; overflow: visible;">
+                <!-- 自定义提示框 - fixed 定位 -->
+                <div
+                  v-if="tooltipVisible"
+                  :style="{
+                    position: 'fixed',
+                    left: fixedTooltipPosition.x + 'px',
+                    top: fixedTooltipPosition.y + 'px',
+                    transform: 'translate(-50%, -100%)',
+                    zIndex: 10000
+                  }"
+                  class="chart-tooltip"
+                >
+                  <div class="tooltip-content">
+                    <div class="tooltip-title">{{ tooltipData.title }}</div>
+                    <div class="tooltip-score">分数: <span :class="getScoreColor(tooltipData.score)">{{ tooltipData.score }}</span></div>
+                    <div class="tooltip-date">时间: {{ tooltipData.date }}</div>
+                    <div class="tooltip-hint">点击查看详情</div>
+                  </div>
+                </div>
+
+                <!-- 横轴日期标签 - absolute 定位，相对于图表容器，垂直显示 -->
+                <div
+                  v-for="(label, index) in xAxisLabels"
+                  :key="index"
+                  :style="{
+                    position: 'absolute',
+                    left: label.x + 'px',
+                    bottom: '10px',
+                    transform: 'translateX(-50%) rotate(-90deg)',
+                    transformOrigin: 'center top',
+                    color: label.isHovered ? '#1890ff' : '#666',
+                    fontWeight: label.isHovered ? 'bold' : 'normal',
+                    fontSize: label.isHovered ? '12px' : '11px',
+                    whiteSpace: 'nowrap',
+                    zIndex: 9999,
+                    pointerEvents: 'none'
+                  }"
+                >
+                  {{ label.text }}
                 </div>
               </div>
             </div>
@@ -231,10 +260,15 @@ const editDialog = ref(false)
 const saving = ref(false)
 const form = ref<any>(null)
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
+const chartContainer = ref<HTMLDivElement | null>(null)
+const chartWrapper = ref<HTMLDivElement | null>(null)
+const chartContainerWidth = ref(0)
 const tooltipVisible = ref(false)
 const tooltipData = ref<any>({})
 const tooltipPosition = ref({ x: 0, y: 0 })
+const fixedTooltipPosition = ref({ x: 0, y: 0 })
 const chartPoints = ref<{x: number, y: number, data: any}[]>([])
+const xAxisLabels = ref<{x: number, text: string, isHovered: boolean}[]>([])
 const hoveredPointIndex = ref<number>(-1)
 
 // 编辑项
@@ -418,22 +452,39 @@ function getScoreColor(score: number) {
 // 绘制图表
 function drawChart() {
   const canvas = chartCanvas.value
-  if (!canvas) return
+  const container = chartContainer.value
+  if (!canvas || !container) return
+
+  const data = chartData.value
+  if (data.length === 0) return
 
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  const rect = canvas.getBoundingClientRect()
-  canvas.width = rect.width * 2
-  canvas.height = rect.height * 2
+  // 基础参数
+  const basePadding = { top: 20, right: 80, bottom: 40, left: 80 } // 减少底部padding，因为使用浮动布局的HTML标签
+  const minHeight = 350 // 增加容器高度以容纳浮动标签
+  const minPointSpacing = 80 // 每个数据点之间的最小间距
+
+  // 计算所需的最小宽度
+  const minRequiredWidth = basePadding.left + basePadding.right + (data.length - 1) * minPointSpacing
+
+  // 获取父容器的实际宽度
+  const parentWidth = container.parentElement?.clientWidth || 800
+
+  // 设置容器宽度（至少显示所有数据点，或父容器宽度）
+  const containerWidth = Math.max(parentWidth, minRequiredWidth)
+  chartContainerWidth.value = containerWidth
+
+  // 设置canvas尺寸
+  const rect = container.getBoundingClientRect()
+  canvas.width = containerWidth * 2
+  canvas.height = minHeight * 2
   ctx.scale(2, 2)
 
-  const width = rect.width
-  const height = rect.height
-  const padding = { top: 20, right: 20, bottom: 40, left: 50 }
-
-  const data = chartData.value
-  if (data.length === 0) return
+  const width = containerWidth
+  const height = minHeight
+  const padding = basePadding
 
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
@@ -445,10 +496,23 @@ function drawChart() {
   ctx.strokeStyle = '#e8e8e8'
   ctx.lineWidth = 1
 
-  // Y轴网格线 (0-100分，每20分一条线)
-  for (let i = 0; i <= 5; i++) {
-    const y = padding.top + (chartHeight * i) / 5
-    const score = 100 - i * 20
+  // 计算数据的最大值和最小值
+  const scores = data.map(item => item.score)
+  const maxScore = Math.max(...scores)
+  const minScore = Math.min(...scores)
+
+  // 向上取整到十位作为 Y 轴最大值
+  const yAxisMax = Math.ceil(maxScore / 10) * 10
+  // 向下取整到十位作为 Y 轴最小值
+  const yAxisMin = Math.floor(minScore / 10) * 10
+
+  // Y 轴范围
+  const yAxisRange = yAxisMax - yAxisMin
+
+  // Y轴网格线（7条线，6个间隔）
+  for (let i = 0; i < 7; i++) {
+    const y = padding.top + (chartHeight * i) / 6
+    const score = yAxisMax - (yAxisRange * i) / 6
 
     ctx.beginPath()
     ctx.moveTo(padding.left, y)
@@ -459,7 +523,7 @@ function drawChart() {
     ctx.fillStyle = '#666'
     ctx.font = '12px Arial'
     ctx.textAlign = 'right'
-    ctx.fillText(score.toString(), padding.left - 10, y + 4)
+    ctx.fillText(score.toFixed(0).toString(), padding.left - 10, y + 4)
   }
 
   // 计算数据点的位置
@@ -467,7 +531,9 @@ function drawChart() {
 
   data.forEach((item, index) => {
     const x = padding.left + (chartWidth * index) / (data.length - 1 || 1)
-    const y = padding.top + chartHeight - (item.score / 100) * chartHeight
+    // 使用动态的 Y 轴范围计算位置
+    const normalizedScore = (item.score - yAxisMin) / yAxisRange
+    const y = padding.top + chartHeight - normalizedScore * chartHeight
     pointPositions.push({ x, y, data: item })
   })
 
@@ -516,23 +582,17 @@ function drawChart() {
     })
   }
 
-  // X轴标签
-  ctx.fillStyle = '#666'
-  ctx.font = '11px Arial'
-  ctx.textAlign = 'center'
-
+  // X轴标签（竖向显示）- 使用 HTML 元素，浮动在 canvas 外部
+  const labels: {x: number, text: string, isHovered: boolean}[] = []
   data.forEach((item, index) => {
     const x = padding.left + (chartWidth * index) / (data.length - 1 || 1)
-    // 悬停时高亮标签
-    if (index === hoveredPointIndex.value) {
-      ctx.fillStyle = '#1890ff'
-      ctx.font = 'bold 12px Arial'
-    } else {
-      ctx.fillStyle = '#666'
-      ctx.font = '11px Arial'
-    }
-    ctx.fillText(item.date, x, height - padding.bottom + 20)
+    labels.push({
+      x,
+      text: item.date,
+      isHovered: index === hoveredPointIndex.value
+    })
   })
+  xAxisLabels.value = labels
 }
 
 // 处理图表点击
@@ -587,9 +647,14 @@ function handleChartMouseMove(event: MouseEvent) {
     const point = chartPoints.value[foundIndex]
     tooltipVisible.value = true
     tooltipData.value = point.data
-    tooltipPosition.value = {
-      x: point.x,
-      y: point.y - 15
+
+    // 计算 fixed 定位的坐标（相对于视口）
+    const wrapperRect = chartWrapper.value?.getBoundingClientRect()
+    if (wrapperRect) {
+      fixedTooltipPosition.value = {
+        x: wrapperRect.left + point.x,
+        y: wrapperRect.top + point.y - 15
+      }
     }
   } else {
     tooltipVisible.value = false
@@ -625,6 +690,30 @@ function openInNewTab(path: string) {
 </script>
 
 <style scoped>
+/* 自定义滚动条样式 */
+:deep(.ant-card-body > div[style*="overflow-x"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+:deep(.ant-card-body > div[style*="overflow-x"])::-webkit-scrollbar {
+  height: 8px;
+}
+
+:deep(.ant-card-body > div[style*="overflow-x"])::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+:deep(.ant-card-body > div[style*="overflow-x"])::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+:deep(.ant-card-body > div[style*="overflow-x"])::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 .chart-tooltip {
   background: rgba(0, 0, 0, 0.85);
   border-radius: 8px;
