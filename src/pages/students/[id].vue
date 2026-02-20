@@ -70,7 +70,7 @@
                 </template>
                 <template v-if="column.key === 'finalScore'">
                   <span v-if="!record.isError" :class="getScoreColor(record.finalScore)">{{ record.finalScore }}</span>
-                  <span v-else>-</span>
+                  <span v-else class="text-red-500">Error</span>
                 </template>
                 <template v-if="column.key === 'createdAt'">
                   {{ formatDateUTC8(record.createdAt) }}
