@@ -12,6 +12,7 @@ declare module 'vue' {
     BackToTop: typeof import('./components/BackToTop.vue')['default']
     EditAssignments: typeof import('./components/EditAssignments.vue')['default']
     ExportToWord: typeof import('./components/ExportToWord.vue')['default']
+    GlobalErrorModal: typeof import('./components/GlobalErrorModal.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     MarkdownRenderer: typeof import('./components/MarkdownRenderer.vue')['default']
     OrientationOverlay: typeof import('./components/OrientationOverlay.vue')['default']

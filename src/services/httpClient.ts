@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import { handleApiError } from '@/utils/errorHandler'
 
 export const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
@@ -36,8 +37,11 @@ httpClient.interceptors.response.use(
     if (response && response.status === 401) {
       const authStore = useAuthStore()
       authStore.logout()
-      window.location.href = '/login'
     }
+    
+    // 全局捕获错误并显示弹窗
+    handleApiError(error)
+    
     return Promise.reject(error)
   }
 )

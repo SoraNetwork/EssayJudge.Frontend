@@ -87,6 +87,7 @@
       v-model:open="dialog"
       :title="isEditing ? '编辑学生' : '添加学生'"
       @ok="saveStudent"
+      @cancel="closeDialog"
       :confirm-loading="saving"
       :width="600"
     >
@@ -236,6 +237,13 @@ function resetEditedItem() {
     studentId: '',
     classId: null,
   };
+}
+
+// 关闭对话框时重置表单
+function closeDialog() {
+  dialog.value = false;
+  resetEditedItem();
+  isEditing.value = false;
 }
 
 // 编辑学生

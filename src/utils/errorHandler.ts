@@ -1,5 +1,6 @@
 import { message } from 'ant-design-vue'
 import type { AxiosError } from 'axios'
+import { useAppStore } from '@/stores/app'
 
 export class ApiError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -9,47 +10,42 @@ export class ApiError extends Error {
 }
 
 export function handleApiError(error: unknown): void {
+  const appStore = useAppStore()
+  
+  // 避免重复显示同一个错误
+  if (appStore.errorVisible) return
+
   if (error instanceof ApiError) {
-    switch (error.statusCode) {
-      case 401:
-        message.error('未授权，请重新登录')
-        break
-      case 403:
-        message.error('没有权限访问此资源')
-        break
-      case 404:
-        message.error('请求的资源不存在')
-        break
-      case 500:
-        message.error('服务器错误，请稍后重试')
-        break
-      default:
-        message.error(error.message || '操作失败')
-    }
+    appStore.showError({
+      code: error.statusCode,
+      message: error.message
+    })
   } else if (isAxiosError(error)) {
     const status = error.response?.status
-    const errorMessage = (error.response?.data as any)?.message || error.message || '请求失败'
-
-    switch (status) {
-      case 401:
-        message.error('未授权，请重新登录')
-        break
-      case 403:
-        message.error('没有权限访问此资源')
-        break
-      case 404:
-        message.error('请求的资源不存在')
-        break
-      case 500:
-        message.error('服务器错误，请稍后重试')
-        break
-      default:
-        message.error(errorMessage)
+    const responseData = error.response?.data as any
+    const errorMessage = responseData?.message || error.message || '请求失败'
+    
+    // 如果是 500 错误，尽量获取完整的错误堆栈或 JSON
+    let fullError = ''
+    if (status === 500) {
+      fullError = typeof responseData === 'string' 
+        ? responseData 
+        : JSON.stringify(responseData || error.message, null, 2)
     }
+
+    appStore.showError({
+      code: status || null,
+      message: errorMessage,
+      full: fullError
+    })
   } else if (error instanceof Error) {
-    message.error(error.message || '操作失败')
+    appStore.showError({
+      message: error.message || '操作失败'
+    })
   } else {
-    message.error('发生未知错误')
+    appStore.showError({
+      message: '发生未知错误'
+    })
   }
 }
 

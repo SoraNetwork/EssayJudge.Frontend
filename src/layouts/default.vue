@@ -166,6 +166,7 @@
         <span>Copyright &copy; {{ new Date().getFullYear() }} - SoraEssayJudge &nbsp;&nbsp; <a class="text-md select-none font-semibold text-neutral-500 dark:text-neutral-400" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">浙ICP备2024113182号-1</a></span>
       </div>
     </a-layout-footer>
+    <GlobalErrorModal />
   </a-layout>
   </a-config-provider>
 </template>
@@ -178,6 +179,7 @@ import { useAppStore } from '@/stores/app'
 import { useAntdTheme } from '@/composables/useAntdTheme'
 import { getServerStatus, type ServerStatus } from '@/services/apiService'
 import { theme } from 'ant-design-vue'
+import GlobalErrorModal from '@/components/GlobalErrorModal.vue'
 
 // Ant Design 组件
 import {

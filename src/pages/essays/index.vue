@@ -162,8 +162,10 @@ import { ref, computed, onMounted } from 'vue'
 import { UploadOutlined, SearchOutlined, ReloadOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { searchSubmissions, getAssignments, submitSubmissionForEvaluation, deleteSubmission } from '@/services/apiService';
 import { formatDateUTC8 } from '@/composables/useDateFormat';
+import { handleApiError } from '@/utils/errorHandler';
 
 // Define interface for Essay item
+// ... (rest of imports and types)
 interface Essay {
   id: string | number;
   studentName?: string | null | undefined;
