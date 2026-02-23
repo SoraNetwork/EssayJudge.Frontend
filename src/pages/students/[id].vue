@@ -69,8 +69,9 @@
                   </a-tooltip>
                 </template>
                 <template v-if="column.key === 'finalScore'">
-                  <span v-if="!record.isError" :class="getScoreColor(record.finalScore)">{{ record.finalScore }}</span>
-                  <span v-else class="text-red-500">Error</span>
+                  <a-tag :color="getScoreColor(record.finalScore)">
+                    {{ record.finalScore }}
+                  </a-tag>
                 </template>
                 <template v-if="column.key === 'createdAt'">
                   {{ formatDateUTC8(record.createdAt) }}
@@ -192,7 +193,7 @@ const columns = [
 // 数据处理
 const chartData = computed(() => {
   return submissionSummaries.value
-    .filter(s => !s.isError && s.finalScore !== undefined)
+    .filter(s => s.finalScore !== undefined)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .map(sub => ({
       date: formatDateUTC8(sub.createdAt).split(' ')[0], // 只取日期
@@ -378,10 +379,16 @@ async function saveStudent() {
 }
 function openInNewTab(url: string) { window.open(url, '_blank') }
 function getInitials(n: string) { return n ? n[0].toUpperCase() : '?' }
-function getScoreColor(s: number) {
-  if (s >= 90) return 'text-green-500';
-  if (s >= 60) return 'text-blue-500';
-  return 'text-red-500';
+function getScoreColor(score: number | null | undefined) {
+  if (score === null || score === undefined) {
+    return 'default';
+  }
+  if (score >= 54) return 'gold';
+  if (score >= 48) return 'green';
+  if (score >= 42) return 'cyan';
+  if (score >= 36) return 'orange';
+  if (score >= 30) return 'red';
+  return 'red';
 }
 
 onMounted(() => {
