@@ -15,7 +15,8 @@ import type {
   QueriedEssay,
   ApiKeyUpdateDto,
   EssaySubmissionSummaryDto,
-  finihedAssignments
+  finihedAssignments,
+  AssignmentAchievement
 } from './types'
 
 export type {
@@ -34,7 +35,8 @@ export type {
   QueriedEssay,
   ApiKeyUpdateDto,
   EssaySubmissionSummaryDto,
-  finihedAssignments
+  finihedAssignments,
+  AssignmentAchievement
 }
 
 /// 学生上传相关API
@@ -157,6 +159,10 @@ export const deleteClass = async (id: string): Promise<void> => {
 }
 
 // 作业管理相关API
+export const getAssignmentAchievement = async (assignmentId: string): Promise<AssignmentAchievement[]> => {
+  const response = await httpClient.get<AssignmentAchievement[]>(`/EssayAssignment/${assignmentId}/status`)
+  return response.data
+}
 export const getAssignments = async (): Promise<Assignment[]> => {
   const response = await httpClient.get<Assignment[]>('/EssayAssignment', {
     headers: {

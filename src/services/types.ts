@@ -19,6 +19,14 @@ export interface finihedAssignments {
   submissions: SubmissionItem[]
 }
 
+export interface AssignmentAchievement {
+  totalStudentCount: number
+  conmpletedCount: number
+  pendingCount: number
+  completedSubmissions: SubmissionItem[]
+  pendingStudents: Student[]
+}
+
 export interface Student {
   id: string
   name: string
