@@ -159,8 +159,8 @@ export const deleteClass = async (id: string): Promise<void> => {
 }
 
 // 作业管理相关API
-export const getAssignmentAchievement = async (assignmentId: string): Promise<AssignmentAchievement[]> => {
-  const response = await httpClient.get<AssignmentAchievement[]>(`/EssayAssignment/${assignmentId}/status`)
+export const getAssignmentAchievement = async (assignmentId: string, classId: string): Promise<AssignmentAchievement> => {
+  const response = await httpClient.get<AssignmentAchievement>(`/EssayAssignment/${assignmentId}/status?classId=${classId}`)
   return response.data
 }
 export const getAssignments = async (): Promise<Assignment[]> => {

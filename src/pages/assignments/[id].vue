@@ -156,26 +156,68 @@
         </a-row>
       </a-card>
 
-      <!-- 作文提交列表 -->
+      <!-- 作文提交列表/作文未交列表 -->
       <a-card>
-        <template #title>
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span>作文提交列表</span>
-            <!-- 搜索框 -->
-            <a-input
-              v-model:value="search"
-              placeholder="搜索学生"
+       <a-tabs v-model:activeKey="currentTab">
+          <a-tab-pane key="essaySubmissionsList" tab="作文提交列表"></a-tab-pane>
+          <a-tab-pane key="essayPendingList" tab="作文未交列表">
+          <div style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <a-select
+              v-model:value="selectedClass"
+              placeholder="选择班级"
               allowClear
-              style="max-width: 300px;"
-            >
-              <template #prefix><SearchOutlined /></template>
+              style="width: 200px;"
+              :options="classesList.map(cls => ({ label: cls.name, value: cls.id }))"
+            />
+            <a-input v-model:value="search" placeholder="搜索学生" allowClear style="max-width: 300px;">
+              <template #prefix>
+                <SearchOutlined />
+              </template>
             </a-input>
           </div>
+          <!-- 统计信息 -->
+          <a-card v-if="selectedClass && pendingStudents.length >= 0" style="margin-bottom: 16px;">
+            <a-row :gutter="16">
+              <a-col :span="8">
+                <a-statistic
+                  title="总学生数"
+                  :value="pendingStudentsData.totalStudentCount || 0"
+                  :value-style="{ fontSize: '28px', fontWeight: 'bold' }"
+                />
+              </a-col>
+              <a-col :span="8">
+                <a-statistic
+                  title="已完成"
+                  :value="pendingStudentsData.completedCount || 0"
+                  :value-style="{ fontSize: '28px', fontWeight: 'bold', color: '#3f8600' }"
+                />
+              </a-col>
+              <a-col :span="8">
+                <a-statistic
+                  title="未交"
+                  :value="pendingStudentsData.pendingCount || 0"
+                  :value-style="{ fontSize: '28px', fontWeight: 'bold', color: '#cf1322' }"
+                />
+              </a-col>
+            </a-row>
+          </a-card>
+        </a-tab-pane>
+        </a-tabs>
+        <template #title>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ currentTab === 'essaySubmissionsList' ? '作文提交列表' : '作文未交列表' }}</span>
+          </div>
         </template>
-
         <!-- 桌面端表格 -->
+        <a-input v-if="currentTab === 'essaySubmissionsList'" v-model:value="search" placeholder="搜索学生" allowClear
+          style="max-width: 300px;margin-bottom: 16px;">
+          <template #prefix>
+            <SearchOutlined />
+          </template>
+        </a-input>
+
         <a-table
-          v-if="isDesktop"
+          v-if="isDesktop && currentTab === 'essaySubmissionsList'"
           :columns="columns"
           :data-source="filteredSubmissions"
           :loading="loadingSubmissions"
@@ -200,8 +242,27 @@
           </template>
         </a-table>
 
-        <!-- 移动端列表 -->
-        <a-list v-else :data-source="filteredSubmissions" item-layout="horizontal">
+        <!-- 桌面端未交列表表格 -->
+        <a-table
+          v-if="isDesktop && currentTab === 'essayPendingList'"
+          :columns="pendingColumns"
+          :data-source="filteredPendingStudents"
+          :loading="loadingPendingStudents"
+          :pagination="false"
+          :scroll="{ x: true }"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'className'">
+              {{ record.class?.name || '-' }}
+            </template>
+          </template>
+          <template #emptyText>
+            <a-empty description="暂无未交学生" />
+          </template>
+        </a-table>
+
+        <!-- 移动端提交列表 -->
+        <a-list v-if="!isDesktop && currentTab === 'essaySubmissionsList'" :data-source="filteredSubmissions" item-layout="horizontal">
           <template #renderItem="{ item }">
             <a-list-item :style="{ marginBottom: '8px' }">
               <template #actions>
@@ -228,6 +289,25 @@
             </a-list-item>
           </template>
         </a-list>
+
+        <!-- 移动端未交列表 -->
+        <a-list v-if="!isDesktop && currentTab === 'essayPendingList'" :data-source="filteredPendingStudents" item-layout="horizontal">
+          <template #renderItem="{ item }">
+            <a-list-item :style="{ marginBottom: '8px' }">
+              <a-list-item-meta>
+                <template #title>
+                  {{ item.name || '未知学生' }}
+                </template>
+                <template #description>
+                  {{ item.class?.name || '-' }} - {{ item.studentId || '-' }}
+                </template>
+              </a-list-item-meta>
+            </a-list-item>
+          </template>
+          <template #empty>
+            <a-empty description="暂无未交学生" />
+          </template>
+        </a-list>
       </a-card>
 
       
@@ -237,14 +317,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeftOutlined, EditOutlined, SearchOutlined, EyeOutlined, StarOutlined, StarFilled, CalendarOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
-import { getAssignmentById, searchSubmissions, updateAssignment } from '@/services/apiService';
+import { getAssignmentById, searchSubmissions, updateAssignment, getAssignmentAchievement, getClasses } from '@/services/apiService';
 import { formatDateUTC8 } from '@/composables/useDateFormat';
 
 // Responsive display detection
 const windowWidth = ref(window.innerWidth)
+
+const currentTab = ref('essaySubmissionsList')
+const selectedClass = ref<string | null>(null)
+const classesList = ref<any[]>([])
+
+// 监听标签页切换
+watch(currentTab, async (newTab) => {
+  if (newTab === 'essayPendingList') {
+    await getClassesList()
+  }
+})
+
+// 监听班级选择变化
+watch(selectedClass, async (newClassId) => {
+  await getAssignmentAchievementList(newClassId);
+})
 
 const grades = ref([
   { grade: '一年级', string: '一年级' },
@@ -291,8 +387,17 @@ const assignment = ref<any>({
   updatedAt: ''
 })
 const submissions = ref<any[]>([])
+const pendingStudents = ref<any[]>([])
+const pendingStudentsData = ref<any>({
+  totalStudentCount: 0,
+  completedCount: 0,
+  pendingCount: 0,
+  completedSubmissions: [],
+  pendingStudents: []
+})
 const loading = ref(true)
 const loadingSubmissions = ref(true)
+const loadingPendingStudents = ref(true)
 const error = ref('')
 const isEditing = ref(false)
 const saving = ref(false)
@@ -306,13 +411,20 @@ const editableGrade = ref<string | null>(null)
 const editableTotalScore = ref<number | null>(null)
 const editableBaseScore = ref<number | null>(null)
 
-// 表格列定义
+// 表格列定义 - 提交列表
 const columns = [
   { title: '学生', dataIndex: 'studentName', key: 'studentName' ,sorter: (a: any, b: any) => (a.studentName || '').localeCompare(b.studentName || '') },
   { title: '班级', dataIndex: 'className', key: 'className' ,sorter: (a: any, b: any) => (a.className || '').localeCompare(b.className || '') },
   { title: '分数', key: 'finalScore' ,sorter: (a: any, b: any) => (a.finalScore || 0) - (b.finalScore || 0) },
   { title: '提交时间', key: 'createdAt' ,sorter:(a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime() },
   { title: '操作', key: 'actions' }
+]
+
+// 未交列表表格列定义
+const pendingColumns = [
+  { title: '学生姓名', dataIndex: 'name', key: 'name', sorter: (a: any, b: any) => (a.name || '').localeCompare(b.name || '') },
+  { title: '学号', dataIndex: 'studentId', key: 'studentId', sorter: (a: any, b: any) => (a.studentId || '').localeCompare(b.studentId || '') },
+  { title: '班级', key: 'className', sorter: (a: any, b: any) => (a.className || '').localeCompare(b.className || '') }
 ]
 
 // 过滤后的提交列表
@@ -323,6 +435,17 @@ const filteredSubmissions = computed(() => {
   return submissions.value.filter(submission => {
     return submission.studentName.toLowerCase().includes(searchTerm) ||
            (submission.className && submission.className.toLowerCase().includes(searchTerm))
+  })
+})
+
+// 过滤后的未交列表
+const filteredPendingStudents = computed(() => {
+  if (!search.value) return pendingStudents.value
+
+  const searchTerm = search.value.toLowerCase()
+  return pendingStudents.value.filter(student => {
+    return (student.name && student.name.toLowerCase().includes(searchTerm)) ||
+           (student.studentId && student.studentId.toLowerCase().includes(searchTerm))
   })
 })
 
@@ -370,8 +493,42 @@ async function fetchSubmissions() {
   }
 }
 
+//获取作文未交列表
+async function getAssignmentAchievementList(classId?: string | null) {
+  if (!classId) {
+    pendingStudents.value = []
+    pendingStudentsData.value = {
+      totalStudentCount: 0,
+      completedCount: 0,
+      pendingCount: 0,
+      completedSubmissions: [],
+      pendingStudents: []
+    }
+    return
+  }
 
+  loadingPendingStudents.value = true
 
+  try {
+    const data = await getAssignmentAchievement(assignmentId.value, classId);
+    pendingStudentsData.value = data
+    pendingStudents.value = data.pendingStudents || [];
+  } catch (err) {
+    console.error('获取作文未交状态失败:', err)
+  } finally {
+    loadingPendingStudents.value = false
+  }
+}
+
+//获取班级
+async function getClassesList(){
+  try {
+    const classesData = await getClasses();
+    classesList.value = classesData;
+  } catch (err) {
+    console.error('获取班级列表失败:', err)
+  }
+}
 // 获取状态文本
 function getStatusText(status: string) {
   const statusMap: Record<string, string> = {

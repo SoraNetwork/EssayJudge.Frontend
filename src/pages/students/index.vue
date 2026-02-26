@@ -56,15 +56,18 @@
 
     <!-- 学生列表 -->
     <a-card>
-      <a-table :columns="columns" 
-      :data-source="filteredStudents" 
-      :loading="loading" 
-      row-key="id" 
-      :pagination="{
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total: any) => `共 ${total} 条`
-      }">
+      <!-- 桌面端表格 -->
+      <a-table
+        v-if="!isMobile"
+        :columns="columns"
+        :data-source="filteredStudents"
+        :loading="loading"
+        row-key="id"
+        :pagination="{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total: any) => `共 ${total} 条`
+        }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'actions'">
             <a-space>
@@ -73,7 +76,7 @@
               </a-tooltip>
               <a-tooltip title="编辑">
                 <a-button size="small" type="text" @click="editStudent(record)"><EditOutlined /></a-button>
-              </a-tooltip> 
+              </a-tooltip>
               <a-tooltip title="删除">
                 <a-button size="small" type="text" danger @click="confirmDelete(record)"><DeleteOutlined /></a-button>
               </a-tooltip>
@@ -81,6 +84,46 @@
           </template>
         </template>
       </a-table>
+
+      <!-- 移动端列表 -->
+      <a-list
+        v-else
+        :data-source="filteredStudents"
+        :loading="loading"
+        item-layout="horizontal"
+      >
+        <template #renderItem="{ item }">
+          <a-list-item
+            :style="{ marginBottom: '8px', background: 'var(--ant-color-bg-container)', padding: '12px', borderRadius: '8px', cursor: 'pointer' }"
+            @click="viewStudentDetail(item.id)"
+          >
+            <a-list-item-meta>
+              <template #title>
+                <div style="font-size: 16px; font-weight: 500;">{{ item.name }}</div>
+              </template>
+              <template #description>
+                <div style="color: var(--ant-color-text-secondary);">
+                  <div>学号：{{ item.studentId }}</div>
+                  <div>班级：{{ item.className || '无班级' }}</div>
+                </div>
+              </template>
+            </a-list-item-meta>
+            <template #actions>
+              <a-space @click.stop>
+                <a-tooltip title="编辑">
+                  <a-button size="small" type="text" @click="editStudent(item)"><EditOutlined /></a-button>
+                </a-tooltip>
+                <a-tooltip title="删除">
+                  <a-button size="small" type="text" danger @click="confirmDelete(item)"><DeleteOutlined /></a-button>
+                </a-tooltip>
+              </a-space>
+            </template>
+          </a-list-item>
+        </template>
+        <template #empty>
+          <a-empty description="暂无学生数据" />
+        </template>
+      </a-list>
     </a-card>
     <!-- 新建/编辑学生对话框 -->
     <a-modal
@@ -146,6 +189,12 @@ import { getStudents, getClasses, createStudent, updateStudent, deleteStudent as
 
 // Ant Design 组件
 import { EyeOutlined, SearchOutlined, ReloadOutlined, PlusOutlined, UploadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue';
+
+// 检测是否为移动设备
+const isMobile = computed(() => {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 768;
+});
 
 interface Class {
   id: string;
@@ -472,6 +521,11 @@ function handleSearch() {
   // 无需额外操作，computed属性会自动处理过滤
 }
 
+// 查看学生详情
+function viewStudentDetail(studentId: string) {
+  window.open(`/students/${studentId}`, '_blank');
+}
+
 // 取消导入处理
 function handleImportCancel() {
   importDialog.value = false;
@@ -556,5 +610,46 @@ const classOptions = computed(() => {
   background: var(--ant-color-primary);
   border-color: var(--ant-color-primary);
   color: var(--ant-color-white);
+}
+
+/* 移动端列表样式 */
+:deep(.ant-list-item) {
+  padding: 0;
+  margin-bottom: 12px;
+  transition: background-color 0.2s;
+}
+
+:deep(.ant-list-item:hover) {
+  background-color: var(--ant-color-fill-secondary) !important;
+}
+
+:deep(.ant-list-item-meta-title) {
+  margin-bottom: 8px;
+}
+
+:deep(.ant-list-item-meta-description) {
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .students-container {
+    padding: 12px;
+  }
+
+  .header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-section div {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .header-section div a-button {
+    flex: 1;
+  }
 }
 </style>

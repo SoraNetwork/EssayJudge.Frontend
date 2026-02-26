@@ -100,6 +100,8 @@ import { BookOutlined, TeamOutlined, FileTextOutlined } from '@ant-design/icons-
 const authStore = useAuthStore()
 const router = useRouter()
 
+const isDesktop = ref(window.innerWidth >= 768)
+
 // Loading states
 const loading = ref({
   assignments: false,

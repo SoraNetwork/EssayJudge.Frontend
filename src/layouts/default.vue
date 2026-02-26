@@ -10,6 +10,10 @@
       <div class="logo" @click="$router.push('/')" style="cursor: pointer; color: white; font-size: 18px; font-weight: bold; float: left; height: 64px; line-height: 64px;">
         {{ appTitle }}
       </div>
+      <!-- 移动端菜单按钮 -->
+      <a-button type="text" v-if="isMobile" @click="mobileMenuOpen = true" style="color: white; float: left; margin-left: 8px;">
+        <MenuOutlined />
+      </a-button>
       <a-menu
         class="main-menu"
         v-model:selectedKeys="selectedKeys"
@@ -101,7 +105,12 @@
         placement="left"
         :closable="false"
         width="256"
+        :body-style="{ padding: 0 }"
+        :header-style="{ display: 'none' }"
       >
+        <div class="mobile-drawer-header" style="height: 64px; display: flex; align-items: center; padding: 0 16px; background: #1890ff; color: white; font-size: 18px; font-weight: bold;">
+          {{ appTitle }}
+        </div>
         <a-menu
           class="main-menu-mobile"
           mode="inline"
@@ -191,7 +200,8 @@ import {
   KeyOutlined,
   InfoCircleOutlined,
   UserOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  MenuOutlined
 } from '@ant-design/icons-vue';
 
 // 使用 Ant Design 主题
@@ -358,24 +368,124 @@ onMounted(async () => {
   margin-right: 20px;
 }
 
+/* 移动端优化：隐藏桌面端菜单 */
+@media (max-width: 768px) {
+  :deep(.main-menu) {
+    display: none;
+  }
+
+  .header {
+    padding: 0 12px !important;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+
+  :deep(.header-actions .ant-btn) {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+
+  :deep(.user-avatar) {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    margin-left: 8px;
+  }
+}
+
 /* 移动端抽屉内菜单样式 */
 :deep(.main-menu-mobile .ant-menu-item) {
-  padding: 12px 20px;
+  padding: 12px 16px;
   margin: 0;
   height: auto;
   display: flex;
   align-items: center;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+:deep(.main-menu-mobile .ant-menu-item:hover) {
+  color: #fff;
+  background: #1890ff;
+}
+
+:deep(.main-menu-mobile .ant-menu-item-selected) {
+  background: #1890ff;
+  color: #fff;
+}
+
+:deep(.main-menu-mobile .ant-menu-submenu-title) {
+  padding: 12px 16px;
+  margin: 0;
+  height: auto;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+:deep(.main-menu-mobile .ant-menu-submenu-title:hover) {
+  color: #fff;
+}
+
+:deep(.main-menu-mobile .ant-menu-submenu-selected > .ant-menu-submenu-title) {
+  color: #1890ff;
+}
+
+:deep(.main-menu-mobile .ant-menu-item .anticon),
+:deep(.main-menu-mobile .ant-menu-submenu-title .anticon) {
+  font-size: 16px;
+  margin-right: 12px;
+}
+
+/* 移动端抽屉头部样式 */
+.mobile-drawer-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  /* background: var(--ant-color-primary);
+  color: var(--ant-color-primary-text); */
+  font-size: 18px;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  position: relative;
 }
 
 /* 确保抽屉体内的菜单有合适的内边距 */
 :deep(.ant-drawer-body .main-menu-mobile) {
-  padding-top: 8px;
-  padding-bottom: 8px;
+  padding: 24px 0 0 0;
+}
+
+/* 移动端抽屉样式优化 */
+:deep(.ant-drawer-body) {
+  padding: 0;
+}
+
+:deep(.ant-drawer-content) {
+  background: #001529;
+}
+
+:deep(.ant-drawer-header) {
+  display: none;
+}
+
+:deep(.ant-drawer .ant-drawer-body) {
+  padding: 0;
 }
 
 @media (max-width: 768px) {
   .content-wrapper {
-    margin: 0 8px;
+    margin: 0;
+    padding: 16px 12px;
+  }
+
+  .content {
+    margin: 0;
+    padding: 0;
+  }
+
+  .footer {
+    padding: 12px 16px;
   }
 }
 
@@ -387,5 +497,51 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* 移动端优化：减少卡片内边距 */
+@media (max-width: 768px) {
+  :deep(.ant-card) {
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  :deep(.ant-card-body) {
+    padding: 16px 12px !important;
+  }
+
+  :deep(.ant-tabs-content) {
+    padding: 12px 0 !important;
+  }
+
+  :deep(.ant-table) {
+    font-size: 14px;
+  }
+
+  :deep(.ant-table-thead > tr > th) {
+    padding: 8px 4px !important;
+    font-size: 13px;
+  }
+
+  :deep(.ant-table-tbody > tr > td) {
+    padding: 8px 4px !important;
+  }
+
+  :deep(.ant-list-item) {
+    padding: 12px 8px !important;
+  }
+
+  :deep(.ant-form-item) {
+    margin-bottom: 16px;
+  }
+
+  :deep(.ant-form-item-label) {
+    padding-bottom: 4px;
+  }
+
+  :deep(.ant-input),
+  :deep(.ant-select-selector) {
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+  }
 }
 </style>

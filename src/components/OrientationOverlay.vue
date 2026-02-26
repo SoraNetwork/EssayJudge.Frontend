@@ -4,7 +4,9 @@
       <img src="/rotation.gif" alt="旋转设备" class="rotation-gif" />
       <p class="message">请在横屏模式下使用</p>
       <p class="hint">旋转设备以继续</p>
+          <a-button type="default" @click="isMobileDevice = false" style="margin-top: 20px;">在竖屏状态下继续</a-button>
     </div>
+
   </div>
 </template>
 
